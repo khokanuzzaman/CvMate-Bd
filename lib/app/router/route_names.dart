@@ -1,0 +1,41 @@
+abstract final class RouteNames {
+  static const String splash = 'splash';
+  static const String onboarding = 'onboarding';
+  static const String home = 'home';
+  static const String settings = 'settings';
+  static const String login = 'login';
+  static const String register = 'register';
+  static const String forgotPassword = 'forgot-password';
+  static const String profile = 'profile';
+  static const String cvList = 'cv-list';
+  static const String cvBuilder = 'cv-builder';
+  static const String cvPreview = 'cv-preview';
+  static const String cvPdfPreview = 'cv-pdf-preview';
+  static const String aiImprove = 'ai-improve';
+  static const String coverLetter = 'cover-letter';
+  static const String jobTracker = 'job-tracker';
+  static const String jobApplicationForm = 'job-application-form';
+  static const String jobApplicationDetails = 'job-application-details';
+  static const String interviewPrep = 'interview-prep';
+  static const String atsChecker = 'ats-checker';
+
+  static const String splashPath = '/';
+  static const String onboardingPath = '/onboarding';
+  static const String homePath = '/home';
+  static const String settingsPath = '/settings';
+  static const String loginPath = '/login';
+  static const String registerPath = '/register';
+  static const String forgotPasswordPath = '/forgot-password';
+  static const String profilePath = '/profile';
+  static const String cvListPath = '/cvs';
+  static const String cvBuilderPath = '/cvs/builder';
+  static const String cvPreviewPath = '/cvs/preview';
+  static const String cvPdfPreviewPath = '/cvs/pdf-preview';
+  static const String aiImprovePath = '/cvs/ai-improve';
+  static const String coverLetterPath = '/cover-letter';
+  static const String jobTrackerPath = '/job-tracker';
+  static const String jobApplicationFormPath = '/job-tracker/form';
+  static const String jobApplicationDetailsPath = '/job-tracker/details';
+  static const String interviewPrepPath = '/interview-prep';
+  static const String atsCheckerPath = '/ats-checker';
+}
