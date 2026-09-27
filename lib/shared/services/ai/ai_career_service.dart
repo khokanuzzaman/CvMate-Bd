@@ -105,4 +105,17 @@ abstract class AiCareerService {
     required String jobPostText,
     AiOutputLanguage language = AiOutputLanguage.english,
   });
+
+  /// One combined call that tailors a CV to a job post: a role-aligned summary,
+  /// emphasized (existing) skills, and rewritten experience bullets. The cover
+  /// letter is generated separately via [generateCoverLetter].
+  Future<Result<CvTailoringSuggestion>> tailorCvForJob({
+    required CvProfile profile,
+    required String jobPostText,
+    String jobTitle = '',
+    String companyName = '',
+    List<String> targetKeywords = const [],
+    AiOutputLanguage language = AiOutputLanguage.english,
+    AiTone tone = AiTone.professional,
+  });
 }

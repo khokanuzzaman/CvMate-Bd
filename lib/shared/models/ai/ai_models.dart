@@ -139,6 +139,32 @@ class JobPostAnalysis {
   final List<String> keywords;
 }
 
+class TailoredBulletSuggestion {
+  const TailoredBulletSuggestion({
+    required this.experienceId,
+    required this.original,
+    required this.suggested,
+  });
+
+  final String experienceId;
+  final String original;
+  final String suggested;
+}
+
+class CvTailoringSuggestion {
+  const CvTailoringSuggestion({
+    required this.tailoredSummary,
+    required this.emphasizedSkills,
+    required this.rewrittenBullets,
+    required this.language,
+  });
+
+  final String tailoredSummary;
+  final List<String> emphasizedSkills;
+  final List<TailoredBulletSuggestion> rewrittenBullets;
+  final AiOutputLanguage language;
+}
+
 class CvJobMatchResult {
   const CvJobMatchResult({
     required this.matchScore,

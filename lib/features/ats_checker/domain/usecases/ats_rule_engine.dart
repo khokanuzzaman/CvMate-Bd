@@ -2,75 +2,22 @@ import 'package:careermatebd/features/ats_checker/domain/entities/ats_check_cate
 import 'package:careermatebd/features/ats_checker/domain/entities/ats_check_issue.dart';
 import 'package:careermatebd/features/ats_checker/domain/entities/ats_check_report.dart';
 import 'package:careermatebd/features/ats_checker/domain/entities/ats_job_match_report.dart';
+import 'package:careermatebd/features/ats_checker/domain/usecases/ats_engine_constants.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
 
 class AtsRuleEngine {
   const AtsRuleEngine();
 
-  static const List<String> _actionVerbs = [
-    'achieved',
-    'analyzed',
-    'automated',
-    'built',
-    'coordinated',
-    'created',
-    'delivered',
-    'designed',
-    'developed',
-    'implemented',
-    'improved',
-    'launched',
-    'led',
-    'managed',
-    'optimized',
-    'resolved',
-    'supported',
-    'tested',
-  ];
+  /// Maximum number of salient keywords extracted from a single job post.
+  static const int _maxJobKeywords = 8;
 
-  static const List<String> _jobKeywords = [
-    'flutter',
-    'dart',
-    'firebase',
-    'rest api',
-    'api integration',
-    'riverpod',
-    'provider',
-    'bloc',
-    'go router',
-    'android',
-    'ios',
-    'github',
-    'git',
-    'sql',
-    'kotlin',
-    'javascript',
-    'react',
-    'angular',
-    'node.js',
-    'node js',
-    'spring boot',
-    'excel',
-    'power bi',
-    'communication',
-    'leadership',
-    'teamwork',
-    'problem solving',
-    'ui/ux',
-    'digital marketing',
-    'sales',
-    'customer support',
-    'data analysis',
-    'ui',
-    'ux',
-    'testing',
-    'python',
-    'java',
-    'node',
-    'html',
-    'css',
-  ];
+  /// Longest multi-word phrase kept as a single keyword.
+  static const int _maxPhraseWords = 4;
+
+  /// Extra weight given to phrases that appear inside a comma/bullet list, since
+  /// job posts usually enumerate their real skill requirements that way.
+  static const int _enumerationWeight = 3;
 
   static const Map<AtsSuggestionSeverity, int> _severityPenalty = {
     AtsSuggestionSeverity.high: 12,
@@ -496,7 +443,7 @@ class AtsRuleEngine {
         }
 
         final firstWord = cleaned.split(RegExp(r'\s+')).first;
-        if (_actionVerbs.contains(firstWord)) {
+        if (atsActionVerbs.contains(firstWord)) {
           return true;
         }
       }
@@ -522,38 +469,132 @@ class AtsRuleEngine {
     return false;
   }
 
-  List<String> _extractJobKeywords(String jobPostText) {
-    final lowerText = jobPostText.toLowerCase();
-    final keywords = <String>[];
+  /// Extracts salient role/skill keywords from a pasted job post.
+  ///
+  /// This is deterministic and rule-based (no LLM, no fixed profession list), so
+  /// it works for any role. It splits the text into candidate phrases on
+  /// punctuation and stopwords, favours phrases that appear inside comma/bullet
+  /// lists (where job posts enumerate real requirements), normalizes casing,
+  /// dedupes, and returns the top keywords by relevance.
+  List<String> extractJobKeywords(String jobPostText) {
+    if (jobPostText.trim().isEmpty) {
+      return const [];
+    }
 
-    for (final keyword in _jobKeywords) {
-      if (_textContainsKeyword(lowerText, keyword) &&
-          !keywords.contains(_displayKeyword(keyword))) {
-        keywords.add(_displayKeyword(keyword));
+    final scoreByKey = <String, int>{};
+    final orderByKey = <String, int>{};
+    final displayByKey = <String, String>{};
+    var appearanceIndex = 0;
+
+    void register(String phraseKey, String display, int weight, int order) {
+      scoreByKey.update(
+        phraseKey,
+        (value) => value + weight,
+        ifAbsent: () => weight,
+      );
+      orderByKey.putIfAbsent(phraseKey, () => order);
+      displayByKey.putIfAbsent(phraseKey, () => display);
+    }
+
+    // Break the post into lines on newlines and bullet markers.
+    final lines = jobPostText.split(RegExp(r'[\n\r•·▪◦*]+'));
+    for (final line in lines) {
+      final commaParts = line.split(',');
+      final isEnumeration = commaParts.length >= 2;
+      final segments = isEnumeration
+          ? commaParts
+          : line.split(RegExp(r'[.;!?]+'));
+
+      for (final segment in segments) {
+        // Break each segment on separators that end a distinct term.
+        final subSegments = segment.split(RegExp(r'[:()\[\]|]+'));
+        for (final sub in subSegments) {
+          for (final phrase in _phrasesFromSegment(sub)) {
+            final key = _keywordKey(phrase.lower);
+            register(
+              key,
+              _displayKeyword(phrase.original),
+              isEnumeration ? _enumerationWeight : 1,
+              appearanceIndex++,
+            );
+          }
+        }
       }
     }
 
-    if (keywords.length >= 8) {
-      return keywords.take(8).toList();
+    if (scoreByKey.isEmpty) {
+      return const [];
     }
 
-    final words = lowerText
-        .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
-        .split(RegExp(r'\s+'))
-        .where((word) => word.length >= 4 && !_stopWords.contains(word))
+    final keys = scoreByKey.keys.toList()
+      ..sort((a, b) {
+        final scoreDelta = scoreByKey[b]!.compareTo(scoreByKey[a]!);
+        if (scoreDelta != 0) {
+          return scoreDelta;
+        }
+        return orderByKey[a]!.compareTo(orderByKey[b]!);
+      });
+
+    return [for (final key in keys.take(_maxJobKeywords)) displayByKey[key]!];
+  }
+
+  List<String> _extractJobKeywords(String jobPostText) =>
+      extractJobKeywords(jobPostText);
+
+  /// Splits a raw text segment into content-word phrases (runs of non-stopword
+  /// tokens), capped at [_maxPhraseWords]. Preserves the original casing so the
+  /// display form can keep acronyms intact.
+  List<_KeywordPhrase> _phrasesFromSegment(String segment) {
+    final tokens = segment
+        .split(RegExp(r'[^A-Za-z0-9/.+#]+'))
+        // Keep punctuation only when it is internal (node.js, ui/ux); strip
+        // sentence dots and stray slashes glued to the token edges.
+        .map((token) => token.replaceAll(RegExp(r'^[./]+|[./]+$'), ''))
+        .where((token) => token.isNotEmpty)
         .toList();
 
-    for (final word in words) {
-      final candidate = _displayKeyword(word);
-      if (!keywords.contains(candidate)) {
-        keywords.add(candidate);
+    final phrases = <_KeywordPhrase>[];
+    final run = <String>[];
+
+    void flush() {
+      if (run.isEmpty) {
+        return;
       }
-      if (keywords.length >= 8) {
-        break;
+      if (run.length <= _maxPhraseWords) {
+        phrases.add(
+          _KeywordPhrase(
+            original: run.join(' '),
+            lower: run.map((token) => token.toLowerCase()).join(' '),
+          ),
+        );
       }
+      run.clear();
     }
 
-    return keywords;
+    for (final token in tokens) {
+      final lower = token.toLowerCase();
+      final isContentWord =
+          lower.length >= 2 &&
+          !atsStopWords.contains(lower) &&
+          !_isNumeric(lower);
+      if (isContentWord) {
+        run.add(token);
+      } else {
+        flush();
+      }
+    }
+    flush();
+
+    return phrases;
+  }
+
+  bool _isNumeric(String value) => RegExp(r'^[0-9]+$').hasMatch(value);
+
+  /// Normalized dedupe key: collapses known aliases so, e.g., "node js",
+  /// "nodejs" and "node.js" map to the same keyword.
+  String _keywordKey(String lowerPhrase) {
+    final override = atsKeywordDisplayOverrides[lowerPhrase];
+    return (override ?? lowerPhrase).toLowerCase();
   }
 
   List<String> _buildSuggestedSectionsToImprove({
@@ -589,57 +630,34 @@ class AtsRuleEngine {
 
   String _displayKeyword(String value) {
     final lowerValue = value.toLowerCase();
-    const overrides = {
-      'api': 'API',
-      'api integration': 'API Integration',
-      'github': 'GitHub',
-      'go router': 'GoRouter',
-      'ios': 'iOS',
-      'javascript': 'JavaScript',
-      'node.js': 'Node.js',
-      'node js': 'Node.js',
-      'power bi': 'Power BI',
-      'problem solving': 'Problem Solving',
-      'rest api': 'REST API',
-      'spring boot': 'Spring Boot',
-      'ui': 'UI',
-      'ux': 'UX',
-      'ui/ux': 'UI/UX',
-    };
-    if (overrides.containsKey(lowerValue)) {
-      return overrides[lowerValue]!;
+    final override = atsKeywordDisplayOverrides[lowerValue];
+    if (override != null) {
+      return override;
     }
 
     return value
-        .split(' ')
+        .split(RegExp(r'\s+'))
         .where((part) => part.trim().isNotEmpty)
-        .map((part) {
-          final lower = part.toLowerCase();
-          if (lower == 'ui' || lower == 'ux' || lower == 'api') {
-            return lower.toUpperCase();
-          }
-          if (lower == 'go') {
-            return 'Go';
-          }
-          return lower[0].toUpperCase() + lower.substring(1);
-        })
+        .map(_displayToken)
         .join(' ');
   }
 
-  bool _looksLikeTrainableKeyword(String keyword) {
-    const trainableKeywords = {
-      'excel',
-      'firebase',
-      'flutter',
-      'git',
-      'github',
-      'power bi',
-      'rest api',
-      'sql',
-      'ui/ux',
-    };
+  /// Title-cases a token, but keeps short all-caps acronyms uppercase
+  /// (e.g. IV, REST, SQL, HR, ICU, CPR) so they read correctly for any field.
+  String _displayToken(String token) {
+    final letters = token.replaceAll(RegExp(r'[^A-Za-z]'), '');
+    if (letters.length >= 2 && letters == letters.toUpperCase()) {
+      return token.toUpperCase();
+    }
+    final lower = token.toLowerCase();
+    if (lower.isEmpty) {
+      return token;
+    }
+    return lower[0].toUpperCase() + lower.substring(1);
+  }
 
-    return trainableKeywords.contains(keyword.toLowerCase());
+  bool _looksLikeTrainableKeyword(String keyword) {
+    return atsTrainableKeywords.contains(keyword.toLowerCase());
   }
 
   String _externalEvidenceText(CvProfile profile) {
@@ -674,39 +692,13 @@ class AtsRuleEngine {
     );
     return pattern.hasMatch(source);
   }
+}
 
-  static const Set<String> _stopWords = {
-    'with',
-    'from',
-    'that',
-    'this',
-    'your',
-    'their',
-    'must',
-    'will',
-    'have',
-    'team',
-    'role',
-    'work',
-    'using',
-    'into',
-    'than',
-    'more',
-    'need',
-    'needs',
-    'good',
-    'strong',
-    'able',
-    'where',
-    'when',
-    'across',
-    'under',
-    'about',
-    'apply',
-    'position',
-    'candidate',
-    'experience',
-    'skills',
-    'ability',
-  };
+/// A candidate keyword phrase carrying both its original casing (for display)
+/// and its lowercase form (for scoring, deduping, and matching).
+class _KeywordPhrase {
+  const _KeywordPhrase({required this.original, required this.lower});
+
+  final String original;
+  final String lower;
 }

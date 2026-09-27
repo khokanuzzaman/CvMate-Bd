@@ -127,6 +127,33 @@ class AiResponseParser {
     );
   }
 
+  CvTailoringSuggestion parseCvTailoring(String rawResponse) {
+    final map = _decodeMap(rawResponse);
+    final bullets = (map['rewrittenBullets'] as List<dynamic>? ?? const []).map((
+      item,
+    ) {
+      final bulletMap = item is Map<String, dynamic>
+          ? item
+          : throw const AppException(
+              'AI tailoring response format was invalid.',
+              code: 'ai_parse_error',
+            );
+
+      return TailoredBulletSuggestion(
+        experienceId: _readString(bulletMap, 'experienceId'),
+        original: _readString(bulletMap, 'original'),
+        suggested: _readString(bulletMap, 'suggested'),
+      );
+    }).toList();
+
+    return CvTailoringSuggestion(
+      tailoredSummary: _readString(map, 'tailoredSummary'),
+      emphasizedSkills: _readStringList(map, 'emphasizedSkills'),
+      rewrittenBullets: bullets,
+      language: _parseLanguage(_readString(map, 'language')),
+    );
+  }
+
   Map<String, dynamic> _decodeMap(String rawResponse) {
     try {
       final decoded = jsonDecode(rawResponse);

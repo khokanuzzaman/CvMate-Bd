@@ -192,4 +192,121 @@ We need React, Node JS, iOS, and problem solving.
       expect(report.missingKeywords, contains('Node.js'));
     },
   );
+
+  test(
+    'extractJobKeywords pulls salient keywords from any job post without a fixed skill list',
+    () {
+      const jobPost = '''
+Registered Nurse needed for a hospital ward.
+Required skills: patient care, medication administration, IV therapy, vital signs monitoring, infection control, and teamwork.
+''';
+
+      final keywords = engine
+          .extractJobKeywords(jobPost)
+          .map((keyword) => keyword.toLowerCase())
+          .toSet();
+
+      // Comma-listed requirements are treated as the salient keywords.
+      expect(
+        keywords,
+        containsAll([
+          'patient care',
+          'medication administration',
+          'iv therapy',
+          'vital signs monitoring',
+          'infection control',
+          'teamwork',
+        ]),
+      );
+      // No developer-biased leakage from a hardcoded list.
+      expect(keywords, isNot(contains('flutter')));
+      expect(keywords, isNot(contains('dart')));
+      expect(keywords.length, lessThanOrEqualTo(8));
+    },
+  );
+
+  test(
+    'analyzeJobPost produces sensible matching for a non-tech (nurse) CV',
+    () {
+      final profile = CvProfile.empty().copyWith(
+        title: 'Nursing CV',
+        personalInfo: const PersonalInfo(
+          fullName: 'Ayesha Karim',
+          desiredRole: 'Registered Nurse',
+          email: 'ayesha@example.com',
+          phone: '01722222222',
+        ),
+        professionalSummary:
+            'Compassionate registered nurse experienced in patient care, medication administration, and infection control across busy hospital wards.',
+        careerObjective:
+            'Seeking a hospital nursing role where I can deliver safe, patient-centred care and continue building clinical skills.',
+        education: const [
+          EducationInfo(
+            id: 'edu-1',
+            institution: 'Dhaka Nursing College',
+            degree: 'BSc in Nursing',
+            fieldOfStudy: 'Nursing',
+            endYear: '2023',
+          ),
+        ],
+        experiences: const [
+          ExperienceInfo(
+            id: 'exp-1',
+            companyName: 'City General Hospital',
+            jobTitle: 'Staff Nurse',
+            highlights: [
+              'Administered IV therapy and monitored patients for 30+ admissions per shift.',
+              'Coordinated infection control procedures with the ward team and doctors.',
+            ],
+          ),
+        ],
+        skills: const [
+          SkillInfo(id: 'skill-1', name: 'Patient Care', level: 'Advanced'),
+          SkillInfo(
+            id: 'skill-2',
+            name: 'Medication Administration',
+            level: 'Advanced',
+          ),
+        ],
+      );
+
+      const jobPost = '''
+Registered Nurse needed for a hospital ward.
+Required skills: patient care, medication administration, IV therapy, vital signs monitoring, infection control, and teamwork.
+''';
+
+      final report = engine.analyzeJobPost(
+        profile: profile,
+        jobPostText: jobPost,
+      );
+
+      final matched = report.matchedKeywords
+          .map((keyword) => keyword.toLowerCase())
+          .toSet();
+      final missing = report.missingKeywords
+          .map((keyword) => keyword.toLowerCase())
+          .toSet();
+      final suggested = report.suggestedSkillsToAdd
+          .map((keyword) => keyword.toLowerCase())
+          .toSet();
+
+      expect(report.matchPercentage, greaterThan(40));
+      expect(
+        matched,
+        containsAll([
+          'patient care',
+          'medication administration',
+          'iv therapy',
+          'infection control',
+        ]),
+      );
+      // 'vital signs monitoring' and 'teamwork' are not in the CV wording.
+      expect(missing, contains('teamwork'));
+      // Skills backed by CV evidence but missing from the skills section.
+      expect(suggested, containsAll(['iv therapy', 'infection control']));
+      // Skills already listed in the skills section are not re-suggested.
+      expect(suggested, isNot(contains('patient care')));
+      expect(suggested, isNot(contains('medication administration')));
+    },
+  );
 }

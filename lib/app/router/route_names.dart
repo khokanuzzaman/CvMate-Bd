@@ -18,6 +18,7 @@ abstract final class RouteNames {
   static const String jobApplicationDetails = 'job-application-details';
   static const String interviewPrep = 'interview-prep';
   static const String atsChecker = 'ats-checker';
+  static const String tailoring = 'tailoring';
 
   static const String splashPath = '/';
   static const String onboardingPath = '/onboarding';
@@ -38,4 +39,5 @@ abstract final class RouteNames {
   static const String jobApplicationDetailsPath = '/job-tracker/details';
   static const String interviewPrepPath = '/interview-prep';
   static const String atsCheckerPath = '/ats-checker';
+  static const String tailoringPath = '/tailor';
 }

@@ -380,6 +380,42 @@ class DirectOpenAiCareerService implements AiCareerService {
     );
   }
 
+  @override
+  Future<Result<CvTailoringSuggestion>> tailorCvForJob({
+    required CvProfile profile,
+    required String jobPostText,
+    String jobTitle = '',
+    String companyName = '',
+    List<String> targetKeywords = const [],
+    AiOutputLanguage language = AiOutputLanguage.english,
+    AiTone tone = AiTone.professional,
+  }) {
+    final trimmedJobPost = jobPostText.trim();
+    if (trimmedJobPost.length < 20) {
+      return Future.value(
+        const FailureResult(
+          Failure('Your input is too short.', code: 'ai_validation_error'),
+        ),
+      );
+    }
+
+    final prompt = promptBuilder.tailorCvForJob(
+      profile: profile,
+      language: language,
+      tone: tone,
+      jobTitle: jobTitle,
+      companyName: companyName,
+      jobPostText: trimmedJobPost,
+      targetKeywords: targetKeywords,
+    );
+
+    return _executePrompt(
+      prompt: prompt,
+      schema: _AiJsonSchema.cvTailoring,
+      parser: responseParser.parseCvTailoring,
+    );
+  }
+
   Future<Result<T>> _executePrompt<T>({
     required String prompt,
     required _AiJsonSchema schema,
@@ -732,6 +768,44 @@ class _AiJsonSchema {
         'keywords': {
           'type': 'array',
           'items': {'type': 'string'},
+        },
+      },
+    },
+  );
+
+  static const cvTailoring = _AiJsonSchema(
+    name: 'career_cv_tailoring',
+    definition: {
+      'type': 'object',
+      'additionalProperties': false,
+      'required': [
+        'tailoredSummary',
+        'emphasizedSkills',
+        'rewrittenBullets',
+        'language',
+      ],
+      'properties': {
+        'tailoredSummary': {'type': 'string'},
+        'emphasizedSkills': {
+          'type': 'array',
+          'items': {'type': 'string'},
+        },
+        'rewrittenBullets': {
+          'type': 'array',
+          'items': {
+            'type': 'object',
+            'additionalProperties': false,
+            'required': ['experienceId', 'original', 'suggested'],
+            'properties': {
+              'experienceId': {'type': 'string'},
+              'original': {'type': 'string'},
+              'suggested': {'type': 'string'},
+            },
+          },
+        },
+        'language': {
+          'type': 'string',
+          'enum': ['english', 'bangla'],
         },
       },
     },
