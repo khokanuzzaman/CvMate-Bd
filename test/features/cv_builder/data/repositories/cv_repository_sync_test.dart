@@ -57,7 +57,7 @@ void main() {
       localDataSource: const CvLocalDataSource(),
       remoteDataSource: remote,
       authRepository: auth,
-      onSyncError: errors == null ? null : errors.add,
+      onSyncError: errors?.add,
     );
   }
 
