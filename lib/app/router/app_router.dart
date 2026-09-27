@@ -9,6 +9,7 @@ import 'package:careermatebd/features/auth/presentation/screens/forgot_password_
 import 'package:careermatebd/features/auth/presentation/screens/login_screen.dart';
 import 'package:careermatebd/features/auth/presentation/screens/register_screen.dart';
 import 'package:careermatebd/features/cover_letter/presentation/screens/cover_letter_screen.dart';
+import 'package:careermatebd/features/dev/presentation/screens/component_gallery_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/ai_improve_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_builder_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_list_screen.dart';
@@ -25,6 +26,7 @@ import 'package:careermatebd/features/settings/presentation/screens/settings_scr
 import 'package:careermatebd/features/splash/presentation/screens/splash_screen.dart';
 import 'package:careermatebd/features/subscription/presentation/screens/paywall_screen.dart';
 import 'package:careermatebd/features/tailoring/presentation/screens/tailoring_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -171,6 +173,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: RouteNames.tailoring,
         builder: (context, state) => const TailoringScreen(),
       ),
+      // Dev-only: component gallery, registered only in debug builds.
+      if (kDebugMode)
+        GoRoute(
+          path: RouteNames.componentGalleryPath,
+          name: RouteNames.componentGallery,
+          builder: (context, state) => const ComponentGalleryScreen(),
+        ),
       GoRoute(
         path: RouteNames.paywallPath,
         name: RouteNames.paywall,
