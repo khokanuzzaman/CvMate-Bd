@@ -23,6 +23,7 @@ import 'package:careermatebd/features/onboarding/presentation/screens/onboarding
 import 'package:careermatebd/features/profile/presentation/screens/profile_screen.dart';
 import 'package:careermatebd/features/settings/presentation/screens/settings_screen.dart';
 import 'package:careermatebd/features/splash/presentation/screens/splash_screen.dart';
+import 'package:careermatebd/features/tailoring/presentation/screens/tailoring_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -163,6 +164,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteNames.atsCheckerPath,
         name: RouteNames.atsChecker,
         builder: (context, state) => const AtsCheckerScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.tailoringPath,
+        name: RouteNames.tailoring,
+        builder: (context, state) => const TailoringScreen(),
       ),
     ],
     errorBuilder: (context, state) {

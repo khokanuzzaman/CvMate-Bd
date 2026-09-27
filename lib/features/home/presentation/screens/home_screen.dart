@@ -13,6 +13,13 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final quickActions = <_QuickAction>[
       const _QuickAction(
+        label: 'Tailor to a Job',
+        description:
+            'Paste a job post to tailor your CV and match a cover letter.',
+        icon: Icons.auto_awesome_rounded,
+        routePath: RouteNames.tailoringPath,
+      ),
+      const _QuickAction(
         label: 'Create CV',
         description: 'Start a new CV or manage saved versions.',
         icon: Icons.description_outlined,
@@ -112,6 +119,17 @@ class HomeScreen extends StatelessWidget {
                           AppStrings.homeHeroBody,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        FilledButton.icon(
+                          onPressed: () =>
+                              context.push(RouteNames.tailoringPath),
+                          icon: const Icon(Icons.auto_awesome_rounded),
+                          label: const Text('Tailor to a job'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: colorScheme.primary,
                           ),
                         ),
                       ],

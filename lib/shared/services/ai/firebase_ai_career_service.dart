@@ -299,6 +299,31 @@ class FirebaseAiCareerService implements AiCareerService {
     );
   }
 
+  @override
+  Future<Result<CvTailoringSuggestion>> tailorCvForJob({
+    required CvProfile profile,
+    required String jobPostText,
+    String jobTitle = '',
+    String companyName = '',
+    List<String> targetKeywords = const [],
+    AiOutputLanguage language = AiOutputLanguage.english,
+    AiTone tone = AiTone.professional,
+  }) {
+    return _callAndParse(
+      action: 'tailorCvForJob',
+      cvData: _serializeCvProfile(profile),
+      language: language,
+      tone: tone,
+      jobPost: jobPostText,
+      metadata: {
+        'jobTitle': jobTitle.trim(),
+        'companyName': companyName.trim(),
+        'targetKeywords': targetKeywords,
+      },
+      parser: responseParser.parseCvTailoring,
+    );
+  }
+
   Future<Result<T>> _callAndParse<T>({
     required String action,
     required T Function(String rawResponse) parser,

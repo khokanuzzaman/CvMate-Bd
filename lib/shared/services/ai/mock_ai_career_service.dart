@@ -1169,6 +1169,97 @@ class MockAiCareerService implements AiCareerService {
     );
   }
 
+  @override
+  Future<Result<CvTailoringSuggestion>> tailorCvForJob({
+    required CvProfile profile,
+    required String jobPostText,
+    String jobTitle = '',
+    String companyName = '',
+    List<String> targetKeywords = const [],
+    AiOutputLanguage language = AiOutputLanguage.english,
+    AiTone tone = AiTone.professional,
+  }) {
+    final prompt = promptBuilder.tailorCvForJob(
+      profile: profile,
+      language: language,
+      tone: tone,
+      jobTitle: jobTitle,
+      companyName: companyName,
+      jobPostText: jobPostText,
+      targetKeywords: targetKeywords,
+    );
+
+    return _runRequest(
+      prompt: prompt,
+      parser: responseParser.parseCvTailoring,
+      failureMessage: 'AI generation failed. Please try again.',
+      rawResponseBuilder: () {
+        final role = _resolveRole(profile, jobTitle: jobTitle);
+        final keywords = targetKeywords.isNotEmpty
+            ? targetKeywords
+            : _extractKeywords(jobPostText, roleHint: jobTitle);
+        final lowerKeywords = keywords
+            .map((keyword) => keyword.toLowerCase())
+            .toList();
+
+        final existingSkills = _collectProfileSkills(profile);
+        final matchingSkills = <String>[
+          for (final skill in existingSkills)
+            if (lowerKeywords.any(
+              (keyword) =>
+                  skill.toLowerCase().contains(keyword) ||
+                  keyword.contains(skill.toLowerCase()),
+            ))
+              skill,
+        ];
+        final remainingSkills = <String>[
+          for (final skill in existingSkills)
+            if (!matchingSkills.contains(skill)) skill,
+        ];
+        final emphasizedSkills = <String>[...matchingSkills, ...remainingSkills];
+        final resolvedSkills = emphasizedSkills.isEmpty
+            ? keywords.take(5).toList()
+            : emphasizedSkills;
+
+        final rewrittenBullets = <Map<String, String>>[];
+        for (final experience in profile.experiences) {
+          for (final highlight in experience.highlights) {
+            final trimmed = highlight.trim();
+            if (trimmed.isEmpty) {
+              continue;
+            }
+
+            final rewritten = _professionalizeStatement(trimmed);
+            rewrittenBullets.add({
+              'experienceId': experience.id,
+              'original': trimmed,
+              'suggested': _localized(
+                language,
+                english: '$rewritten, aligned with $role priorities.',
+                bangla: '$rewritten, $role প্রায়োরিটির সাথে সামঞ্জস্যপূর্ণ।',
+              ),
+            });
+          }
+        }
+
+        final tailoredSummary = _localized(
+          language,
+          english:
+              '${_tonePrefix(tone, language)} $role focused on ${_joinOrFallback(resolvedSkills.take(3).toList(), fallback: 'role-relevant strengths')}. Tailored to reflect the priorities in the target job post while keeping every claim true to the existing CV.',
+          bangla:
+              '${_tonePrefix(tone, language)} $role, যার ফোকাস ${_joinOrFallback(resolvedSkills.take(3).toList(), fallback: 'রোল-প্রাসঙ্গিক শক্তি')}-এ। টার্গেট জব পোস্টের প্রায়োরিটি অনুযায়ী সাজানো হয়েছে, তবে CV-এর প্রতিটি তথ্য সত্য রাখা হয়েছে।',
+        );
+
+        return jsonEncode({
+          'tailoredSummary': tailoredSummary,
+          'emphasizedSkills': resolvedSkills,
+          'rewrittenBullets': rewrittenBullets,
+          'language': language.code,
+        });
+      },
+    );
+  }
+
   Future<Result<T>> _runRequest<T>({
     required String prompt,
     required T Function(String rawResponse) parser,

@@ -311,6 +311,40 @@ class AiPromptBuilder {
     );
   }
 
+  String tailorCvForJob({
+    required CvProfile profile,
+    required AiOutputLanguage language,
+    required AiTone tone,
+    String jobTitle = '',
+    String companyName = '',
+    String jobPostText = '',
+    List<String> targetKeywords = const [],
+  }) {
+    return _buildPrompt(
+      action: 'tailorCvForJob',
+      language: language,
+      responseSchema:
+          '{"tailoredSummary":"","emphasizedSkills":[""],"rewrittenBullets":[{"experienceId":"","original":"","suggested":""}],"language":""}',
+      inputs: [
+        _profileSnapshot(profile),
+        _jobContext(jobTitle: jobTitle, jobPostText: jobPostText),
+        'Target company: $companyName',
+        'Priority job keywords: ${targetKeywords.join(', ')}',
+        'Experience entries to rewrite (reuse each experienceId exactly):',
+        for (final experience in profile.experiences)
+          'experienceId=${experience.id} | role=${experience.jobTitle} | company=${experience.companyName} | bullets=${experience.highlights.join(' || ')}',
+        'Requested tone: ${tone.code}',
+      ],
+      extraRules: const [
+        'Tailor the professional summary and emphasize existing skills toward the job post.',
+        'Rewrite the provided experience bullets with stronger, role-aligned wording.',
+        'Reuse each provided experienceId exactly; never create new experience entries.',
+        'Do not invent experience, companies, achievements, skills, or metrics.',
+        'Only emphasize skills that already exist or are clearly supported by the CV.',
+      ],
+    );
+  }
+
   String _buildPrompt({
     required String action,
     required AiOutputLanguage language,
