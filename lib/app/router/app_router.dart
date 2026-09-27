@@ -25,6 +25,7 @@ import 'package:careermatebd/features/profile/presentation/screens/profile_scree
 import 'package:careermatebd/features/settings/presentation/screens/settings_screen.dart';
 import 'package:careermatebd/features/splash/presentation/screens/splash_screen.dart';
 import 'package:careermatebd/features/tailoring/presentation/screens/tailoring_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
