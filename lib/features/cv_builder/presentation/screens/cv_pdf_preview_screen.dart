@@ -6,6 +6,7 @@ import 'package:careermatebd/core/widgets/custom_empty_state.dart';
 import 'package:careermatebd/core/widgets/custom_error_view.dart';
 import 'package:careermatebd/core/widgets/custom_loading_view.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
+import 'package:careermatebd/features/subscription/presentation/export_gate.dart';
 import 'package:careermatebd/shared/services/pdf/cv_pdf_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -116,18 +117,16 @@ class CvPdfPreviewScreen extends ConsumerWidget {
     final profile = ref.read(cvBuilderControllerProvider).draft;
     final pdfService = ref.read(cvPdfServiceProvider);
 
-    try {
-      final bytes = await pdfService.generateCvPdf(profile: profile);
-      await Printing.sharePdf(bytes: bytes, filename: fileName);
-    } catch (error) {
-      if (!context.mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('PDF share failed. $error')));
-    }
+    await runGatedExport(
+      ref: ref,
+      context: context,
+      source: 'cv_pdf_preview',
+      exportType: 'share',
+      export: () async {
+        final bytes = await pdfService.generateCvPdf(profile: profile);
+        await Printing.sharePdf(bytes: bytes, filename: fileName);
+      },
+    );
   }
 
   Future<void> _printPdf(
@@ -138,20 +137,16 @@ class CvPdfPreviewScreen extends ConsumerWidget {
     final profile = ref.read(cvBuilderControllerProvider).draft;
     final pdfService = ref.read(cvPdfServiceProvider);
 
-    try {
-      await Printing.layoutPdf(
+    await runGatedExport(
+      ref: ref,
+      context: context,
+      source: 'cv_pdf_preview',
+      exportType: 'print',
+      export: () => Printing.layoutPdf(
         name: fileName,
         onLayout: (format) =>
             pdfService.generateCvPdf(profile: profile, pageFormat: format),
-      );
-    } catch (error) {
-      if (!context.mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('PDF print failed. $error')));
-    }
+      ),
+    );
   }
 }
