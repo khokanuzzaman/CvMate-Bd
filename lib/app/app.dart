@@ -2,6 +2,7 @@ import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/app_router.dart';
 import 'package:careermatebd/app/theme/app_theme.dart';
 import 'package:careermatebd/core/config/env_config.dart';
+import 'package:careermatebd/features/cv_builder/data/cv_cloud_sync.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,8 @@ class CareerMateApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Activate CV cloud backup/restore (guest session + Firestore reconcile).
+    ref.watch(cvCloudSyncProvider);
     // Log app_open once for the analytics funnel.
     ref.watch(analyticsBootstrapProvider);
 

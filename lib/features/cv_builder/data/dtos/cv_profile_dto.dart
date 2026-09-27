@@ -20,7 +20,16 @@ class CvProfileDto {
     return CvProfileDto(_fromMap(map));
   }
 
+  /// Builds a DTO from a decoded map (e.g. a Firestore document). Uses the exact
+  /// same field format as [fromJson]/[toJson] — no second serialization scheme.
+  factory CvProfileDto.fromMap(Map<String, dynamic> map) =>
+      CvProfileDto(_fromMap(map));
+
   String toJson() => jsonEncode(_toMap(profile));
+
+  /// The same map [toJson] encodes, but left as a map for map-based stores like
+  /// Firestore. Reuses the shared [_toMap] so both stores stay in sync.
+  Map<String, dynamic> toMap() => _toMap(profile);
 
   static CvProfile _fromMap(Map<String, dynamic> map) {
     return CvProfile(
