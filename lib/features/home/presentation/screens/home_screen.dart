@@ -1,255 +1,265 @@
-import 'package:careermatebd/app/constants/app_constants.dart';
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
-import 'package:careermatebd/core/widgets/custom_app_bar.dart';
-import 'package:careermatebd/core/widgets/custom_card.dart';
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_radii.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
+import 'package:careermatebd/core/utils/date_formatter.dart';
+import 'package:careermatebd/core/widgets/app_buttons.dart';
+import 'package:careermatebd/core/widgets/app_card.dart';
+import 'package:careermatebd/core/widgets/bottom_nav_bar.dart';
+import 'package:careermatebd/core/widgets/cv_list_tile.dart';
+import 'package:careermatebd/core/widgets/quick_action_tile.dart';
+import 'package:careermatebd/core/widgets/section_label.dart';
+import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
+import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
+import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_library_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class HomeScreen extends StatelessWidget {
+/// Home — the app's landing screen. Built from `lib/core` widgets + theme tokens
+/// to match `docs/design/Home@2x.png`. Tailoring is the core loop, so the indigo
+/// hero card and the raised amber "Tailor" nav action both lead to it.
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
+
+  /// The six quick actions, in the grid order shown in the design.
+  static const List<_QuickAction> _quickActions = [
+    _QuickAction(
+      label: AppStrings.actionCreateCv,
+      icon: Icons.note_add_outlined,
+      routePath: RouteNames.cvListPath,
+    ),
+    _QuickAction(
+      label: AppStrings.actionAtsCheck,
+      icon: Icons.verified_user_outlined,
+      routePath: RouteNames.atsCheckerPath,
+    ),
+    _QuickAction(
+      label: AppStrings.actionCoverLetter,
+      icon: Icons.mail_outline_rounded,
+      routePath: RouteNames.coverLetterPath,
+    ),
+    _QuickAction(
+      label: AppStrings.actionImproveCv,
+      icon: Icons.auto_awesome_outlined,
+      routePath: RouteNames.aiImprovePath,
+    ),
+    _QuickAction(
+      label: AppStrings.actionInterview,
+      icon: Icons.chat_bubble_outline_rounded,
+      routePath: RouteNames.interviewPrepPath,
+    ),
+    _QuickAction(
+      label: AppStrings.actionTrackJob,
+      icon: Icons.work_outline_rounded,
+      routePath: RouteNames.jobTrackerPath,
+    ),
+  ];
+
+  /// How many saved CVs to surface on Home before deferring to the CVs tab.
+  static const int _maxHomeCvs = 3;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cvLibrary = ref.watch(cvLibraryControllerProvider);
+    final user = ref.watch(currentAuthUserProvider);
+    final avatarInitial = _initialFor(user?.email);
+
+    return Scaffold(
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            AppSpacing.s16,
+            AppSpacing.screen,
+            AppSpacing.s22,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _HomeHeader(
+                initial: avatarInitial,
+                onProfileTap: () => context.push(RouteNames.profilePath),
+              ),
+              const SizedBox(height: AppSpacing.s20),
+              _HeroTailorCard(
+                onStart: () => context.push(RouteNames.tailoringPath),
+              ),
+              const SizedBox(height: AppSpacing.s22),
+              const SectionLabel(AppStrings.homeQuickActions),
+              const SizedBox(height: AppSpacing.s12),
+              const _QuickActionsGrid(actions: _quickActions),
+              const SizedBox(height: AppSpacing.s22),
+              Row(
+                children: [
+                  const SectionLabel(AppStrings.homeYourCvs),
+                  const Spacer(),
+                  _NewCvButton(onTap: () => _createCv(context, ref)),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.s12),
+              _YourCvsSection(
+                cvLibrary: cvLibrary,
+                maxItems: _maxHomeCvs,
+                onReload: () =>
+                    ref.read(cvLibraryControllerProvider.notifier).reload(),
+                onCreate: () => _createCv(context, ref),
+                onOpen: (cv) => _openCv(context, ref, cv.id),
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 0,
+        onTap: (index) => _onNavTap(context, index),
+      ),
+    );
+  }
+
+  static String? _initialFor(String? email) {
+    final value = email?.trim() ?? '';
+    return value.isEmpty ? null : value.substring(0, 1).toUpperCase();
+  }
+
+  void _onNavTap(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        break; // Already on Home.
+      case 1:
+        context.push(RouteNames.cvListPath);
+        break;
+      case 2:
+        context.push(RouteNames.tailoringPath);
+        break;
+      case 3:
+        context.push(RouteNames.jobTrackerPath);
+        break;
+      case 4:
+        context.push(RouteNames.profilePath);
+        break;
+    }
+  }
+
+  /// Starts a fresh draft via the CV builder controller, then opens the builder.
+  Future<void> _createCv(BuildContext context, WidgetRef ref) async {
+    final controller = ref.read(cvBuilderControllerProvider.notifier);
+    await controller.startNewDraft();
+    final state = ref.read(cvBuilderControllerProvider);
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (state.errorMessage != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+      return;
+    }
+
+    context.push(RouteNames.cvBuilderPath);
+  }
+
+  /// Loads the selected CV into the builder controller, then opens its preview.
+  Future<void> _openCv(BuildContext context, WidgetRef ref, String id) async {
+    final controller = ref.read(cvBuilderControllerProvider.notifier);
+    await controller.loadDraft(id);
+    final state = ref.read(cvBuilderControllerProvider);
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (state.errorMessage != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+      return;
+    }
+
+    context.push(RouteNames.cvPreviewPath);
+  }
+}
+
+class _QuickAction {
+  const _QuickAction({
+    required this.label,
+    required this.icon,
+    required this.routePath,
+  });
+
+  final String label;
+  final IconData icon;
+  final String routePath;
+}
+
+/// "WELCOME BACK" eyebrow + "Ready to apply?" title + profile avatar button.
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({required this.initial, required this.onProfileTap});
+
+  final String? initial;
+  final VoidCallback onProfileTap;
 
   @override
   Widget build(BuildContext context) {
-    final quickActions = <_QuickAction>[
-      const _QuickAction(
-        label: 'Tailor to a Job',
-        description:
-            'Paste a job post to tailor your CV and match a cover letter.',
-        icon: Icons.auto_awesome_rounded,
-        routePath: RouteNames.tailoringPath,
-      ),
-      const _QuickAction(
-        label: 'Create CV',
-        description: 'Start a new CV or manage saved versions.',
-        icon: Icons.description_outlined,
-        routePath: RouteNames.cvListPath,
-      ),
-      const _QuickAction(
-        label: 'Improve CV',
-        description: 'Rewrite summaries and experience bullets with AI.',
-        icon: Icons.auto_fix_high_outlined,
-        routePath: RouteNames.aiImprovePath,
-      ),
-      const _QuickAction(
-        label: 'Cover Letter',
-        description: 'Generate tailored letters and email drafts.',
-        icon: Icons.mail_outline_rounded,
-        routePath: RouteNames.coverLetterPath,
-      ),
-      const _QuickAction(
-        label: 'Track Job',
-        description: 'Follow application stages and interview dates.',
-        icon: Icons.track_changes_outlined,
-        routePath: RouteNames.jobTrackerPath,
-      ),
-      const _QuickAction(
-        label: 'Interview Prep',
-        description: 'Practice role-based and CV-based questions.',
-        icon: Icons.record_voice_over_outlined,
-        routePath: RouteNames.interviewPrepPath,
-      ),
-      const _QuickAction(
-        label: 'ATS Check',
-        description: 'Review structure, keywords, and missing sections.',
-        icon: Icons.fact_check_outlined,
-        routePath: RouteNames.atsCheckerPath,
-      ),
-    ];
-
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: AppStrings.appName,
-        actions: [
-          IconButton(
-            onPressed: () => context.push(RouteNames.profilePath),
-            icon: const Icon(Icons.person_outline_rounded),
-            tooltip: 'Profile',
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SectionLabel(AppStrings.homeWelcomeEyebrow),
+              const SizedBox(height: AppSpacing.s6),
+              Text(AppStrings.homeTitle, style: AppTextStyles.h1),
+            ],
           ),
-          IconButton(
-            onPressed: () => context.push(RouteNames.settingsPath),
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: AppConstants.contentMaxWidth,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [colorScheme.primary, const Color(0xFF144B7D)],
+        ),
+        const SizedBox(width: AppSpacing.s12),
+        _ProfileAvatarButton(initial: initial, onTap: onProfileTap),
+      ],
+    );
+  }
+}
+
+class _ProfileAvatarButton extends StatelessWidget {
+  const _ProfileAvatarButton({required this.initial, required this.onTap});
+
+  final String? initial;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Profile',
+      child: Material(
+        color: AppColors.primarySoft,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            width: AppSpacing.minTouchTarget,
+            height: AppSpacing.minTouchTarget,
+            child: Center(
+              child: initial == null
+                  ? const Icon(
+                      Icons.person_outline_rounded,
+                      color: AppColors.primary,
+                      size: 24,
+                    )
+                  : Text(
+                      initial!,
+                      style: AppTextStyles.title.copyWith(
+                        color: AppColors.primary,
                       ),
-                      borderRadius: BorderRadius.circular(32),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppStrings.homeGreeting,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.88),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          AppStrings.homeHeroTitle,
-                          style: theme.textTheme.headlineLarge?.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          AppStrings.homeHeroBody,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.9),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        FilledButton.icon(
-                          onPressed: () =>
-                              context.push(RouteNames.tailoringPath),
-                          icon: const Icon(Icons.auto_awesome_rounded),
-                          label: const Text('Tailor to a job'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    AppStrings.homeQuickActions,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final columns = constraints.maxWidth >= 640 ? 3 : 2;
-                      final spacing = 16.0;
-                      final itemWidth =
-                          (constraints.maxWidth - ((columns - 1) * spacing)) /
-                          columns;
-
-                      return Wrap(
-                        spacing: spacing,
-                        runSpacing: spacing,
-                        children: [
-                          for (final action in quickActions)
-                            SizedBox(
-                              width: itemWidth,
-                              child: _QuickActionCard(action: action),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    AppStrings.homeProgress,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isWide = constraints.maxWidth >= 560;
-                      return Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: [
-                          SizedBox(
-                            width: isWide
-                                ? (constraints.maxWidth - 16) / 2
-                                : constraints.maxWidth,
-                            child: const _StatusCard(
-                              value: 'Foundation',
-                              label: 'Project milestone',
-                              note:
-                                  'Theme, routing, reusable widgets, and initial screens are in place.',
-                            ),
-                          ),
-                          SizedBox(
-                            width: isWide
-                                ? (constraints.maxWidth - 16) / 2
-                                : constraints.maxWidth,
-                            child: const _StatusCard(
-                              value: '6',
-                              label: 'Career actions',
-                              note:
-                                  'Quick paths for CV building, AI writing, ATS review, and job tracking.',
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    AppStrings.homeAiTools,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  CustomCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Planned AI prompt categories',
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: const [
-                            Chip(label: Text('Professional summary')),
-                            Chip(label: Text('Career objective')),
-                            Chip(label: Text('Experience bullet rewrite')),
-                            Chip(label: Text('Cover letter')),
-                            Chip(label: Text('Job application email')),
-                            Chip(label: Text('Interview questions')),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    AppStrings.homeRecentActivity,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  const _RecentActivityCard(
-                    icon: Icons.note_alt_outlined,
-                    title: 'Recent CVs',
-                    message: AppStrings.homeRecentCvEmpty,
-                  ),
-                  const SizedBox(height: 16),
-                  const _RecentActivityCard(
-                    icon: Icons.work_outline_rounded,
-                    title: 'Recent applications',
-                    message: AppStrings.homeRecentJobsEmpty,
-                  ),
-                ],
-              ),
             ),
           ),
         ),
@@ -258,112 +268,272 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _QuickAction {
-  const _QuickAction({
-    required this.label,
-    required this.description,
-    required this.icon,
-    required this.routePath,
-  });
+/// Indigo hero card: eyebrow + title + body + amber CTA, with a faint crosshair
+/// motif echoing the "Tailor" mark.
+class _HeroTailorCard extends StatelessWidget {
+  const _HeroTailorCard({required this.onStart});
 
-  final String label;
-  final String description;
-  final IconData icon;
-  final String routePath;
-}
-
-class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({required this.action});
-
-  final _QuickAction action;
+  final VoidCallback onStart;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    return ClipRRect(
+      borderRadius: AppRadii.cardRadius,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: AppRadii.cardRadius,
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -34,
+              right: -28,
+              child: Icon(
+                Icons.gps_fixed,
+                size: 150,
+                color: AppColors.onPrimary.withValues(alpha: 0.12),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.s22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppStrings.homeHeroEyebrow.toUpperCase(),
+                    style: AppTextStyles.label.copyWith(
+                      color: AppColors.primarySoft,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s12),
+                  Text(
+                    AppStrings.homeHeroCardTitle,
+                    style: AppTextStyles.h2.copyWith(color: AppColors.onPrimary),
+                  ),
+                  const SizedBox(height: AppSpacing.s12),
+                  Text(
+                    AppStrings.homeHeroCardBody,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.onPrimary.withValues(alpha: 0.9),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s20),
+                  AmberCtaButton(
+                    label: AppStrings.homeHeroCta,
+                    trailingIcon: Icons.arrow_forward_rounded,
+                    expanded: false,
+                    onPressed: onStart,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-    return CustomCard(
-      onTap: () => context.push(action.routePath),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-            foregroundColor: colorScheme.primary,
-            child: Icon(action.icon),
+/// Three-column grid of [QuickActionTile]s.
+class _QuickActionsGrid extends StatelessWidget {
+  const _QuickActionsGrid({required this.actions});
+
+  final List<_QuickAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    const spacing = AppSpacing.s12;
+    const columns = 3;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tileWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final action in actions)
+              SizedBox(
+                width: tileWidth,
+                child: QuickActionTile(
+                  icon: action.icon,
+                  label: action.label,
+                  onTap: () => context.push(action.routePath),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// "+ New" text action beside the "Your CVs" label.
+class _NewCvButton extends StatelessWidget {
+  const _NewCvButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: MaterialType.transparency,
+      borderRadius: AppRadii.pillRadius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadii.pillRadius,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s8,
+            vertical: AppSpacing.s6,
           ),
-          const SizedBox(height: 16),
-          Text(action.label, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(action.description, style: theme.textTheme.bodyMedium),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.s4),
+              Text(
+                AppStrings.homeNewCv,
+                style: AppTextStyles.bodySm.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _StatusCard extends StatelessWidget {
-  const _StatusCard({
-    required this.value,
-    required this.label,
-    required this.note,
+/// "Your CVs" list bound to [cvLibraryControllerProvider] — handles loading,
+/// error, empty, and data states.
+class _YourCvsSection extends StatelessWidget {
+  const _YourCvsSection({
+    required this.cvLibrary,
+    required this.maxItems,
+    required this.onReload,
+    required this.onCreate,
+    required this.onOpen,
   });
 
-  final String value;
-  final String label;
-  final String note;
+  final AsyncValue<List<CvProfile>> cvLibrary;
+  final int maxItems;
+  final VoidCallback onReload;
+  final VoidCallback onCreate;
+  final ValueChanged<CvProfile> onOpen;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return CustomCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(value, style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 8),
-          Text(label, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(note, style: theme.textTheme.bodyMedium),
-        ],
+    return cvLibrary.when(
+      loading: () => const _CvsMessageCard(
+        icon: Icons.hourglass_empty_rounded,
+        title: null,
+        body: 'Loading your CVs…',
       ),
+      error: (error, stackTrace) => _CvsMessageCard(
+        icon: Icons.error_outline_rounded,
+        title: AppStrings.homeCvsError,
+        body: null,
+        actionLabel: AppStrings.homeRetry,
+        onAction: onReload,
+      ),
+      data: (cvs) {
+        if (cvs.isEmpty) {
+          return _CvsMessageCard(
+            icon: Icons.description_outlined,
+            title: AppStrings.homeCvsEmptyTitle,
+            body: AppStrings.homeCvsEmptyBody,
+            actionLabel: AppStrings.actionCreateCv,
+            onAction: onCreate,
+          );
+        }
+
+        final visible = cvs.take(maxItems).toList();
+        return Column(
+          children: [
+            for (var i = 0; i < visible.length; i++) ...[
+              if (i > 0) const SizedBox(height: AppSpacing.s12),
+              CvListTile(
+                title: visible[i].displayTitle,
+                subtitle: _subtitleFor(visible[i]),
+                onTap: () => onOpen(visible[i]),
+              ),
+            ],
+          ],
+        );
+      },
     );
+  }
+
+  String _subtitleFor(CvProfile cv) {
+    return 'Edited ${DateFormatter.shortDate(cv.updatedAt)} · '
+        '${cv.template.label}';
   }
 }
 
-class _RecentActivityCard extends StatelessWidget {
-  const _RecentActivityCard({
+/// Compact card used for the loading / empty / error states of "Your CVs".
+class _CvsMessageCard extends StatelessWidget {
+  const _CvsMessageCard({
     required this.icon,
     required this.title,
-    required this.message,
+    required this.body,
+    this.actionLabel,
+    this.onAction,
   });
 
   final IconData icon;
-  final String title;
-  final String message;
+  final String? title;
+  final String? body;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return CustomCard(
+    return AppCard(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 24),
-          const SizedBox(width: 14),
+          Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: AppRadii.iconTileRadius,
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(width: AppSpacing.s14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title, style: theme.textTheme.titleMedium),
-                const SizedBox(height: 6),
-                Text(message, style: theme.textTheme.bodyMedium),
+                if (title != null)
+                  Text(title!, style: AppTextStyles.itemTitle),
+                if (title != null && body != null)
+                  const SizedBox(height: AppSpacing.s4),
+                if (body != null)
+                  Text(body!, style: AppTextStyles.caption),
               ],
             ),
           ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(width: AppSpacing.s8),
+            TextButton(
+              onPressed: onAction,
+              child: Text(
+                actionLabel!,
+                style: AppTextStyles.bodySm.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

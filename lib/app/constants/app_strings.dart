@@ -17,18 +17,34 @@ abstract final class AppStrings {
   static const String routeErrorMessage =
       'This route is not available in the current build.';
 
-  static const String homeGreeting = 'Assalamu alaikum';
-  static const String homeHeroTitle =
-      'Move from draft CV to real applications.';
-  static const String homeHeroBody =
-      'CareerMate BD is shaping into a practical AI career assistant with CV writing, job tracking, cover letters, and interview prep.';
+  // Home — header
+  static const String homeWelcomeEyebrow = 'Welcome back';
+  static const String homeTitle = 'Ready to apply?';
+
+  // Home — hero "Tailor to a Job" card
+  static const String homeHeroEyebrow = 'Tailor to a job';
+  static const String homeHeroCardTitle = 'Match your CV to any job post';
+  static const String homeHeroCardBody =
+      'Paste a job post — get an ATS score, a tailored CV and a matching '
+      'cover letter in about a minute.';
+  static const String homeHeroCta = 'Start tailoring';
+
+  // Home — sections
   static const String homeQuickActions = 'Quick actions';
-  static const String homeProgress = 'MVP progress';
-  static const String homeAiTools = 'AI career tools';
-  static const String homeRecentActivity = 'Recent activity';
-  static const String homeRecentCvEmpty =
-      'No CV created yet. Create your first professional CV.';
-  static const String homeRecentJobsEmpty =
-      'No job applications tracked yet. Add your first application.';
+  static const String homeYourCvs = 'Your CVs';
+  static const String homeNewCv = 'New';
+  static const String homeCvsEmptyTitle = 'No CVs yet';
+  static const String homeCvsEmptyBody = 'Create your first CV to see it here.';
+  static const String homeCvsError = 'Could not load your CVs.';
+  static const String homeRetry = 'Retry';
+
+  // Home — quick action labels
+  static const String actionCreateCv = 'Create CV';
+  static const String actionAtsCheck = 'ATS Check';
+  static const String actionCoverLetter = 'Cover Letter';
+  static const String actionImproveCv = 'Improve CV';
+  static const String actionInterview = 'Interview';
+  static const String actionTrackJob = 'Track Job';
+
   static const String settings = 'Settings';
 }
