@@ -11,6 +11,13 @@ final cvPdfServiceProvider = Provider<CvPdfService>((ref) {
   return const CvPdfService();
 });
 
+/// Renders a [CvProfile] to an ATS-friendly, single-column, selectable PDF.
+///
+/// TODO(docx): DOCX export is intentionally not implemented here. Dart-side
+/// .docx generators are fragile for rich CV layouts; the cleaner path is a
+/// server-side conversion (render this PDF, or the structured profile, to DOCX
+/// via a backend/Cloud Function) so formatting stays consistent. PDF is the
+/// priority export for now.
 class CvPdfService {
   const CvPdfService();
 
@@ -25,40 +32,39 @@ class CvPdfService {
       subject: 'ATS-friendly CV export',
     );
 
-    final exportTemplate = _resolveExportTemplate(profile.template);
-    final exportedProfile = profile.copyWith(template: exportTemplate);
-
-    switch (exportTemplate) {
-      case CvTemplate.classic:
-        document.addPage(
-          CvPdfTemplateBuilders.buildClassic(
-            profile: exportedProfile,
-            pageFormat: pageFormat,
-          ),
-        );
-        break;
-      case CvTemplate.modern:
-        document.addPage(
-          CvPdfTemplateBuilders.buildModern(
-            profile: exportedProfile,
-            pageFormat: pageFormat,
-          ),
-        );
-        break;
-      case CvTemplate.minimal:
-        document.addPage(
-          CvPdfTemplateBuilders.buildMinimal(
-            profile: exportedProfile,
-            pageFormat: pageFormat,
-          ),
-        );
-        break;
-      case CvTemplate.professional:
-      case CvTemplate.fresher:
-        break;
-    }
+    // Every CvTemplate maps to a dedicated builder; the exhaustive switch means
+    // a new enum value cannot silently fall back to another template.
+    document.addPage(_buildPage(profile: profile, pageFormat: pageFormat));
 
     return document.save();
+  }
+
+  pw.MultiPage _buildPage({
+    required CvProfile profile,
+    required PdfPageFormat pageFormat,
+  }) {
+    return switch (profile.template) {
+      CvTemplate.classic => CvPdfTemplateBuilders.buildClassic(
+        profile: profile,
+        pageFormat: pageFormat,
+      ),
+      CvTemplate.modern => CvPdfTemplateBuilders.buildModern(
+        profile: profile,
+        pageFormat: pageFormat,
+      ),
+      CvTemplate.minimal => CvPdfTemplateBuilders.buildMinimal(
+        profile: profile,
+        pageFormat: pageFormat,
+      ),
+      CvTemplate.professional => CvPdfTemplateBuilders.buildProfessional(
+        profile: profile,
+        pageFormat: pageFormat,
+      ),
+      CvTemplate.fresher => CvPdfTemplateBuilders.buildFresher(
+        profile: profile,
+        pageFormat: pageFormat,
+      ),
+    };
   }
 
   String buildFileName(CvProfile profile) {
@@ -70,15 +76,5 @@ class CvPdfService {
 
     final safeName = baseName.isEmpty ? 'cv_export' : baseName;
     return '${safeName}_cv.pdf';
-  }
-
-  CvTemplate _resolveExportTemplate(CvTemplate template) {
-    return switch (template) {
-      CvTemplate.classic => CvTemplate.classic,
-      CvTemplate.modern => CvTemplate.modern,
-      CvTemplate.minimal => CvTemplate.minimal,
-      CvTemplate.professional => CvTemplate.classic,
-      CvTemplate.fresher => CvTemplate.minimal,
-    };
   }
 }

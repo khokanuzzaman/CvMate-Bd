@@ -61,6 +61,44 @@ abstract final class CvPdfTemplateBuilders {
     );
   }
 
+  static pw.MultiPage buildProfessional({
+    required CvProfile profile,
+    required PdfPageFormat pageFormat,
+  }) {
+    return pw.MultiPage(
+      pageTheme: _pageTheme(pageFormat),
+      footer: _pageFooter,
+      build: (context) => [
+        _professionalHeader(profile),
+        pw.SizedBox(height: 18),
+        ..._sharedSections(
+          profile,
+          sectionTitleBuilder: (title) => _professionalSectionTitle(title),
+        ),
+      ],
+    );
+  }
+
+  static pw.MultiPage buildFresher({
+    required CvProfile profile,
+    required PdfPageFormat pageFormat,
+  }) {
+    return pw.MultiPage(
+      pageTheme: _pageTheme(pageFormat),
+      footer: _pageFooter,
+      build: (context) => [
+        _fresherHeader(profile),
+        pw.SizedBox(height: 18),
+        // Freshers usually lead with education and projects; experience (if any)
+        // and the remaining sections follow. See [_fresherSections].
+        ..._fresherSections(
+          profile,
+          sectionTitleBuilder: (title) => _fresherSectionTitle(title),
+        ),
+      ],
+    );
+  }
+
   static pw.PageTheme _pageTheme(PdfPageFormat pageFormat) {
     return pw.PageTheme(
       pageFormat: pageFormat,
@@ -168,6 +206,52 @@ abstract final class CvPdfTemplateBuilders {
     );
   }
 
+  static pw.Widget _professionalHeader(CvProfile profile) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          profile.displayName,
+          style: pw.TextStyle(font: pw.Font.helveticaBold(), fontSize: 22),
+        ),
+        pw.SizedBox(height: 5),
+        pw.Text(
+          profile.displayRole.toUpperCase(),
+          style: const pw.TextStyle(
+            fontSize: 11,
+            color: PdfColors.grey800,
+            letterSpacing: 1.4,
+          ),
+        ),
+        pw.SizedBox(height: 12),
+        _contactWrap(profile),
+        pw.SizedBox(height: 12),
+        pw.Container(height: 1.6, color: PdfColors.grey900),
+      ],
+    );
+  }
+
+  static pw.Widget _fresherHeader(CvProfile profile) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          profile.displayName,
+          style: pw.TextStyle(font: pw.Font.helveticaBold(), fontSize: 23),
+        ),
+        pw.SizedBox(height: 5),
+        pw.Text(
+          profile.displayRole,
+          style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey800),
+        ),
+        pw.SizedBox(height: 10),
+        _contactWrap(profile),
+        pw.SizedBox(height: 14),
+        pw.Divider(thickness: 0.9, color: PdfColors.grey600),
+      ],
+    );
+  }
+
   static pw.Widget _classicSectionTitle(String title) {
     return pw.Padding(
       padding: const pw.EdgeInsets.only(bottom: 8),
@@ -213,6 +297,48 @@ abstract final class CvPdfTemplateBuilders {
           fontSize: 10,
           letterSpacing: 1.2,
         ),
+      ),
+    );
+  }
+
+  static pw.Widget _professionalSectionTitle(String title) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(top: 2, bottom: 8),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            title.toUpperCase(),
+            style: pw.TextStyle(
+              font: pw.Font.helveticaBold(),
+              fontSize: 11,
+              letterSpacing: 1,
+            ),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Container(height: 1, color: PdfColors.grey900),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _fresherSectionTitle(String title) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 8),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            title.toUpperCase(),
+            style: pw.TextStyle(
+              font: pw.Font.helveticaBold(),
+              fontSize: 10.5,
+              letterSpacing: 1,
+            ),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Container(height: 0.8, color: PdfColors.grey500),
+        ],
       ),
     );
   }
@@ -266,16 +392,77 @@ abstract final class CvPdfTemplateBuilders {
       sectionTitleBuilder: sectionTitleBuilder,
     );
 
-    if (widgets.isEmpty) {
-      widgets.add(
-        pw.Text(
-          'This CV draft is still empty. Complete the builder before exporting.',
-          style: const pw.TextStyle(fontSize: 11),
-        ),
-      );
+    _ensureNotEmpty(widgets);
+    return widgets;
+  }
+
+  /// Fresher ordering: education and projects (plus skills) surface above work
+  /// experience, and experience is simply omitted when the candidate has none.
+  /// Reuses the same section appenders as [_sharedSections] to stay in sync.
+  static List<pw.Widget> _fresherSections(
+    CvProfile profile, {
+    required pw.Widget Function(String title) sectionTitleBuilder,
+  }) {
+    final widgets = <pw.Widget>[];
+
+    _appendSimpleSection(
+      widgets,
+      title: 'Professional Summary',
+      content: profile.professionalSummary,
+      sectionTitleBuilder: sectionTitleBuilder,
+    );
+    _appendSimpleSection(
+      widgets,
+      title: 'Career Objective',
+      content: profile.careerObjective,
+      sectionTitleBuilder: sectionTitleBuilder,
+    );
+    _appendEducationSection(
+      widgets,
+      profile.education,
+      sectionTitleBuilder: sectionTitleBuilder,
+    );
+    _appendProjectsSection(
+      widgets,
+      profile.projects,
+      sectionTitleBuilder: sectionTitleBuilder,
+    );
+    _appendSkillsSection(
+      widgets,
+      profile,
+      sectionTitleBuilder: sectionTitleBuilder,
+    );
+    _appendExperienceSection(
+      widgets,
+      profile.experiences,
+      sectionTitleBuilder: sectionTitleBuilder,
+    );
+    _appendTrainingSection(
+      widgets,
+      profile.trainings,
+      sectionTitleBuilder: sectionTitleBuilder,
+    );
+    _appendLanguagesSection(
+      widgets,
+      profile,
+      sectionTitleBuilder: sectionTitleBuilder,
+    );
+
+    _ensureNotEmpty(widgets);
+    return widgets;
+  }
+
+  static void _ensureNotEmpty(List<pw.Widget> widgets) {
+    if (widgets.isNotEmpty) {
+      return;
     }
 
-    return widgets;
+    widgets.add(
+      pw.Text(
+        'This CV draft is still empty. Complete the builder before exporting.',
+        style: const pw.TextStyle(fontSize: 11),
+      ),
+    );
   }
 
   static void _appendSimpleSection(
