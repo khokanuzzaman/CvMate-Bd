@@ -20,6 +20,7 @@ abstract final class RouteNames {
   static const String atsChecker = 'ats-checker';
   static const String tailoring = 'tailoring';
   static const String componentGallery = 'component-gallery';
+  static const String paywall = 'paywall';
 
   static const String splashPath = '/';
   static const String onboardingPath = '/onboarding';
@@ -44,4 +45,5 @@ abstract final class RouteNames {
 
   /// Dev-only component gallery (registered only in debug builds).
   static const String componentGalleryPath = '/dev/gallery';
+  static const String paywallPath = '/paywall';
 }

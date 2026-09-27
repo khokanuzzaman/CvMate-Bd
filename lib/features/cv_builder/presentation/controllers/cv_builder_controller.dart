@@ -14,6 +14,8 @@ import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_bui
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_step.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_validators.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_library_controller.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final cvBuilderControllerProvider =
@@ -53,6 +55,9 @@ class CvBuilderController extends Notifier<CvBuilderState> {
           .read(cvRepositoryProvider)
           .createEmptyCv(title: title);
       ref.invalidate(cvLibraryControllerProvider);
+      unawaited(
+        ref.read(analyticsServiceProvider).logEvent(AnalyticsEvents.cvCreated),
+      );
       state = state.copyWith(
         draft: profile,
         currentStepIndex: 0,

@@ -9,6 +9,7 @@ import 'package:careermatebd/features/ats_checker/domain/entities/ats_job_match_
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_controller.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_stage.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_state.dart';
+import 'package:careermatebd/features/subscription/presentation/export_gate.dart';
 import 'package:careermatebd/features/tailoring/domain/entities/tailoring_result.dart';
 import 'package:careermatebd/shared/services/pdf/cv_pdf_service.dart';
 import 'package:flutter/material.dart';
@@ -469,17 +470,16 @@ class _TailoringScreenState extends ConsumerState<TailoringScreen> {
     final pdfService = ref.read(cvPdfServiceProvider);
     final fileName = pdfService.buildFileName(profile);
 
-    try {
-      final bytes = await pdfService.generateCvPdf(profile: profile);
-      await Printing.sharePdf(bytes: bytes, filename: fileName);
-    } catch (error) {
-      if (!context.mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('PDF share failed. $error')));
-    }
+    await runGatedExport(
+      ref: ref,
+      context: context,
+      source: 'tailoring',
+      exportType: 'share',
+      export: () async {
+        final bytes = await pdfService.generateCvPdf(profile: profile);
+        await Printing.sharePdf(bytes: bytes, filename: fileName);
+      },
+    );
   }
 
   Future<void> _printPdf(BuildContext context) async {
@@ -490,20 +490,17 @@ class _TailoringScreenState extends ConsumerState<TailoringScreen> {
     final pdfService = ref.read(cvPdfServiceProvider);
     final fileName = pdfService.buildFileName(profile);
 
-    try {
-      await Printing.layoutPdf(
+    await runGatedExport(
+      ref: ref,
+      context: context,
+      source: 'tailoring',
+      exportType: 'print',
+      export: () => Printing.layoutPdf(
         name: fileName,
         onLayout: (format) =>
             pdfService.generateCvPdf(profile: profile, pageFormat: format),
-      );
-    } catch (error) {
-      if (!context.mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('PDF print failed. $error')));
-    }
+      ),
+    );
   }
 }
 

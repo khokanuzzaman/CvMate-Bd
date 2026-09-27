@@ -84,6 +84,64 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<AuthUser>> signInAnonymously() async {
+    try {
+      final credential = await _firebaseAuth.signInAnonymously();
+      final user = _mapUser(credential.user);
+      if (user == null) {
+        return const FailureResult<AuthUser>(
+          Failure('Could not start a guest session. Please try again.'),
+        );
+      }
+      return Success(user);
+    } on fb_auth.FirebaseAuthException catch (error) {
+      return FailureResult<AuthUser>(
+        Failure(_messageForException(error), code: error.code),
+      );
+    } catch (_) {
+      return const FailureResult<AuthUser>(
+        Failure('Something went wrong. Please try again.'),
+      );
+    }
+  }
+
+  @override
+  Future<Result<AuthUser>> linkEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    final current = _firebaseAuth.currentUser;
+    if (current == null) {
+      return const FailureResult<AuthUser>(
+        Failure('Please start a session before linking an account.'),
+      );
+    }
+
+    try {
+      final credential = fb_auth.EmailAuthProvider.credential(
+        email: email.trim(),
+        password: password,
+      );
+      final linked = await current.linkWithCredential(credential);
+      final user = _mapUser(linked.user);
+      if (user == null) {
+        return const FailureResult<AuthUser>(
+          Failure('Could not upgrade your account right now. Please try again.'),
+        );
+      }
+      return Success(user);
+    } on fb_auth.FirebaseAuthException catch (error) {
+      return FailureResult<AuthUser>(
+        Failure(_messageForException(error), code: error.code),
+      );
+    } catch (_) {
+      return const FailureResult<AuthUser>(
+        Failure('Something went wrong. Please try again.'),
+      );
+    }
+  }
+
+  @override
   Future<Result<void>> sendPasswordResetEmail({required String email}) async {
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email.trim());
@@ -112,14 +170,15 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   }
 
   AuthUser? _mapUser(fb_auth.User? user) {
-    if (user == null || user.email == null) {
+    if (user == null) {
       return null;
     }
 
     return AuthUser(
       uid: user.uid,
-      email: user.email!,
+      email: user.email ?? '',
       displayName: user.displayName,
+      isAnonymous: user.isAnonymous,
     );
   }
 
@@ -132,6 +191,12 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       'wrong-password' => 'Incorrect password. Please try again.',
       'invalid-credential' => 'Email or password is incorrect.',
       'email-already-in-use' => 'An account already exists with this email.',
+      'credential-already-in-use' =>
+        'This email is already linked to another account. Please sign in instead.',
+      'provider-already-linked' =>
+        'This account is already linked to an email login.',
+      'operation-not-allowed' =>
+        'This sign-in method is not enabled. Please contact support.',
       'weak-password' => 'Password must be at least 6 characters.',
       'too-many-requests' =>
         'Too many attempts detected. Please try again later.',

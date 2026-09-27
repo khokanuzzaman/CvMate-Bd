@@ -83,6 +83,21 @@ class _FakeAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<Result<AuthUser>> signInAnonymously() async {
+    return const Success(
+      AuthUser(uid: 'guest-user', email: '', isAnonymous: true),
+    );
+  }
+
+  @override
+  Future<Result<AuthUser>> linkEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    return Success(AuthUser(uid: 'test-user', email: email));
+  }
+
+  @override
   Future<Result<void>> signOut() async {
     return const Success<void>(null);
   }

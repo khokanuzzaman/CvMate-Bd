@@ -24,6 +24,7 @@ import 'package:careermatebd/features/onboarding/presentation/screens/onboarding
 import 'package:careermatebd/features/profile/presentation/screens/profile_screen.dart';
 import 'package:careermatebd/features/settings/presentation/screens/settings_screen.dart';
 import 'package:careermatebd/features/splash/presentation/screens/splash_screen.dart';
+import 'package:careermatebd/features/subscription/presentation/screens/paywall_screen.dart';
 import 'package:careermatebd/features/tailoring/presentation/screens/tailoring_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -179,6 +180,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           name: RouteNames.componentGallery,
           builder: (context, state) => const ComponentGalleryScreen(),
         ),
+      GoRoute(
+        path: RouteNames.paywallPath,
+        name: RouteNames.paywall,
+        builder: (context, state) =>
+            PaywallScreen(source: state.uri.queryParameters['source']),
+      ),
     ],
     errorBuilder: (context, state) {
       return Scaffold(
