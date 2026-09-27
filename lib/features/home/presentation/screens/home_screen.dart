@@ -13,6 +13,7 @@ import 'package:careermatebd/core/widgets/quick_action_tile.dart';
 import 'package:careermatebd/core/widgets/section_label.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_library_controller.dart';
 import 'package:flutter/material.dart';
