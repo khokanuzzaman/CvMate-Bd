@@ -41,8 +41,8 @@ void main() {
     await tester.tap(find.text(AppStrings.exploreAsGuest));
     await tester.pumpAndSettle();
 
-    expect(find.text(AppStrings.homeHeroTitle), findsOneWidget);
-    expect(find.text(AppStrings.homeQuickActions), findsOneWidget);
+    expect(find.text(AppStrings.homeTitle), findsOneWidget);
+    expect(find.text(AppStrings.homeHeroCardTitle), findsOneWidget);
   });
 }
 
