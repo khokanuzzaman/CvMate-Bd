@@ -33,7 +33,8 @@ class ProgressBar extends StatelessWidget {
 }
 
 /// Stepper track — equal segments with a gap; the first [completedSteps] are
-/// filled `primary`, the rest are `lineStrong`. (DESIGN_TOKENS.md → Steps)
+/// filled [activeColor] (default `primary`), the rest are `lineStrong`.
+/// (DESIGN_TOKENS.md → Steps)
 class SegmentedSteps extends StatelessWidget {
   const SegmentedSteps({
     super.key,
@@ -41,12 +42,14 @@ class SegmentedSteps extends StatelessWidget {
     required this.completedSteps,
     this.height = 6,
     this.gap = 6,
+    this.activeColor = AppColors.primary,
   });
 
   final int totalSteps;
   final int completedSteps;
   final double height;
   final double gap;
+  final Color activeColor;
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +63,7 @@ class SegmentedSteps extends StatelessWidget {
                 height: height,
                 decoration: BoxDecoration(
                   color: i < completedSteps
-                      ? AppColors.primary
+                      ? activeColor
                       : AppColors.lineStrong,
                   borderRadius: AppRadii.pillRadius,
                 ),

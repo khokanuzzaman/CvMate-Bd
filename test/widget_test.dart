@@ -7,43 +7,73 @@ import 'package:careermatebd/core/utils/result.dart';
 import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
 import 'package:careermatebd/features/auth/domain/entities/auth_user.dart';
 import 'package:careermatebd/features/auth/domain/repositories/auth_repository.dart';
+import 'package:careermatebd/features/onboarding/data/repositories/onboarding_repository_impl.dart';
 import 'package:careermatebd/features/settings/data/repositories/settings_repository_impl.dart';
 import 'package:careermatebd/features/settings/domain/entities/app_preferences.dart';
 import 'package:careermatebd/features/settings/domain/repositories/settings_repository.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers/fake_onboarding_repository.dart';
 
 void main() {
-  testWidgets('app boots through splash to onboarding and home', (
+  testWidgets('first run: splash → onboarding → Get started → home', (
     WidgetTester tester,
   ) async {
-    final repository = _FakeAuthRepository();
-    final settingsRepository = _FakeSettingsRepository();
-    addTearDown(repository.dispose);
+    final onboarding = FakeOnboardingRepository();
+    await _pumpApp(tester, onboardingRepository: onboarding);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(repository),
-          settingsRepositoryProvider.overrideWithValue(settingsRepository),
-        ],
-        child: const CareerMateApp(),
-      ),
-    );
-
-    expect(find.text(AppStrings.appName), findsOneWidget);
+    // Splash brand screen.
+    expect(find.text(AppStrings.brandName), findsOneWidget);
+    expect(find.text(AppStrings.splashTagline), findsOneWidget);
 
     await tester.pump(AppConstants.splashDuration);
     await tester.pumpAndSettle();
     expect(find.text(AppStrings.onboardingHeadline), findsOneWidget);
 
-    await tester.ensureVisible(find.text(AppStrings.exploreAsGuest));
-    await tester.tap(find.text(AppStrings.exploreAsGuest));
+    await tester.ensureVisible(find.text(AppStrings.onboardingGetStarted));
+    await tester.tap(find.text(AppStrings.onboardingGetStarted));
     await tester.pumpAndSettle();
 
+    expect(onboarding.seen, isTrue);
     expect(find.text(AppStrings.homeTitle), findsOneWidget);
     expect(find.text(AppStrings.homeHeroCardTitle), findsOneWidget);
   });
+
+  testWidgets('returning user (onboarding seen) lands on login', (
+    WidgetTester tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      onboardingRepository: FakeOnboardingRepository(seen: true),
+    );
+
+    await tester.pump(AppConstants.splashDuration);
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.loginTitle), findsOneWidget);
+    expect(find.text(AppStrings.onboardingHeadline), findsNothing);
+  });
+}
+
+Future<void> _pumpApp(
+  WidgetTester tester, {
+  required FakeOnboardingRepository onboardingRepository,
+}) async {
+  final repository = _FakeAuthRepository();
+  final settingsRepository = _FakeSettingsRepository();
+  addTearDown(repository.dispose);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(repository),
+        settingsRepositoryProvider.overrideWithValue(settingsRepository),
+        onboardingRepositoryProvider.overrideWithValue(onboardingRepository),
+      ],
+      child: const CareerMateApp(),
+    ),
+  );
 }
 
 class _FakeAuthRepository implements AuthRepository {

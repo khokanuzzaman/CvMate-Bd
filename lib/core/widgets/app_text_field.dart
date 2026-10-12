@@ -9,34 +9,48 @@ class AppTextField extends StatelessWidget {
   const AppTextField({
     super.key,
     this.label,
+    this.labelTrailing,
     this.hintText,
     this.controller,
     this.onChanged,
+    this.validator,
     this.keyboardType,
     this.textInputAction,
     this.obscureText = false,
+    this.suffixIcon,
   });
 
   final String? label;
+
+  /// Optional widget aligned to the end of the label row (e.g. "Forgot?").
+  final Widget? labelTrailing;
   final String? hintText;
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
+
+  /// Runs when an ancestor [Form] validates; renders the themed error state.
+  final FormFieldValidator<String>? validator;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final bool obscureText;
+
+  /// Trailing icon inside the field (e.g. a password show/hide toggle).
+  final Widget? suffixIcon;
 
   @override
   Widget build(BuildContext context) {
     return _LabeledField(
       label: label,
-      field: TextField(
+      labelTrailing: labelTrailing,
+      field: TextFormField(
         controller: controller,
         onChanged: onChanged,
+        validator: validator,
         keyboardType: keyboardType,
         textInputAction: textInputAction,
         obscureText: obscureText,
         style: AppTextStyles.bodySm,
-        decoration: InputDecoration(hintText: hintText),
+        decoration: InputDecoration(hintText: hintText, suffixIcon: suffixIcon),
       ),
     );
   }
@@ -79,10 +93,11 @@ class AppTextArea extends StatelessWidget {
 }
 
 class _LabeledField extends StatelessWidget {
-  const _LabeledField({required this.field, this.label});
+  const _LabeledField({required this.field, this.label, this.labelTrailing});
 
   final Widget field;
   final String? label;
+  final Widget? labelTrailing;
 
   @override
   Widget build(BuildContext context) {
@@ -90,11 +105,21 @@ class _LabeledField extends StatelessWidget {
       return field;
     }
 
+    final labelText = Text(label!, style: AppTextStyles.fieldLabel);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label!, style: AppTextStyles.fieldLabel),
+        if (labelTrailing == null)
+          labelText
+        else
+          Row(
+            children: [
+              Expanded(child: labelText),
+              labelTrailing!,
+            ],
+          ),
         const SizedBox(height: AppSpacing.s6),
         field,
       ],
