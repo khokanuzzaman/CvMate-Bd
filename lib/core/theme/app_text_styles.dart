@@ -9,6 +9,15 @@ import 'package:google_fonts/google_fonts.dart';
 /// getters (or the mapped [textTheme]) rather than ad-hoc [TextStyle]s.
 abstract final class AppTextStyles {
   // Display / headings — Sora.
+
+  /// Brand wordmark on the splash screen (Sora 700 @36, white-on-indigo).
+  static TextStyle get display => GoogleFonts.sora(
+    fontSize: 36,
+    height: 1.1,
+    fontWeight: FontWeight.w700,
+    color: AppColors.ink,
+  );
+
   static TextStyle get h1 => GoogleFonts.sora(
     fontSize: 26,
     height: 1.15,
