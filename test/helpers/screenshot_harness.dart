@@ -93,6 +93,18 @@ Future<void> loadTestFonts() async {
   ];
   await GoogleFonts.pendingFonts();
   await _loadMaterialIcons();
+  await _loadBengaliFallback();
+}
+
+/// Registers the bundled Noto Sans Bengali (`assets/fonts/`) — the fallback the
+/// app's text styles name — so ৳ and Bangla text render instead of boxes.
+Future<void> _loadBengaliFallback() async {
+  final loader = FontLoader(AppTextStyles.bengaliFontFamily);
+  for (final name in const ['Regular', 'Bold']) {
+    final file = File('assets/fonts/NotoSansBengali-$name.ttf');
+    loader.addFont(Future.value(ByteData.sublistView(file.readAsBytesSync())));
+  }
+  await loader.load();
 }
 
 /// Registers the Material icon font from the Flutter SDK (the test engine

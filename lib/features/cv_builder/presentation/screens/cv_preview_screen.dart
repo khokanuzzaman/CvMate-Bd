@@ -8,6 +8,7 @@ import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/app_top_bar.dart';
 import 'package:careermatebd/core/widgets/custom_empty_state.dart';
 import 'package:careermatebd/core/widgets/custom_loading_view.dart';
+import 'package:careermatebd/core/widgets/overflow_menu_button.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_preview_content.dart';
@@ -89,9 +90,17 @@ class CvPreviewScreen extends ConsumerWidget {
                     template: draft.template,
                     onTap: () => context.push(RouteNames.cvTemplatePath),
                   ),
-                  _OverflowMenu(
-                    canPrint: draft.hasContent,
-                    onPrint: () => _export(context, ref, _ExportKind.print),
+                  OverflowMenuButton(
+                    tooltip: AppStrings.previewMoreOptions,
+                    items: [
+                      OverflowMenuItem(
+                        label: AppStrings.previewPrint,
+                        icon: Icons.print_outlined,
+                        enabled: draft.hasContent,
+                        onSelected: () =>
+                            _export(context, ref, _ExportKind.print),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -202,46 +211,6 @@ class CvPreviewScreen extends ConsumerWidget {
 }
 
 enum _ExportKind { share, print }
-
-/// The ⋮ menu in the top bar; currently just Print.
-class _OverflowMenu extends StatelessWidget {
-  const _OverflowMenu({required this.canPrint, required this.onPrint});
-
-  final bool canPrint;
-  final VoidCallback onPrint;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<_ExportKind>(
-      tooltip: AppStrings.previewMoreOptions,
-      icon: const Icon(Icons.more_vert_rounded, color: AppColors.ink),
-      color: AppColors.surface,
-      surfaceTintColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: AppRadii.inputRadius,
-        side: BorderSide(color: AppColors.line),
-      ),
-      onSelected: (_) => onPrint(),
-      itemBuilder: (context) => [
-        PopupMenuItem<_ExportKind>(
-          value: _ExportKind.print,
-          enabled: canPrint,
-          child: Row(
-            children: [
-              const Icon(
-                Icons.print_outlined,
-                size: 20,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: AppSpacing.s12),
-              Text(AppStrings.previewPrint, style: AppTextStyles.body),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 /// The current template's name as a white pill; tapping opens the picker.
 class _TemplatePill extends StatelessWidget {

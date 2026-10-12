@@ -72,6 +72,15 @@ flutter:
   assets:
     - .env
 
+  # Noto Sans Bengali (SIL OFL, see assets/fonts/README.md): fallback for ৳ and
+  # Bangla text, used via AppTextStyles.bengaliFallback.
+  fonts:
+    - family: NotoSansBengali
+      fonts:
+        - asset: assets/fonts/NotoSansBengali-Regular.ttf
+        - asset: assets/fonts/NotoSansBengali-Bold.ttf
+          weight: 700
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

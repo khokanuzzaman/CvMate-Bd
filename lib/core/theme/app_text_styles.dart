@@ -8,6 +8,9 @@ import 'package:google_fonts/google_fonts.dart';
 /// (400, 500, 600, 700). Loaded via `google_fonts`. Widgets should use these
 /// getters (or the mapped [textTheme]) rather than ad-hoc [TextStyle]s.
 abstract final class AppTextStyles {
+  /// Family name of the bundled Noto Sans Bengali (`assets/fonts/`).
+  static const String bengaliFontFamily = 'NotoSansBengali';
+
   // Display / headings — Sora.
 
   /// Brand wordmark on the splash screen (Sora 700 @36, white-on-indigo).
@@ -16,41 +19,41 @@ abstract final class AppTextStyles {
     height: 1.1,
     fontWeight: FontWeight.w700,
     color: AppColors.ink,
-  );
+  ).withBengali;
 
   static TextStyle get h1 => GoogleFonts.sora(
     fontSize: 26,
     height: 1.15,
     fontWeight: FontWeight.w700,
     color: AppColors.ink,
-  );
+  ).withBengali;
 
   static TextStyle get h2 => GoogleFonts.sora(
     fontSize: 23,
     height: 1.2,
     fontWeight: FontWeight.w700,
     color: AppColors.ink,
-  );
+  ).withBengali;
 
   static TextStyle get title => GoogleFonts.sora(
     fontSize: 20,
     height: 1.25,
     fontWeight: FontWeight.w700,
     color: AppColors.ink,
-  );
+  ).withBengali;
 
   static TextStyle get appBar => GoogleFonts.sora(
     fontSize: 17,
     height: 1.25,
     fontWeight: FontWeight.w700,
     color: AppColors.ink,
-  );
+  ).withBengali;
 
   /// Big numbers / scores use Sora 700 as well.
   static TextStyle get numeric => GoogleFonts.sora(
     fontWeight: FontWeight.w700,
     color: AppColors.ink,
-  );
+  ).withBengali;
 
   // Body / UI — Plus Jakarta Sans.
   static TextStyle get body => GoogleFonts.plusJakartaSans(
@@ -58,28 +61,28 @@ abstract final class AppTextStyles {
     height: 1.5,
     fontWeight: FontWeight.w500,
     color: AppColors.inkSoft,
-  );
+  ).withBengali;
 
   static TextStyle get bodySm => GoogleFonts.plusJakartaSans(
     fontSize: 13.5,
     height: 1.45,
     fontWeight: FontWeight.w500,
     color: AppColors.inkSoft,
-  );
+  ).withBengali;
 
   static TextStyle get caption => GoogleFonts.plusJakartaSans(
     fontSize: 12,
     height: 1.4,
     fontWeight: FontWeight.w400,
     color: AppColors.muted,
-  );
+  ).withBengali;
 
   static TextStyle get hint => GoogleFonts.plusJakartaSans(
     fontSize: 11.5,
     height: 1.35,
     fontWeight: FontWeight.w400,
     color: AppColors.muted2,
-  );
+  ).withBengali;
 
   /// UPPERCASE section label, letter-spacing .06em (≈0.69 @11.5). Uppercasing is
   /// applied by the widget (e.g. SectionLabel), not baked into the token.
@@ -88,27 +91,27 @@ abstract final class AppTextStyles {
     fontWeight: FontWeight.w700,
     letterSpacing: 0.69,
     color: AppColors.muted,
-  );
+  ).withBengali;
 
   /// Field input label (12 / 600, muted).
   static TextStyle get fieldLabel => GoogleFonts.plusJakartaSans(
     fontSize: 12,
     fontWeight: FontWeight.w600,
     color: AppColors.muted,
-  );
+  ).withBengali;
 
   /// Button text — Plus Jakarta 700 @15.
   static TextStyle get button => GoogleFonts.plusJakartaSans(
     fontSize: 15,
     fontWeight: FontWeight.w700,
-  );
+  ).withBengali;
 
   /// QuickActionTile caption — 12 / 600, centered, ink.
   static TextStyle get tileLabel => GoogleFonts.plusJakartaSans(
     fontSize: 12,
     fontWeight: FontWeight.w600,
     color: AppColors.ink,
-  );
+  ).withBengali;
 
   /// List-item title (e.g. CvListTile) — Plus Jakarta 700, ink.
   static TextStyle get itemTitle => GoogleFonts.plusJakartaSans(
@@ -116,7 +119,7 @@ abstract final class AppTextStyles {
     height: 1.25,
     fontWeight: FontWeight.w700,
     color: AppColors.ink,
-  );
+  ).withBengali;
 
   /// Maps the design type scale onto Material text slots so
   /// `Theme.of(context).textTheme` and default [Text] widgets stay on-brand.
@@ -133,4 +136,17 @@ abstract final class AppTextStyles {
       labelSmall: hint,
     );
   }
+}
+
+/// Adds Noto Sans Bengali as a fallback for glyphs Sora / Plus Jakarta Sans lack
+/// — the taka sign ৳ and Bangla text — so they render the same everywhere,
+/// tests included. google_fonts sets its own fallback list, so this appends to
+/// it rather than passing one in.
+extension _BengaliFallback on TextStyle {
+  TextStyle get withBengali => copyWith(
+    fontFamilyFallback: [
+      ...?fontFamilyFallback,
+      AppTextStyles.bengaliFontFamily,
+    ],
+  );
 }

@@ -22,6 +22,7 @@ class AppTextField extends StatelessWidget {
     this.obscureText = false,
     this.suffixIcon,
     this.fillColor,
+    this.autofocus = false,
   }) : assert(
          controller == null || initialValue == null,
          'A controller and an initialValue cannot be used together.',
@@ -54,6 +55,9 @@ class AppTextField extends StatelessWidget {
   /// on the page ground instead of inside a card).
   final Color? fillColor;
 
+  /// Takes focus (and scrolls into view) when first shown.
+  final bool autofocus;
+
   @override
   Widget build(BuildContext context) {
     return _LabeledField(
@@ -62,6 +66,7 @@ class AppTextField extends StatelessWidget {
       field: TextFormField(
         controller: controller,
         initialValue: initialValue,
+        autofocus: autofocus,
         onChanged: onChanged,
         validator: validator,
         autovalidateMode: autovalidateMode,

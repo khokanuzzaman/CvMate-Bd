@@ -5,6 +5,7 @@ import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/widgets/app_text_field.dart';
 import 'package:careermatebd/core/widgets/section_label.dart';
+import 'package:careermatebd/core/widgets/segmented_toggle.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/ai_improve_type.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_step.dart';
@@ -60,8 +61,18 @@ class _SummaryObjectiveStepState extends ConsumerState<SummaryObjectiveStep> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ModeToggle(
-          showObjective: _showObjective,
+        SegmentedToggle<bool>(
+          options: const [
+            SegmentedOption(
+              value: false,
+              label: AppStrings.builderToggleSummary,
+            ),
+            SegmentedOption(
+              value: true,
+              label: AppStrings.builderToggleObjective,
+            ),
+          ],
+          value: _showObjective,
           onChanged: (value) => setState(() => _showObjective = value),
         ),
         const SizedBox(height: AppSpacing.s8),
@@ -131,87 +142,6 @@ class _SummaryObjectiveStepState extends ConsumerState<SummaryObjectiveStep> {
           const _DoneBanner(),
         ],
       ],
-    );
-  }
-}
-
-class _ModeToggle extends StatelessWidget {
-  const _ModeToggle({required this.showObjective, required this.onChanged});
-
-  final bool showObjective;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s4 + 1),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.input + 4),
-        border: Border.all(color: AppColors.line),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _Segment(
-              label: AppStrings.builderToggleSummary,
-              selected: !showObjective,
-              onTap: () => onChanged(false),
-            ),
-          ),
-          Expanded(
-            child: _Segment(
-              label: AppStrings.builderToggleObjective,
-              selected: showObjective,
-              onTap: () => onChanged(true),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Segment extends StatelessWidget {
-  const _Segment({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(
-            minHeight: AppSpacing.minTouchTarget,
-          ),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppRadii.input),
-          ),
-          child: ExcludeSemantics(
-            child: Text(
-              label,
-              style: AppTextStyles.body.copyWith(
-                color: selected ? AppColors.onPrimary : AppColors.muted,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
