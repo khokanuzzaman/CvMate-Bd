@@ -3,6 +3,7 @@
 // It also guards against layout errors: any overflow or exception fails it.
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/app/constants/app_strings.dart';
+import 'package:careermatebd/features/ats_checker/presentation/screens/ats_checker_screen.dart';
 import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
 import 'package:careermatebd/features/auth/presentation/screens/login_screen.dart';
 import 'package:careermatebd/features/auth/presentation/screens/register_screen.dart';
@@ -18,6 +19,18 @@ import 'package:careermatebd/features/cover_letter/data/repositories/cover_lette
 import 'package:careermatebd/features/cover_letter/presentation/controllers/cover_letter_controller.dart';
 import 'package:careermatebd/features/cover_letter/presentation/screens/cover_letter_screen.dart';
 import 'package:careermatebd/features/home/presentation/screens/home_screen.dart';
+import 'package:careermatebd/features/interview_prep/presentation/controllers/interview_prep_controller.dart';
+import 'package:careermatebd/features/interview_prep/presentation/screens/interview_prep_screen.dart';
+import 'package:careermatebd/features/job_tracker/data/repositories/job_application_repository_impl.dart';
+import 'package:careermatebd/features/job_tracker/presentation/screens/job_application_details_screen.dart';
+import 'package:careermatebd/features/job_tracker/presentation/screens/job_application_form_screen.dart';
+import 'package:careermatebd/features/job_tracker/presentation/screens/job_tracker_screen.dart';
+import 'package:careermatebd/features/profile/presentation/screens/profile_screen.dart';
+import 'package:careermatebd/features/settings/data/repositories/settings_repository_impl.dart';
+import 'package:careermatebd/features/settings/presentation/controllers/settings_overview_controller.dart';
+import 'package:careermatebd/shared/services/entitlement/entitlement_store.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:careermatebd/features/interview_prep/data/repositories/interview_prep_session_repository_impl.dart';
 import 'package:careermatebd/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:careermatebd/features/splash/presentation/screens/splash_screen.dart';
 import 'package:careermatebd/features/subscription/presentation/screens/paywall_screen.dart';
@@ -33,6 +46,10 @@ import '../helpers/core_flow_harness.dart';
 import '../helpers/design_cv.dart';
 import '../helpers/fake_ai_career_service.dart';
 import '../helpers/fake_cv_repository.dart';
+import '../helpers/builder_harness.dart';
+import '../helpers/fake_interview_session_repository.dart';
+import '../helpers/fake_settings_repository.dart';
+import '../helpers/fake_job_application_repository.dart';
 import '../helpers/screenshot_harness.dart';
 
 Future<ProviderContainer> _containerWith(CvProfile profile) async {
@@ -332,6 +349,163 @@ void main() {
         const PaywallScreen(source: 'screenshot'),
       );
       await expectCaptured(tester, key, '20_paywall');
+    });
+  });
+
+  group('ats, interview, tracker, profile', () {
+    testWidgets('ats check', (tester) async {
+      useScreenshotSurface(tester);
+      final key = GlobalKey();
+      await pumpScreenshotScreen(
+        tester,
+        key,
+        const AtsCheckerScreen(),
+        overrides: [
+          cvRepositoryProvider.overrideWithValue(
+            FakeCvRepository([designCv()]),
+          ),
+        ],
+      );
+      await expectCaptured(tester, key, '21_ats_check');
+    });
+
+    testWidgets('interview prep', (tester) async {
+      useScreenshotSurface(tester);
+      final key = GlobalKey();
+      final container = ProviderContainer(
+        overrides: [
+          cvRepositoryProvider.overrideWithValue(
+            FakeCvRepository([designCv()]),
+          ),
+          aiCareerServiceProvider.overrideWithValue(FakeAiCareerService()),
+          interviewPrepSessionRepositoryProvider.overrideWithValue(
+            FakeInterviewSessionRepository(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final prep = container.read(interviewPrepControllerProvider.notifier);
+      await prep.initialize();
+      prep.updateCompanyName('Acme');
+      await prep.generateQuestions();
+
+      await pumpScreenshotScreen(
+        tester,
+        key,
+        const InterviewPrepScreen(),
+        container: container,
+      );
+      await expectCaptured(tester, key, '22_interview_prep');
+    });
+
+    testWidgets('interview prep setup', (tester) async {
+      useScreenshotSurface(tester);
+      final key = GlobalKey();
+      await pumpScreenshotScreen(
+        tester,
+        key,
+        const InterviewPrepScreen(),
+        overrides: [
+          cvRepositoryProvider.overrideWithValue(
+            FakeCvRepository([designCv()]),
+          ),
+          aiCareerServiceProvider.overrideWithValue(FakeAiCareerService()),
+          interviewPrepSessionRepositoryProvider.overrideWithValue(
+            FakeInterviewSessionRepository(),
+          ),
+        ],
+      );
+      await expectCaptured(tester, key, '22b_interview_prep_setup');
+    });
+
+    testWidgets('job tracker', (tester) async {
+      useScreenshotSurface(tester);
+      final key = GlobalKey();
+      await pumpScreenshotScreen(
+        tester,
+        key,
+        const JobTrackerScreen(),
+        overrides: [
+          jobApplicationRepositoryProvider.overrideWithValue(
+            FakeJobApplicationRepository(designApplications()),
+          ),
+        ],
+      );
+      await expectCaptured(tester, key, '23_job_tracker');
+    });
+
+    testWidgets('job application details', (tester) async {
+      useScreenshotSurface(tester);
+      final key = GlobalKey();
+      await pumpScreenshotScreen(
+        tester,
+        key,
+        const JobApplicationDetailsScreen(applicationId: 'job-applied'),
+        overrides: [
+          jobApplicationRepositoryProvider.overrideWithValue(
+            FakeJobApplicationRepository(designApplications()),
+          ),
+          cvRepositoryProvider.overrideWithValue(FakeCvRepository()),
+          coverLetterRepositoryProvider.overrideWithValue(
+            FakeCoverLetterRepository(),
+          ),
+        ],
+      );
+      await expectCaptured(tester, key, '24b_job_details');
+    });
+
+    testWidgets('job application form', (tester) async {
+      useScreenshotSurface(tester);
+      final key = GlobalKey();
+      await pumpScreenshotScreen(
+        tester,
+        key,
+        const JobApplicationFormScreen(),
+        overrides: [
+          jobApplicationRepositoryProvider.overrideWithValue(
+            FakeJobApplicationRepository(),
+          ),
+          cvRepositoryProvider.overrideWithValue(
+            FakeCvRepository([designCv()]),
+          ),
+          coverLetterRepositoryProvider.overrideWithValue(
+            FakeCoverLetterRepository(),
+          ),
+        ],
+      );
+      await expectCaptured(tester, key, '24c_job_form');
+    });
+
+    testWidgets('profile & settings', (tester) async {
+      useScreenshotSurface(tester);
+      final auth = FakeAuthRepository(displayName: 'Ayesha Rahman');
+      addTearDown(auth.dispose);
+      await auth.signInWithEmailAndPassword(
+        email: 'ayesha@email.com',
+        password: 'secret12',
+      );
+      final key = GlobalKey();
+      await pumpScreenshotScreen(
+        tester,
+        key,
+        const ProfileScreen(),
+        overrides: [
+          authRepositoryProvider.overrideWithValue(auth),
+          entitlementStoreProvider.overrideWithValue(FakeEntitlementStore()),
+          settingsRepositoryProvider.overrideWithValue(
+            FakeSettingsRepository(),
+          ),
+          packageInfoLoaderProvider.overrideWithValue(
+            () async => PackageInfo(
+              appName: 'CvMate',
+              packageName: 'com.khokan.careermatebd',
+              version: '1.0.0',
+              buildNumber: '1',
+            ),
+          ),
+        ],
+      );
+      await expectCaptured(tester, key, '24_profile');
     });
   });
 }

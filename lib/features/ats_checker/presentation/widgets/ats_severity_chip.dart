@@ -1,6 +1,12 @@
+import 'package:careermatebd/app/constants/app_strings.dart';
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_radii.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
 import 'package:flutter/material.dart';
 
+/// The HIGH / MED / LOW pill beside an ATS issue.
 class AtsSeverityChip extends StatelessWidget {
   const AtsSeverityChip({super.key, required this.severity});
 
@@ -8,39 +14,40 @@ class AtsSeverityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _colorsForSeverity(Theme.of(context).colorScheme, severity);
-    return Chip(
-      label: Text(_label(severity)),
-      backgroundColor: colors.$1,
-      labelStyle: TextStyle(color: colors.$2),
-      side: BorderSide(color: colors.$2.withValues(alpha: 0.2)),
-      visualDensity: VisualDensity.compact,
-    );
-  }
-
-  (Color, Color) _colorsForSeverity(
-    ColorScheme scheme,
-    AtsSuggestionSeverity severity,
-  ) {
-    return switch (severity) {
+    final (background, foreground, label) = switch (severity) {
       AtsSuggestionSeverity.high => (
-        scheme.error.withValues(alpha: 0.12),
-        scheme.error,
+        AppColors.danger,
+        AppColors.onPrimary,
+        AppStrings.atsSeverityHigh,
       ),
       AtsSuggestionSeverity.medium => (
-        const Color(0xFFFFF2D6),
-        const Color(0xFF8C5A00),
+        AppColors.accent,
+        AppColors.onAccent,
+        AppStrings.atsSeverityMed,
       ),
       AtsSuggestionSeverity.low => (
-        scheme.primary.withValues(alpha: 0.12),
-        scheme.primary,
+        AppColors.primarySoft,
+        AppColors.primaryDeep,
+        AppStrings.atsSeverityLow,
       ),
     };
-  }
 
-  String _label(AtsSuggestionSeverity severity) => switch (severity) {
-    AtsSuggestionSeverity.high => 'High',
-    AtsSuggestionSeverity.medium => 'Medium',
-    AtsSuggestionSeverity.low => 'Low',
-  };
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s10,
+        vertical: AppSpacing.s4,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: AppRadii.pillRadius,
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.hint.copyWith(
+          color: foreground,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
 }

@@ -443,4 +443,222 @@ abstract final class AppStrings {
   static const String paywallCta = 'Coming soon';
   static const String paywallFooter = 'No auto-renew tricks · cancel anytime';
   static const String paywallRestore = 'Restore purchase';
+
+  // ATS check
+  static const String atsTitle = 'ATS check';
+  static const String atsCheckedNow = 'Checked just now';
+  static const String atsLoading = 'Checking your CV...';
+  static const String atsLoadErrorTitle = 'Could not load the ATS check';
+  static const String atsNoCvTitle = 'No CV to check yet';
+  static const String atsNoCvBody =
+      'Create a CV first, then come back to see how ATS-friendly it is.';
+  static const String atsCreateCv = 'Create CV';
+  static const String atsNoSelectionTitle = 'No CV selected';
+  static const String atsNoSelectionBody =
+      'Reload the screen and choose a saved CV.';
+  static const String atsHeadlineStrong = 'Strong';
+  static const String atsHeadlineGood = 'Good';
+  static const String atsHeadlineNeedsWork = 'Needs work';
+  static String atsHeadline(String band, int fixes) => fixes == 0
+      ? band
+      : fixes == 1
+      ? '$band, with 1 fix'
+      : '$band, with $fixes fixes';
+  static const String atsBodyStrong =
+      'This CV reads well. Review the items below to polish it further.';
+  static const String atsBodyGood =
+      'Most systems will read this CV. Fix the high-priority items first.';
+  static const String atsBodyNeedsWork =
+      'Some systems may struggle with this CV. Start with the high-priority '
+      'items.';
+  static const String atsWhatToFix = 'What to fix';
+  static const String atsFix = 'Fix';
+  static const String atsSeverityHigh = 'HIGH';
+  static const String atsSeverityMed = 'MED';
+  static const String atsSeverityLow = 'LOW';
+  static const String atsNoIssues = 'No issues found — nice work.';
+  static String atsExample(String text) => 'Example: $text';
+  static const String atsDisclaimer =
+      'A rule-based guide — not a guarantee of ATS approval or shortlisting.';
+  static const String atsCheckAgainstJob = 'Check against a job post';
+  static const String atsMenuImproveWithAi = 'Improve summary with AI';
+  static const String atsMenuOpenAiImprove = 'Open AI Improve';
+  static const String atsAiSheetTitle = 'Improve with AI';
+  static const String atsAiSheetBody =
+      'Generate an editable summary or objective. Review it and keep only '
+      'what is true.';
+  static const String atsAiSuggestionLabel = 'AI suggestion';
+  static const String atsAiGenerate = 'Generate';
+  static const String atsAiGenerating = 'Generating...';
+  static const String atsAiApply = 'Apply to CV';
+  static const String atsAiCopy = 'Copy';
+
+  // Interview prep
+  static const String interviewTitle = 'Interview prep';
+  static const String interviewLoading = 'Loading interview prep...';
+  static const String interviewLoadErrorTitle = 'Could not load interview prep';
+  static String interviewContext({
+    required bool fromCv,
+    required String role,
+    required String company,
+  }) {
+    final lead = fromCv ? 'From your CV' : 'From your target role';
+    if (role.isEmpty) {
+      return lead;
+    }
+    return company.isEmpty ? '$lead · $role' : '$lead · $role at $company';
+  }
+
+  static String interviewFilterAll(int count) => 'All $count';
+  static String interviewQuestionLabel(String category, int number) =>
+      '$category · Q$number';
+  static const String interviewSuggestedAnswer = 'Suggested answer';
+  static const String interviewStarSuffix = ' · STAR';
+  static const String interviewNoAnswer = 'No suggested answer yet.';
+  static const String interviewPractice = 'Practice answer';
+  static const String interviewShowInBangla = 'বাংলায় দেখো';
+  static const String interviewShowInEnglish = 'Show in English';
+  static const String interviewGenerateMore = 'Generate more questions';
+  static const String interviewGenerate = 'Generate questions';
+  static const String interviewGenerating = 'Generating questions...';
+  static String interviewMoreAdded(int count) =>
+      count == 1 ? 'Added 1 new question.' : 'Added $count new questions.';
+  static const String interviewNoNewQuestions =
+      'No new questions this time. Try again or adjust the job details.';
+  static const String interviewRegeneratedBangla =
+      'Questions regenerated in Bangla.';
+  static const String interviewRegeneratedEnglish =
+      'Questions regenerated in English.';
+  static const String interviewMoreOptions = 'More options';
+  static const String interviewSaveSession = 'Save session';
+  static const String interviewCopyAllQuestions = 'Copy all questions';
+  static const String interviewCopyAllAnswers = 'Copy all answers';
+  static const String interviewStartOver = 'Start over';
+  static const String interviewSetupLabel = 'Set up your practice';
+  static const String interviewNoCvSelected = 'No CV selected';
+  static const String interviewWithoutCv = 'Continue without a CV';
+  static const String interviewNoCvTitle = 'No saved CV yet';
+  static const String interviewNoCvBody =
+      'You can still practice with a target role and job post. A CV makes the '
+      'questions more personal.';
+  static const String interviewCreateCv = 'Create CV';
+  static const String interviewRoleLabel = 'Target job title';
+  static const String interviewRoleHint = 'e.g. Frontend Developer';
+  static const String interviewCompanyLabel = 'Company';
+  static const String interviewCompanyHint = 'e.g. Acme Inc.';
+  static const String interviewJobPostLabel = 'Job post or details';
+  static const String interviewJobPostHint =
+      'Paste responsibilities, required skills or interview expectations.';
+  static const String interviewTypeLabel = 'Interview type';
+  static const String interviewLanguageLabel = 'Language';
+  static const String interviewEnglish = 'English';
+  static const String interviewBangla = 'Bangla';
+  static const String interviewAnswerStyleLabel = 'Answer style';
+  static const String interviewOptional = '(optional)';
+  static const String interviewRecent = 'Recent sessions';
+  static const String interviewQuickPractice = 'Quick practice';
+  static const String interviewQuickPracticeBody =
+      'Common questions you can rehearse any time.';
+  static const String interviewCopyQuestion = 'Copy question';
+  static const String interviewQuestionCopied = 'Question copied.';
+  static const String interviewCopyAnswer = 'Copy answer';
+  static const String interviewFavorite = 'Save favorite';
+  static const String interviewUnfavorite = 'Remove favorite';
+  static const String interviewPracticeTitle = 'Practice your answer';
+  static const String interviewWhyItMatters = 'Why it matters';
+  static String interviewAnswerTip(String tip) => 'Tip: $tip';
+  static const String interviewYourAnswer = 'Your answer (editable)';
+  static const String interviewTruthful =
+      'Review everything before a real interview and never claim skills or '
+      'experience you do not have.';
+
+  // Job tracker
+  static const String trackerTitle = 'Applications';
+  static const String trackerAdd = 'Add application';
+  static const String trackerSearch = 'Search applications';
+  static const String trackerSearchHint = 'Company or job title';
+  static const String trackerStatApplied = 'Applied';
+  static const String trackerStatInterview = 'Interview';
+  static const String trackerStatOffer = 'Offer';
+  static const String trackerStatClosed = 'Closed';
+  static const String trackerFilterAll = 'All';
+  static const String trackerLoading = 'Loading your applications...';
+  static const String trackerLoadErrorTitle = 'Could not load applications';
+  static const String trackerLoadErrorBody =
+      'Something went wrong. Please try again.';
+  static const String trackerEmptyTitle = 'No applications yet';
+  static const String trackerEmptyBody =
+      'Track your first application to see interviews, follow-ups and linked '
+      'CVs in one place.';
+  static const String trackerNoMatchTitle = 'No matching applications';
+  static const String trackerNoMatchBody =
+      'Try another company, job title or status.';
+  static const String trackerClearFilters = 'Clear filters';
+  static const String trackerUntitledRole = 'Untitled role';
+  static const String trackerUnknownCompany = 'Unknown company';
+  static String trackerVia(String company, String source) =>
+      '$company · via $source';
+  static String trackerHintInterview(String when) =>
+      'Interview $when · Prep now';
+  static const String trackerToday = 'today';
+  static const String trackerTomorrow = 'tomorrow';
+  static const String trackerHintFollowUpDue =
+      'Follow-up due · Send a follow-up';
+  static String trackerHintApplied(int days) {
+    final when = switch (days) {
+      0 => 'Applied today',
+      1 => 'Applied 1 day ago',
+      _ => 'Applied $days days ago',
+    };
+    return days >= 7 ? '$when · Send a follow-up' : when;
+  }
+
+  // Profile & settings
+  static const String profileTitle = 'Profile';
+  static const String profileLoading = 'Loading account details...';
+  static const String profileGuest = 'Guest';
+  static const String profileGuestSubtitle = 'Using CvMate without an account';
+  static const String planFree = 'Free';
+  static const String planPro = 'Pro';
+  static const String goProTitle = 'Go Pro';
+  static const String goProBody = 'Unlimited tailoring and exports';
+  static const String goProCta = 'See plans';
+  static const String profilePreferences = 'Preferences';
+  static const String profileAccount = 'Account';
+  static const String profileAppLanguage = 'App language';
+  static const String profileLanguageNote =
+      'Saves your preferred language. The app itself is English-only for now.';
+  static const String profileTheme = 'Theme';
+  static const String themeLight = 'Light';
+  static const String themeDark = 'Dark';
+  static const String themeAuto = 'Auto';
+  static const String themeComingSoon = 'Dark and Auto are coming soon.';
+  static const String profileCloudBackup = 'Cloud backup';
+  static const String profileCloudOn = 'On';
+  static const String profileCloudOff = 'Off';
+  static const String profileCloudOnNote = 'CVs only';
+  static const String profileCloudOffNote = 'Sign in to back up your CVs';
+  static const String profileComingSoon = 'Coming soon';
+  static const String profilePrivacyTerms = 'Privacy & terms';
+  static const String profileMoreSettings = 'More settings';
+  static const String profileLogOut = 'Log out';
+  static const String profileLogIn = 'Log in';
+  static const String profileCreateAccount = 'Create account';
+  static String profileVersion(String version) => 'CvMate $version';
+  static const String logOutTitle = 'Log out';
+  static const String logOutBody =
+      'Log out now? Your local CVs and drafts will remain on this device.';
+  static const String logOutCancel = 'Cancel';
+  static const String legalClose = 'Close';
+  static const String privacyPolicyTitle = 'Privacy Policy';
+  static const String privacyPolicyBody =
+      'Privacy Policy placeholder\n\nCareerMate BD stores sensitive career '
+      'information such as CV content, job applications, and interview prep '
+      'notes. Review every future production privacy document carefully '
+      'before release.';
+  static const String termsTitle = 'Terms';
+  static const String termsBody =
+      'Terms placeholder\n\nCareerMate BD provides career writing and '
+      'preparation tools. AI suggestions may help improve clarity, but users '
+      'remain responsible for reviewing all content before sending it.';
 }

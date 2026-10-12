@@ -1,3 +1,4 @@
+import 'package:careermatebd/core/utils/result.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/personal_info.dart';
@@ -154,48 +155,19 @@ class InterviewPrepController extends Notifier<InterviewPrepState> {
   Future<void> generateQuestions() async {
     final profile = _buildGenerationProfile();
     if (profile == null) {
-      state = state.copyWith(
-        errorMessage:
-            'Select a CV or enter at least a target role before generating questions.',
-      );
+      state = state.copyWith(errorMessage: _needsRoleMessage);
       return;
     }
 
     state = state.copyWith(isGenerating: true, clearErrorMessage: true);
 
-    final result = await ref
-        .read(aiCareerServiceProvider)
-        .generateInterviewQuestions(
-          profile: profile,
-          language: state.language,
-          jobTitle: state.targetJobTitle.trim(),
-          companyName: state.companyName.trim(),
-          jobPostText: state.jobPostText.trim(),
-          interviewType: state.interviewType.label,
-          answerStyle: state.answerStyle.label,
-        );
+    final result = await _requestQuestions(profile);
 
     result.when(
       success: (data) {
-        final nowSeed = DateTime.now().microsecondsSinceEpoch;
-        final questions = <InterviewPrepQuestion>[
-          for (var index = 0; index < data.questions.length; index++)
-            InterviewPrepQuestion(
-              id: '${nowSeed}_$index',
-              category: InterviewQuestionCategoryX.fromCode(
-                data.questions[index].category,
-              ),
-              question: data.questions[index].question,
-              whyItMatters: data.questions[index].whyItMatters,
-              answerTip: data.questions[index].answerTip,
-              answerText: data.questions[index].sampleAnswer,
-              isFavorite: false,
-            ),
-        ];
-
         state = state.copyWith(
           isGenerating: false,
-          questions: questions,
+          questions: _toQuestions(data),
           clearErrorMessage: true,
         );
       },
@@ -207,6 +179,86 @@ class InterviewPrepController extends Notifier<InterviewPrepState> {
       },
     );
   }
+
+  /// Asks for another set and appends only the questions that are not listed
+  /// yet, so edited answers, favorites and order are kept. Returns how many
+  /// were added; 0 when nothing new came back or the request failed (then
+  /// [InterviewPrepState.errorMessage] says why).
+  Future<int> generateMoreQuestions() async {
+    final profile = _buildGenerationProfile();
+    if (profile == null) {
+      state = state.copyWith(errorMessage: _needsRoleMessage);
+      return 0;
+    }
+
+    state = state.copyWith(isGenerating: true, clearErrorMessage: true);
+
+    final result = await _requestQuestions(profile);
+
+    return result.when(
+      success: (data) {
+        final known = {
+          for (final question in state.questions)
+            _normalizeQuestion(question.question),
+        };
+        final fresh = [
+          for (final question in _toQuestions(data))
+            if (known.add(_normalizeQuestion(question.question))) question,
+        ];
+        state = state.copyWith(
+          isGenerating: false,
+          questions: [...state.questions, ...fresh],
+          clearErrorMessage: true,
+        );
+        return fresh.length;
+      },
+      failure: (failure) {
+        state = state.copyWith(
+          isGenerating: false,
+          errorMessage: failure.message,
+        );
+        return 0;
+      },
+    );
+  }
+
+  static const String _needsRoleMessage =
+      'Select a CV or enter at least a target role before generating questions.';
+
+  Future<Result<InterviewQuestionSet>> _requestQuestions(CvProfile profile) {
+    return ref
+        .read(aiCareerServiceProvider)
+        .generateInterviewQuestions(
+          profile: profile,
+          language: state.language,
+          jobTitle: state.targetJobTitle.trim(),
+          companyName: state.companyName.trim(),
+          jobPostText: state.jobPostText.trim(),
+          interviewType: state.interviewType.label,
+          answerStyle: state.answerStyle.label,
+        );
+  }
+
+  List<InterviewPrepQuestion> _toQuestions(InterviewQuestionSet data) {
+    final nowSeed = DateTime.now().microsecondsSinceEpoch;
+    return [
+      for (var index = 0; index < data.questions.length; index++)
+        InterviewPrepQuestion(
+          id: '${nowSeed}_$index',
+          category: InterviewQuestionCategoryX.fromCode(
+            data.questions[index].category,
+          ),
+          question: data.questions[index].question,
+          whyItMatters: data.questions[index].whyItMatters,
+          answerTip: data.questions[index].answerTip,
+          answerText: data.questions[index].sampleAnswer,
+          isFavorite: false,
+        ),
+    ];
+  }
+
+  String _normalizeQuestion(String value) =>
+      value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
   Future<String?> copyQuestion(String questionId) async {
     final question = _findQuestion(questionId);

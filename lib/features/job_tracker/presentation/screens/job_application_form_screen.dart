@@ -1,15 +1,21 @@
-import 'package:careermatebd/app/constants/app_constants.dart';
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_radii.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/utils/date_formatter.dart';
-import 'package:careermatebd/core/widgets/custom_app_bar.dart';
-import 'package:careermatebd/core/widgets/custom_button.dart';
-import 'package:careermatebd/core/widgets/custom_card.dart';
+import 'package:careermatebd/core/widgets/app_buttons.dart';
+import 'package:careermatebd/core/widgets/app_card.dart';
+import 'package:careermatebd/core/widgets/app_chip.dart';
+import 'package:careermatebd/core/widgets/app_text_field.dart';
+import 'package:careermatebd/core/widgets/app_top_bar.dart';
 import 'package:careermatebd/core/widgets/custom_error_view.dart';
 import 'package:careermatebd/core/widgets/custom_loading_view.dart';
-import 'package:careermatebd/core/widgets/custom_text_field.dart';
+import 'package:careermatebd/core/widgets/section_label.dart';
 import 'package:careermatebd/features/job_tracker/domain/entities/job_application_status.dart';
 import 'package:careermatebd/features/job_tracker/domain/entities/job_source.dart';
 import 'package:careermatebd/features/job_tracker/presentation/controllers/job_application_form_controller.dart';
 import 'package:careermatebd/features/job_tracker/presentation/controllers/job_application_form_state.dart';
+import 'package:careermatebd/features/job_tracker/presentation/widgets/job_filter_chips.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -90,17 +96,26 @@ class _JobApplicationFormScreenState
     _syncController(_notesController, state.notes);
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: state.isEditing ? 'Edit Application' : 'Add Application',
-        actions: [
-          IconButton(
-            onPressed: state.isSaving ? null : _save,
-            icon: const Icon(Icons.save_outlined),
-            tooltip: 'Save application',
-          ),
-        ],
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                AppSpacing.s12,
+                AppSpacing.screen,
+                AppSpacing.s8,
+              ),
+              child: AppTopBar(
+                title: state.isEditing ? 'Edit application' : 'Add application',
+                onBack: () => context.pop(),
+              ),
+            ),
+            Expanded(child: _buildBody(context, state)),
+          ],
+        ),
       ),
-      body: SafeArea(child: _buildBody(context, state)),
     );
   }
 
@@ -122,110 +137,76 @@ class _JobApplicationFormScreenState
       );
     }
 
+    final form = ref.read(jobApplicationFormControllerProvider.notifier);
+
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
-        AppConstants.defaultPadding,
-        AppConstants.defaultPadding,
-        AppConstants.defaultPadding,
-        AppConstants.defaultPadding +
-            MediaQuery.of(context).viewInsets.bottom +
-            24,
+        AppSpacing.screen,
+        AppSpacing.s8,
+        AppSpacing.screen,
+        AppSpacing.s22 + MediaQuery.viewInsetsOf(context).bottom,
       ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: AppConstants.contentMaxWidth,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _BasicsCard(
+            state: state,
+            companyController: _companyController,
+            jobTitleController: _jobTitleController,
+            onSourceChanged: form.updateJobSource,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _BasicsCard(
-                state: state,
-                companyController: _companyController,
-                jobTitleController: _jobTitleController,
-                onSourceChanged: (value) {
-                  if (value != null) {
-                    ref
-                        .read(jobApplicationFormControllerProvider.notifier)
-                        .updateJobSource(value);
-                  }
-                },
-              ),
-              const SizedBox(height: 20),
-              _LinksCard(
-                state: state,
-                onCvChanged: (value) => ref
-                    .read(jobApplicationFormControllerProvider.notifier)
-                    .selectCv(value),
-                onCoverLetterChanged: (value) => ref
-                    .read(jobApplicationFormControllerProvider.notifier)
-                    .selectCoverLetter(value),
-              ),
-              const SizedBox(height: 20),
-              _TimelineCard(
-                state: state,
-                onPickAppliedDate: () => _pickDate(
-                  initialDate: state.appliedDate,
-                  onSelected: (value) => ref
-                      .read(jobApplicationFormControllerProvider.notifier)
-                      .updateAppliedDate(value),
-                ),
-                onPickDeadlineDate: () => _pickOptionalDate(
-                  initialDate: state.deadlineDate ?? state.appliedDate,
-                  onSelected: (value) => ref
-                      .read(jobApplicationFormControllerProvider.notifier)
-                      .updateDeadlineDate(value),
-                ),
-                onClearDeadlineDate: () => ref
-                    .read(jobApplicationFormControllerProvider.notifier)
-                    .updateDeadlineDate(null),
-                onPickInterviewDate: () => _pickOptionalDate(
-                  initialDate: state.interviewDate ?? state.appliedDate,
-                  onSelected: (value) => ref
-                      .read(jobApplicationFormControllerProvider.notifier)
-                      .updateInterviewDate(value),
-                ),
-                onClearInterviewDate: () => ref
-                    .read(jobApplicationFormControllerProvider.notifier)
-                    .updateInterviewDate(null),
-                onPickFollowUpDate: () => _pickOptionalDate(
-                  initialDate: state.followUpDate ?? state.appliedDate,
-                  onSelected: (value) => ref
-                      .read(jobApplicationFormControllerProvider.notifier)
-                      .updateFollowUpDate(value),
-                ),
-                onClearFollowUpDate: () => ref
-                    .read(jobApplicationFormControllerProvider.notifier)
-                    .updateFollowUpDate(null),
-                onStatusChanged: (value) {
-                  if (value != null) {
-                    ref
-                        .read(jobApplicationFormControllerProvider.notifier)
-                        .updateStatus(value);
-                  }
-                },
-              ),
-              const SizedBox(height: 20),
-              _ContactAndNotesCard(
-                jobPostLinkController: _jobPostLinkController,
-                salaryRangeController: _salaryRangeController,
-                contactPersonController: _contactPersonController,
-                contactEmailController: _contactEmailController,
-                notesController: _notesController,
-              ),
-              if (state.errorMessage != null) ...[
-                const SizedBox(height: 20),
-                _InlineErrorCard(message: state.errorMessage!),
-              ],
-              const SizedBox(height: 20),
-              CustomButton(
-                label: state.isSaving ? 'Saving...' : 'Save application',
-                onPressed: state.isSaving ? null : _save,
-                icon: Icons.save_outlined,
-              ),
-            ],
+          const SizedBox(height: AppSpacing.s16),
+          _LinksCard(
+            state: state,
+            onCvChanged: form.selectCv,
+            onCoverLetterChanged: form.selectCoverLetter,
           ),
-        ),
+          const SizedBox(height: AppSpacing.s16),
+          _TimelineCard(
+            state: state,
+            onPickAppliedDate: () => _pickDate(
+              initialDate: state.appliedDate,
+              onSelected: form.updateAppliedDate,
+            ),
+            onPickDeadlineDate: () => _pickOptionalDate(
+              initialDate: state.deadlineDate ?? state.appliedDate,
+              onSelected: form.updateDeadlineDate,
+            ),
+            onClearDeadlineDate: () => form.updateDeadlineDate(null),
+            onPickInterviewDate: () => _pickOptionalDate(
+              initialDate: state.interviewDate ?? state.appliedDate,
+              onSelected: form.updateInterviewDate,
+            ),
+            onClearInterviewDate: () => form.updateInterviewDate(null),
+            onPickFollowUpDate: () => _pickOptionalDate(
+              initialDate: state.followUpDate ?? state.appliedDate,
+              onSelected: form.updateFollowUpDate,
+            ),
+            onClearFollowUpDate: () => form.updateFollowUpDate(null),
+            onStatusChanged: form.updateStatus,
+          ),
+          const SizedBox(height: AppSpacing.s16),
+          _ContactAndNotesCard(
+            jobPostLinkController: _jobPostLinkController,
+            salaryRangeController: _salaryRangeController,
+            contactPersonController: _contactPersonController,
+            contactEmailController: _contactEmailController,
+            notesController: _notesController,
+          ),
+          if (state.errorMessage != null) ...[
+            const SizedBox(height: AppSpacing.s16),
+            Text(
+              state.errorMessage!,
+              style: AppTextStyles.bodySm.copyWith(color: AppColors.danger),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.s20),
+          PrimaryButton(
+            label: state.isSaving ? 'Saving...' : 'Save application',
+            leadingIcon: Icons.check_rounded,
+            onPressed: state.isSaving ? null : _save,
+          ),
+        ],
       ),
     );
   }
@@ -347,37 +328,44 @@ class _BasicsCard extends StatelessWidget {
   final JobApplicationFormState state;
   final TextEditingController companyController;
   final TextEditingController jobTitleController;
-  final ValueChanged<JobSource?> onSourceChanged;
+  final ValueChanged<JobSource> onSourceChanged;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return CustomCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Application basics', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 16),
-          CustomTextField(
+          const SectionLabel('Application basics'),
+          const SizedBox(height: AppSpacing.s14),
+          AppTextField(
             controller: companyController,
             label: 'Company name',
             hintText: 'Bdjobs, BRAC Bank, Unilever Bangladesh',
+            textCapitalization: TextCapitalization.words,
           ),
-          const SizedBox(height: 16),
-          CustomTextField(
+          const SizedBox(height: AppSpacing.s14),
+          AppTextField(
             controller: jobTitleController,
             label: 'Job title',
             hintText: 'Management Trainee, Flutter Developer',
+            textCapitalization: TextCapitalization.words,
           ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<JobSource>(
-            initialValue: state.jobSource,
-            onChanged: onSourceChanged,
-            decoration: const InputDecoration(labelText: 'Job source'),
-            items: [
+          const SizedBox(height: AppSpacing.s14),
+          Text('Job source', style: AppTextStyles.fieldLabel),
+          const SizedBox(height: AppSpacing.s8),
+          Wrap(
+            spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s8,
+            children: [
               for (final source in JobSource.values)
-                DropdownMenuItem(value: source, child: Text(source.label)),
+                AppChip(
+                  label: source.label,
+                  variant: source == state.jobSource
+                      ? AppChipVariant.selected
+                      : AppChipVariant.neutral,
+                  onTap: () => onSourceChanged(source),
+                ),
             ],
           ),
         ],
@@ -399,21 +387,23 @@ class _LinksCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return CustomCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Linked assets', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SectionLabel('Linked assets'),
+          const SizedBox(height: AppSpacing.s6),
           Text(
-            'Connect the exact CV and cover letter draft you used for this application.',
+            'Connect the exact CV and cover letter you used for this '
+            'application.',
+            style: AppTextStyles.bodySm.copyWith(color: AppColors.muted),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.s14),
           DropdownButtonFormField<String?>(
             initialValue: state.selectedCvId,
             onChanged: onCvChanged,
+            isExpanded: true,
+            style: AppTextStyles.bodySm,
             decoration: const InputDecoration(labelText: 'Linked CV'),
             items: [
               const DropdownMenuItem<String?>(
@@ -423,14 +413,19 @@ class _LinksCard extends StatelessWidget {
               for (final cv in state.availableCvs)
                 DropdownMenuItem<String?>(
                   value: cv.id,
-                  child: Text('${cv.displayTitle} • ${cv.displayRole}'),
+                  child: Text(
+                    '${cv.displayTitle} • ${cv.displayRole}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.s14),
           DropdownButtonFormField<String?>(
             initialValue: state.selectedCoverLetterId,
             onChanged: onCoverLetterChanged,
+            isExpanded: true,
+            style: AppTextStyles.bodySm,
             decoration: const InputDecoration(labelText: 'Linked cover letter'),
             items: [
               const DropdownMenuItem<String?>(
@@ -440,7 +435,10 @@ class _LinksCard extends StatelessWidget {
               for (final draft in state.availableCoverLetters)
                 DropdownMenuItem<String?>(
                   value: draft.id,
-                  child: Text(draft.displayTitle),
+                  child: Text(
+                    draft.displayTitle,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
             ],
           ),
@@ -471,57 +469,59 @@ class _TimelineCard extends StatelessWidget {
   final VoidCallback onClearInterviewDate;
   final VoidCallback onPickFollowUpDate;
   final VoidCallback onClearFollowUpDate;
-  final ValueChanged<JobApplicationStatus?> onStatusChanged;
+  final ValueChanged<JobApplicationStatus> onStatusChanged;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    String optional(DateTime? value) =>
+        value == null ? 'Optional' : DateFormatter.shortDate(value);
 
-    return CustomCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Timeline and status', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<JobApplicationStatus>(
-            initialValue: state.status,
-            onChanged: onStatusChanged,
-            decoration: const InputDecoration(labelText: 'Status'),
-            items: [
-              for (final status in JobApplicationStatus.values)
-                DropdownMenuItem(value: status, child: Text(status.label)),
+          const SectionLabel('Timeline and status'),
+          const SizedBox(height: AppSpacing.s14),
+          Text('Status', style: AppTextStyles.fieldLabel),
+          const SizedBox(height: AppSpacing.s8),
+          Wrap(
+            spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s8,
+            children: [
+              for (final status in JobFilterChips.order)
+                AppChip(
+                  label: status.label,
+                  variant: status == state.status
+                      ? AppChipVariant.selected
+                      : AppChipVariant.neutral,
+                  onTap: () => onStatusChanged(status),
+                ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.s14),
           _DateSelectorTile(
             label: 'Applied date',
             value: DateFormatter.shortDate(state.appliedDate),
             onTap: onPickAppliedDate,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s10),
           _DateSelectorTile(
             label: 'Deadline date',
-            value: state.deadlineDate == null
-                ? 'Optional'
-                : DateFormatter.shortDate(state.deadlineDate!),
+            value: optional(state.deadlineDate),
             onTap: onPickDeadlineDate,
             onClear: state.deadlineDate == null ? null : onClearDeadlineDate,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s10),
           _DateSelectorTile(
             label: 'Interview date',
-            value: state.interviewDate == null
-                ? 'Optional'
-                : DateFormatter.shortDate(state.interviewDate!),
+            value: optional(state.interviewDate),
             onTap: onPickInterviewDate,
             onClear: state.interviewDate == null ? null : onClearInterviewDate,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s10),
           _DateSelectorTile(
             label: 'Follow-up reminder date',
-            value: state.followUpDate == null
-                ? 'Optional'
-                : DateFormatter.shortDate(state.followUpDate!),
+            value: optional(state.followUpDate),
             onTap: onPickFollowUpDate,
             onClear: state.followUpDate == null ? null : onClearFollowUpDate,
           ),
@@ -548,45 +548,45 @@ class _ContactAndNotesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return CustomCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Reference details', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 16),
-          CustomTextField(
+          const SectionLabel('Reference details'),
+          const SizedBox(height: AppSpacing.s14),
+          AppTextField(
             controller: jobPostLinkController,
             label: 'Job post link',
             hintText: 'Optional',
             keyboardType: TextInputType.url,
           ),
-          const SizedBox(height: 16),
-          CustomTextField(
+          const SizedBox(height: AppSpacing.s14),
+          AppTextField(
             controller: salaryRangeController,
             label: 'Salary range',
             hintText: 'Optional',
           ),
-          const SizedBox(height: 16),
-          CustomTextField(
+          const SizedBox(height: AppSpacing.s14),
+          AppTextField(
             controller: contactPersonController,
             label: 'Contact person',
             hintText: 'Optional',
+            textCapitalization: TextCapitalization.words,
           ),
-          const SizedBox(height: 16),
-          CustomTextField(
+          const SizedBox(height: AppSpacing.s14),
+          AppTextField(
             controller: contactEmailController,
             label: 'Contact email',
             hintText: 'Optional',
             keyboardType: TextInputType.emailAddress,
           ),
-          const SizedBox(height: 16),
-          CustomTextField(
+          const SizedBox(height: AppSpacing.s14),
+          AppTextArea(
             controller: notesController,
             label: 'Notes',
             hintText:
-                'Interview rounds, recruiter message, next follow-up, salary expectation, or application notes.',
+                'Interview rounds, recruiter message, next follow-up, salary '
+                'expectation, or application notes.',
             minLines: 4,
             maxLines: 6,
           ),
@@ -611,52 +611,55 @@ class _DateSelectorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [Text(label), const SizedBox(height: 4), Text(value)],
-            ),
+    return Material(
+      color: AppColors.surfaceAlt,
+      borderRadius: AppRadii.inputRadius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadii.inputRadius,
+        child: Container(
+          constraints: const BoxConstraints(
+            minHeight: AppSpacing.minTouchTarget,
           ),
-          if (onClear != null) ...[
-            IconButton(
-              onPressed: onClear,
-              icon: const Icon(Icons.close_rounded, size: 18),
-              tooltip: 'Clear date',
-            ),
-          ],
-          const Icon(Icons.calendar_today_outlined, size: 18),
-        ],
-      ),
-    );
-  }
-}
-
-class _InlineErrorCard extends StatelessWidget {
-  const _InlineErrorCard({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return CustomCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.error_outline_rounded, color: colorScheme.error),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(message, style: TextStyle(color: colorScheme.error)),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s14,
+            vertical: AppSpacing.s10,
           ),
-        ],
+          decoration: BoxDecoration(
+            borderRadius: AppRadii.inputRadius,
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: AppTextStyles.fieldLabel),
+                    Text(
+                      value,
+                      style: AppTextStyles.bodySm.copyWith(
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (onClear != null)
+                IconButton(
+                  onPressed: onClear,
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  color: AppColors.muted2,
+                  tooltip: 'Clear date',
+                ),
+              const Icon(
+                Icons.calendar_today_outlined,
+                size: 18,
+                color: AppColors.muted2,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

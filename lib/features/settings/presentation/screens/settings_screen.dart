@@ -124,15 +124,13 @@ class SettingsScreen extends ConsumerWidget {
                   _LegalSection(
                     onOpenPrivacy: () => _showInfoDialog(
                       context,
-                      title: 'Privacy Policy',
-                      body:
-                          'Privacy Policy placeholder\n\nCareerMate BD stores sensitive career information such as CV content, job applications, and interview prep notes. Review every future production privacy document carefully before release.',
+                      title: AppStrings.privacyPolicyTitle,
+                      body: AppStrings.privacyPolicyBody,
                     ),
                     onOpenTerms: () => _showInfoDialog(
                       context,
-                      title: 'Terms',
-                      body:
-                          'Terms placeholder\n\nCareerMate BD provides career writing and preparation tools. AI suggestions may help improve clarity, but users remain responsible for reviewing all content before sending it.',
+                      title: AppStrings.termsTitle,
+                      body: AppStrings.termsBody,
                     ),
                     onOpenAiDisclaimer: () => _showInfoDialog(
                       context,

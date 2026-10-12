@@ -27,3 +27,16 @@ final cvCloudSyncProvider = Provider<void>((ref) {
     unawaited(ref.read(cvRepositoryImplProvider).pullAndReconcile());
   }, fireImmediately: true);
 });
+
+/// Whether CV cloud backup is running for this session.
+enum CloudBackupStatus { on, off }
+
+/// Backup is on whenever [cvCloudSyncProvider] has a user to sync for (a guest
+/// or an account) and off when signed out. The sync is best-effort and does
+/// not report per-run results, so this says whether backup is active, not that
+/// the last sync succeeded. Only CVs are mirrored today.
+final cloudBackupStatusProvider = Provider<CloudBackupStatus>((ref) {
+  return ref.watch(currentAuthUserProvider) == null
+      ? CloudBackupStatus.off
+      : CloudBackupStatus.on;
+});

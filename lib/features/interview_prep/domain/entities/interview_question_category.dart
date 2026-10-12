@@ -26,6 +26,16 @@ extension InterviewQuestionCategoryX on InterviewQuestionCategory {
     InterviewQuestionCategory.general => 'General Questions',
   };
 
+  /// Short name for filter chips and question labels.
+  String get shortLabel => switch (this) {
+    InterviewQuestionCategory.hr => 'HR',
+    InterviewQuestionCategory.technical => 'Technical',
+    InterviewQuestionCategory.behavioral => 'Behavioral',
+    InterviewQuestionCategory.cvBased => 'CV-based',
+    InterviewQuestionCategory.companyBased => 'Company',
+    InterviewQuestionCategory.general => 'General',
+  };
+
   static InterviewQuestionCategory fromCode(String value) {
     return switch (value.trim().toLowerCase()) {
       'hr' => InterviewQuestionCategory.hr,

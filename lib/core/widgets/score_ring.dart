@@ -12,12 +12,20 @@ class ScoreRing extends StatelessWidget {
     required this.percent,
     this.size = 120,
     this.stroke = 9,
+    this.color = AppColors.accent,
+    this.showPercentSign = true,
   });
 
   /// 0–100.
   final int percent;
   final double size;
   final double stroke;
+
+  /// Arc colour — amber by default; the ATS check uses `success`.
+  final Color color;
+
+  /// Whether the centre reads "78%" (default) or just "78".
+  final bool showPercentSign;
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +34,14 @@ class ScoreRing extends StatelessWidget {
       width: size,
       height: size,
       child: CustomPaint(
-        painter: _ScoreRingPainter(fraction: clamped / 100, stroke: stroke),
+        painter: _ScoreRingPainter(
+          fraction: clamped / 100,
+          stroke: stroke,
+          color: color,
+        ),
         child: Center(
           child: Text(
-            '$clamped%',
+            showPercentSign ? '$clamped%' : '$clamped',
             style: AppTextStyles.numeric.copyWith(fontSize: size * 0.24),
           ),
         ),
@@ -39,10 +51,15 @@ class ScoreRing extends StatelessWidget {
 }
 
 class _ScoreRingPainter extends CustomPainter {
-  const _ScoreRingPainter({required this.fraction, required this.stroke});
+  const _ScoreRingPainter({
+    required this.fraction,
+    required this.stroke,
+    required this.color,
+  });
 
   final double fraction;
   final double stroke;
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -60,7 +77,7 @@ class _ScoreRingPainter extends CustomPainter {
     }
 
     final arc = Paint()
-      ..color = AppColors.accent
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round;
@@ -75,6 +92,8 @@ class _ScoreRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ScoreRingPainter oldDelegate) {
-    return oldDelegate.fraction != fraction || oldDelegate.stroke != stroke;
+    return oldDelegate.fraction != fraction ||
+        oldDelegate.stroke != stroke ||
+        oldDelegate.color != color;
   }
 }

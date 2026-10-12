@@ -1,3 +1,4 @@
+import 'package:careermatebd/core/errors/failure.dart';
 import 'package:careermatebd/core/utils/result.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
@@ -94,6 +95,76 @@ class FakeAiCareerService implements AiCareerService {
         highlights: const [],
         language: language,
         tone: tone,
+      ),
+    );
+  }
+
+  /// What [generateInterviewQuestions] returns; tests may replace it.
+  List<InterviewQuestionItem> interviewQuestions = const [
+    InterviewQuestionItem(
+      category: 'technical',
+      question:
+          'How did you improve load time when you rebuilt screens in '
+          'React?',
+      whyItMatters: 'Shows how you measure and improve performance.',
+      answerTip: 'Name one change and the result.',
+      sampleAnswer:
+          'Situation: Key screens were slow on mobile. Task: Make them '
+          'faster. Action: Split bundles, memoized lists. Result: [add your '
+          'number].',
+    ),
+    InterviewQuestionItem(
+      category: 'behavioral',
+      question: 'Tell me about a time you disagreed with a designer.',
+      whyItMatters: 'Tests collaboration and communication.',
+      answerTip: 'Focus on how you reached a decision together.',
+      sampleAnswer: 'I walked through the trade-offs with the designer.',
+    ),
+    InterviewQuestionItem(
+      category: 'hr',
+      question: 'Why do you want to work at Acme?',
+      whyItMatters: 'Checks that your goals fit the employer.',
+      answerTip: 'Connect the role to your skills and motivation.',
+      sampleAnswer: 'The role matches the work I have been preparing for.',
+    ),
+  ];
+
+  /// When set, [generateInterviewQuestions] fails with it.
+  Failure? interviewFailure;
+
+  int interviewCalls = 0;
+  AiOutputLanguage? lastInterviewLanguage;
+
+  @override
+  Future<Result<InterviewQuestionSet>> generateInterviewQuestions({
+    required CvProfile profile,
+    AiOutputLanguage language = AiOutputLanguage.english,
+    String jobTitle = '',
+    String companyName = '',
+    String jobPostText = '',
+    String interviewType = '',
+    String answerStyle = '',
+  }) async {
+    interviewCalls++;
+    lastInterviewLanguage = language;
+    if (interviewFailure != null) {
+      return FailureResult(interviewFailure!);
+    }
+    final bangla = language == AiOutputLanguage.bangla;
+    return Success(
+      InterviewQuestionSet(
+        title: 'Interview prep',
+        language: language,
+        questions: [
+          for (final item in interviewQuestions)
+            InterviewQuestionItem(
+              category: item.category,
+              question: bangla ? '[bn] ${item.question}' : item.question,
+              whyItMatters: item.whyItMatters,
+              answerTip: item.answerTip,
+              sampleAnswer: item.sampleAnswer,
+            ),
+        ],
       ),
     );
   }

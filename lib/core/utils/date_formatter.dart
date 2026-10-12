@@ -13,6 +13,12 @@ class DateFormatter {
     return '${local.day} $month ${local.year}, ${shortTime(local)}';
   }
 
+  /// Three-letter weekday, e.g. `Thu`.
+  static String weekdayShort(DateTime value) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days[value.toLocal().weekday - 1];
+  }
+
   static String shortTime(DateTime value) {
     final local = value.toLocal();
     final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;

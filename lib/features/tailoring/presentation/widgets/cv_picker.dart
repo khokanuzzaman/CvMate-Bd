@@ -10,11 +10,22 @@ import 'package:flutter/material.dart';
 
 /// "Which CV?" card: the selected CV and its template, with a chevron. Tapping
 /// opens [showCvPickerSheet]; [onTap] is null while a step is running.
+///
+/// [subtitle] replaces the template line (e.g. "Checked just now"); [emptyLabel]
+/// is shown when no CV is selected.
 class CvPickerCard extends StatelessWidget {
-  const CvPickerCard({super.key, required this.cv, required this.onTap});
+  const CvPickerCard({
+    super.key,
+    required this.cv,
+    required this.onTap,
+    this.subtitle,
+    this.emptyLabel = '',
+  });
 
   final CvProfile? cv;
   final VoidCallback? onTap;
+  final String? subtitle;
+  final String emptyLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -49,16 +60,17 @@ class CvPickerCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    selected?.displayTitle ?? '',
+                    selected?.displayTitle ?? emptyLabel,
                     style: AppTextStyles.itemTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (selected != null)
                     Text(
-                      AppStrings.tailorTemplateSubtitle(
-                        selected.template.label,
-                      ),
+                      subtitle ??
+                          AppStrings.tailorTemplateSubtitle(
+                            selected.template.label,
+                          ),
                       style: AppTextStyles.bodySm.copyWith(
                         color: AppColors.muted,
                       ),

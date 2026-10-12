@@ -1,6 +1,11 @@
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_radii.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/features/job_tracker/domain/entities/job_application_status.dart';
 import 'package:flutter/material.dart';
 
+/// The status pill on application cards and the details header.
 class JobStatusChip extends StatelessWidget {
   const JobStatusChip({super.key, required this.status});
 
@@ -8,49 +13,53 @@ class JobStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final colors = _colorsForStatus(scheme, status);
+    final style = _styleFor(status);
 
-    return Chip(
-      label: Text(status.label),
-      backgroundColor: colors.$1,
-      labelStyle: TextStyle(color: colors.$2),
-      side: BorderSide(color: colors.$2.withValues(alpha: 0.22)),
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s12,
+        vertical: AppSpacing.s6,
+      ),
+      decoration: BoxDecoration(
+        color: style.background,
+        borderRadius: AppRadii.pillRadius,
+        border: style.border == null ? null : Border.all(color: style.border!),
+      ),
+      child: Text(
+        status.label,
+        style: AppTextStyles.bodySm.copyWith(
+          color: style.foreground,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 
-  (Color, Color) _colorsForStatus(
-    ColorScheme scheme,
+  static ({Color background, Color foreground, Color? border}) _styleFor(
     JobApplicationStatus status,
   ) {
     return switch (status) {
-      JobApplicationStatus.draft => (
-        scheme.surfaceContainerHighest,
-        scheme.onSurfaceVariant,
-      ),
-      JobApplicationStatus.applied => (
-        scheme.primary.withValues(alpha: 0.14),
-        scheme.primary,
-      ),
-      JobApplicationStatus.shortlisted => (
-        const Color(0xFFE7F3E8),
-        const Color(0xFF1E6B34),
-      ),
-      JobApplicationStatus.interview => (
-        const Color(0xFFFFF4DB),
-        const Color(0xFF946200),
+      JobApplicationStatus.interview || JobApplicationStatus.shortlisted => (
+        background: AppColors.primarySoft,
+        foreground: AppColors.primaryDeep,
+        border: null,
       ),
       JobApplicationStatus.offered => (
-        const Color(0xFFDFF6EA),
-        const Color(0xFF0D6B44),
+        background: AppColors.successSoft,
+        foreground: AppColors.successText,
+        border: null,
       ),
       JobApplicationStatus.rejected => (
-        scheme.error.withValues(alpha: 0.12),
-        scheme.error,
+        background: AppColors.danger.withValues(alpha: 0.12),
+        foreground: AppColors.danger,
+        border: null,
       ),
+      JobApplicationStatus.applied ||
+      JobApplicationStatus.draft ||
       JobApplicationStatus.archived => (
-        const Color(0xFFECECEC),
-        const Color(0xFF5B5B5B),
+        background: AppColors.surfaceAlt,
+        foreground: AppColors.muted,
+        border: AppColors.lineStrong,
       ),
     };
   }
