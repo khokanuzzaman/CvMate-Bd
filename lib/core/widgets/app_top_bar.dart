@@ -15,6 +15,7 @@ class AppTopBar extends StatelessWidget {
     this.trailingIcon,
     this.onTrailingTap,
     this.stepLabel,
+    this.trailingTooltip,
   });
 
   final String title;
@@ -22,6 +23,9 @@ class AppTopBar extends StatelessWidget {
   final IconData? trailingIcon;
   final VoidCallback? onTrailingTap;
   final String? stepLabel;
+
+  /// Accessible name for the trailing icon button.
+  final String? trailingTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +51,7 @@ class AppTopBar extends StatelessWidget {
           const SizedBox(width: AppSpacing.s8),
           _IconSquareButton(
             icon: trailingIcon!,
+            tooltip: trailingTooltip,
             onTap: onTrailingTap ?? () {},
           ),
         ],
@@ -56,14 +61,19 @@ class AppTopBar extends StatelessWidget {
 }
 
 class _IconSquareButton extends StatelessWidget {
-  const _IconSquareButton({required this.icon, required this.onTap});
+  const _IconSquareButton({
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
 
   final IconData icon;
   final VoidCallback onTap;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final button = SizedBox(
       // Visual is 40px but keep a 48 min touch target.
       width: AppSpacing.minTouchTarget,
       height: AppSpacing.minTouchTarget,
@@ -88,6 +98,7 @@ class _IconSquareButton extends StatelessWidget {
         ),
       ),
     );
+    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
   }
 }
 

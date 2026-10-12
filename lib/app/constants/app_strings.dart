@@ -260,4 +260,177 @@ abstract final class AppStrings {
   static const String templateTitle = 'Choose a template';
   static const String templateAtsBadge = 'ATS';
   static String templateUse(String name) => 'Use $name template';
+
+  // Tailor — shared
+  static const String tailorTitle = 'Tailor to a job';
+  static String tailorStepPill(int step) => 'Step $step/3';
+  static const String tailorBack = 'Back';
+
+  // Tailor 1 — paste
+  static const String tailorWhichCv = 'Which CV?';
+  static const String tailorChooseCv = 'Choose a CV';
+  static String tailorTemplateSubtitle(String template) => '$template template';
+  static const String tailorPasteLabel = 'Paste the job post';
+  static const String tailorPasteHint =
+      "Paste the full job description here — responsibilities, requirements, "
+      "skills. We'll pull the keywords automatically.";
+  static const String tailorWorksForAnyRole =
+      'Works for any role — nurse, accountant, driver, developer.';
+  static const String tailorJobTitleLabel = 'Job title';
+  static const String tailorJobTitleHint = 'e.g. React Developer';
+  static const String tailorCompanyLabel = 'Company';
+  static const String tailorCompanyHint = 'e.g. Acme Inc.';
+  static const String tailorOptional = '(optional)';
+  static const String tailorAnalyze = 'Analyze match';
+  static const String tailorAnalyzing = 'Analyzing...';
+  static const String tailorLoadingCvs = 'Loading your CVs...';
+  static const String tailorNoCvTitle = 'No CV to tailor yet';
+  static const String tailorNoCvBody =
+      'Create a CV first, then paste a job post here to tailor it and '
+      'generate a matched cover letter.';
+
+  // Tailor 2 — match
+  static const String tailorMatchTitle = 'Match results';
+  static const String tailorMatchStrong = 'ATS match: strong';
+  static const String tailorMatchGood = 'ATS match: good start';
+  static const String tailorMatchLow = 'ATS match: needs work';
+  static const String tailorMatchBodyMissing =
+      'Add the missing keywords below and your score jumps toward 90%.';
+  static const String tailorMatchBodyCovered =
+      'Your CV already covers the keywords in this job post.';
+  static const String tailorMatched = 'Matched';
+  static const String tailorMissing = 'Missing — add these';
+  static const String tailorTruthfulPrefix =
+      'We weave these into your summary and skills ';
+  static const String tailorTruthfulEmphasis = 'truthfully';
+  static const String tailorTruthfulSuffix =
+      " — never inventing experience you don't have.";
+  static const String tailorTailorMyCv = 'Tailor my CV';
+  static const String tailorTailoring = 'Tailoring your CV...';
+
+  // Tailor 3 — result
+  static const String tailorResultTitle = 'Your tailored CV';
+  static String tailorMatchBadge(int percent) => 'Match $percent%';
+  static const String tailorSummaryLabel = 'Professional summary';
+  static const String tailorAiTailored = 'AI tailored';
+  static const String tailorEdit = 'Edit';
+  static const String tailorDone = 'Done';
+  static const String tailorSkillsLabel = 'Skills emphasized for this role';
+  static const String tailorSkillsEditHint = 'Comma separated, e.g. React, Git';
+  static const String tailorBulletsLabel = 'Experience — rewritten bullet';
+  static const String tailorBulletsReview =
+      'Review each rewrite before saving. Keep only what is true.';
+  static const String tailorBulletWas = 'Original bullet';
+  static const String tailorBulletNow = 'Rewritten bullet';
+  static const String tailorCoverLetter = 'Cover letter';
+  static const String tailorSaveExport = 'Save & export';
+  static const String tailorSavesAsCopy =
+      'Saves as a new tailored copy — your original CV stays untouched.';
+  static String tailorSavedSnack(String title) => 'Saved "$title".';
+  static const String tailorMoreOptions = 'More options';
+  static const String tailorPrint = 'Print';
+
+  // Cover letter
+  static const String coverLetterTitle = 'Cover letter';
+  static const String coverLetterShare = 'Share';
+  static String coverLetterAlignedTo(String target) => 'Aligned to $target';
+  static const String coverLetterChangeDetails = 'Change details';
+  static const String coverLetterTone = 'Tone';
+  static const String coverLetterToneProfessional = 'Professional';
+  static const String coverLetterToneFriendly = 'Friendly';
+  static const String coverLetterToneConfident = 'Confident';
+  static const String coverLetterEdit = 'Edit';
+  static const String coverLetterDoneEditing = 'Done';
+  static const String coverLetterRegenerate = 'Regenerate';
+  static const String coverLetterExport = 'Export';
+  static const String coverLetterGenerating = 'Writing your cover letter...';
+  static const String coverLetterSubject = 'Subject';
+  static const String coverLetterCopy = 'Copy';
+  static const String coverLetterSaveDraft = 'Save draft';
+  static const String coverLetterLoading =
+      'Loading CVs and cover letter drafts...';
+  static const String coverLetterNewDraft = 'New draft';
+  static const String coverLetterViewLetter = 'View letter';
+  static const String coverLetterSetupTitle = 'Cover letter generator';
+  static const String coverLetterSetupBody =
+      'Generate editable cover letters, job application emails, and LinkedIn '
+      'messages from a saved CV or a short summary of your own.';
+  static const String coverLetterEditingDraft = 'Editing saved draft';
+  static const String coverLetterNoCvs =
+      'No saved CV found yet. You can still generate content manually, or '
+      'create a CV first for stronger role-based results.';
+  static String coverLetterSelectedCv(String title, String role) =>
+      'Selected CV: $title • $role';
+  static const String coverLetterCreateCv = 'Create CV';
+  static const String coverLetterCreateAnotherCv = 'Create another CV';
+  static const String coverLetterOpenSelectedCv = 'Open selected CV';
+  static const String coverLetterRecentDrafts = 'Recent drafts';
+  static String coverLetterDraftMeta(String type, String updated) =>
+      '$type • Updated $updated';
+  static String coverLetterDraftCv(String title) => 'Using CV: $title';
+  static const String coverLetterOpenDraft = 'Open draft';
+  static const String coverLetterDeleteDraft = 'Delete draft';
+  static const String coverLetterDeleteTitle = 'Delete draft';
+  static String coverLetterDeleteBody(String title) =>
+      'Delete "$title" from local storage? This cannot be undone.';
+  static const String coverLetterCancel = 'Cancel';
+  static const String coverLetterDelete = 'Delete';
+  static const String coverLetterOpenBadge = 'Open';
+  static const String coverLetterCandidate = 'Candidate source';
+  static const String coverLetterSelectCv = 'Select CV';
+  static const String coverLetterManualCv =
+      'No CV selected, use manual summary';
+  static const String coverLetterOutputType = 'Output type';
+  static const String coverLetterLanguage = 'Language';
+  static const String coverLetterEnglish = 'English';
+  static const String coverLetterBangla = 'Bangla';
+  static const String coverLetterJobDetails = 'Job details';
+  static const String coverLetterCompanyLabel = 'Target company name';
+  static const String coverLetterCompanyHint = 'BRAC Bank, DataPath, Shohoz';
+  static const String coverLetterJobTitleLabel = 'Job title';
+  static const String coverLetterJobTitleHint =
+      'Flutter Developer, Marketing Executive';
+  static const String coverLetterJobPostLabel = 'Job post or job details';
+  static const String coverLetterJobPostHint =
+      'Paste responsibilities, skills, company expectations, or a short job '
+      'description.';
+  static const String coverLetterManagerLabel = 'Hiring manager name';
+  static const String coverLetterManagerHint = 'Optional';
+  static const String coverLetterSummaryLabel = 'Candidate summary';
+  static const String coverLetterSummaryHint =
+      'Optional if a CV is selected. Add fresher strengths, projects, or a '
+      'quick profile summary.';
+  static const String coverLetterSummaryNeeded =
+      'Required when you are generating without a selected CV.';
+  static const String coverLetterSummaryReuse =
+      'Leave blank to reuse the selected CV summary or objective.';
+  static const String coverLetterGenerate = 'Generate';
+  static const String coverLetterSubjectLabel = 'Subject line';
+  static const String coverLetterSubjectHint = 'Application for the role';
+
+  // Paywall
+  static const String paywallClose = 'Close';
+  static const String paywallTitle = 'Unlock unlimited exports';
+  static const String paywallBodyPrefix = "You've used your ";
+  static const String paywallBodyEmphasis = 'free export';
+  static const String paywallBodySuffix =
+      '. Go Pro for unlimited tailored CVs — or pay once for just this one.';
+  static const String paywallBenefitTailoring =
+      'Unlimited job tailoring & AI rewrites';
+  static const String paywallBenefitTemplates =
+      'All templates, clean exports — no watermark';
+  static const String paywallBenefitCloud =
+      'Cover letters, cloud sync across devices';
+  static const String paywallMonthly = 'Monthly';
+  static const String paywallYearly = 'Yearly';
+  static const String paywallPerMonth = '/mo';
+  static const String paywallPerYear = '/yr';
+  static String paywallSave(int percent) => 'SAVE $percent%';
+  static const String paywallOneTimeTitle = 'Just this CV — one-time';
+  static const String paywallOneTimeSubtitle = 'No subscription';
+  static const String paywallNotAvailable =
+      "Pro isn't available yet — nothing is charged today.";
+  static const String paywallCta = 'Coming soon';
+  static const String paywallFooter = 'No auto-renew tricks · cancel anytime';
+  static const String paywallRestore = 'Restore purchase';
 }
