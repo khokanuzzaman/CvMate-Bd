@@ -61,61 +61,41 @@ void main() {
     );
   }
 
-  test(
-    'mirror-on-write pushes a saved CV to the remote when signed in',
-    () async {
-      final remote = _FakeRemote();
-      final repo = buildRepository(remote: remote, auth: _FakeAuth('u1'));
+  test('mirror-on-write pushes a saved CV to the remote when signed in', () async {
+    final remote = _FakeRemote();
+    final repo = buildRepository(remote: remote, auth: _FakeAuth('u1'));
 
-      await repo.saveCv(
-        _cv(id: 'a', title: 'Alpha', updatedAt: DateTime(2024, 5)),
-      );
-      await _flushMirror();
+    await repo.saveCv(_cv(id: 'a', title: 'Alpha', updatedAt: DateTime(2024, 5)));
+    await _flushMirror();
 
-      expect(remote.store['u1']?.containsKey('a'), isTrue);
-      expect(remote.store['u1']!['a']!.profile.title, 'Alpha');
-      final local = await repo.getAllCvs();
-      expect(local.map((cv) => cv.id), contains('a'));
-    },
-  );
+    expect(remote.store['u1']?.containsKey('a'), isTrue);
+    expect(remote.store['u1']!['a']!.profile.title, 'Alpha');
+    final local = await repo.getAllCvs();
+    expect(local.map((cv) => cv.id), contains('a'));
+  });
 
-  test(
-    'write works offline: local save succeeds, remote error is captured',
-    () async {
-      final errors = <Object>[];
-      final remote = _FakeRemote()..failWrites = true;
-      final repo = buildRepository(
-        remote: remote,
-        auth: _FakeAuth('u1'),
-        errors: errors,
-      );
+  test('write works offline: local save succeeds, remote error is captured', () async {
+    final errors = <Object>[];
+    final remote = _FakeRemote()..failWrites = true;
+    final repo = buildRepository(
+      remote: remote,
+      auth: _FakeAuth('u1'),
+      errors: errors,
+    );
 
-      await repo.saveCv(
-        _cv(id: 'a', title: 'Alpha', updatedAt: DateTime(2024, 5)),
-      );
-      await _flushMirror();
+    await repo.saveCv(_cv(id: 'a', title: 'Alpha', updatedAt: DateTime(2024, 5)));
+    await _flushMirror();
 
-      final local = await repo.getAllCvs();
-      expect(
-        local.map((cv) => cv.id),
-        contains('a'),
-        reason: 'local must persist',
-      );
-      expect(
-        errors,
-        isNotEmpty,
-        reason: 'remote error should be captured, not thrown',
-      );
-    },
-  );
+    final local = await repo.getAllCvs();
+    expect(local.map((cv) => cv.id), contains('a'), reason: 'local must persist');
+    expect(errors, isNotEmpty, reason: 'remote error should be captured, not thrown');
+  });
 
   test('signed-out writes never touch the remote', () async {
     final remote = _FakeRemote();
     final repo = buildRepository(remote: remote, auth: _FakeAuth(null));
 
-    await repo.saveCv(
-      _cv(id: 'a', title: 'Alpha', updatedAt: DateTime(2024, 5)),
-    );
+    await repo.saveCv(_cv(id: 'a', title: 'Alpha', updatedAt: DateTime(2024, 5)));
     await _flushMirror();
 
     expect(remote.store, isEmpty);
@@ -129,40 +109,22 @@ void main() {
     final repo = buildRepository(remote: remote, auth: auth);
 
     // Remote: A (newer) + B (remote-only).
-    remote.seed(
-      'u1',
-      _cv(id: 'a', title: 'A-remote', updatedAt: DateTime(2024, 6)),
-    );
-    remote.seed(
-      'u1',
-      _cv(id: 'b', title: 'B-remote', updatedAt: DateTime(2024, 6)),
-    );
+    remote.seed('u1', _cv(id: 'a', title: 'A-remote', updatedAt: DateTime(2024, 6)));
+    remote.seed('u1', _cv(id: 'b', title: 'B-remote', updatedAt: DateTime(2024, 6)));
     // Local: A (older) + C (local-only).
     await const CvLocalDataSource().saveCv(
-      CvProfileDto(
-        _cv(id: 'a', title: 'A-local', updatedAt: DateTime(2024, 1)),
-      ),
+      CvProfileDto(_cv(id: 'a', title: 'A-local', updatedAt: DateTime(2024, 1))),
     );
     await const CvLocalDataSource().saveCv(
-      CvProfileDto(
-        _cv(id: 'c', title: 'C-local', updatedAt: DateTime(2024, 3)),
-      ),
+      CvProfileDto(_cv(id: 'c', title: 'C-local', updatedAt: DateTime(2024, 3))),
     );
 
     await repo.pullAndReconcile();
 
     final localById = {for (final cv in await repo.getAllCvs()) cv.id: cv};
     expect(localById.keys, containsAll(['a', 'b', 'c']));
-    expect(
-      localById['a']!.title,
-      'A-remote',
-      reason: 'remote A was newer (LWW)',
-    );
-    expect(
-      localById['c']!.title,
-      'C-local',
-      reason: 'local-only must never be dropped',
-    );
+    expect(localById['a']!.title, 'A-remote', reason: 'remote A was newer (LWW)');
+    expect(localById['c']!.title, 'C-local', reason: 'local-only must never be dropped');
 
     // Local-only C is pushed up; remote keeps everything.
     expect(remote.store['u1']!.keys, containsAll(['a', 'b', 'c']));
@@ -174,17 +136,13 @@ void main() {
     final repo = buildRepository(remote: remote, auth: _FakeAuth('u1'));
 
     await const CvLocalDataSource().saveCv(
-      CvProfileDto(
-        _cv(id: 'c', title: 'C-local', updatedAt: DateTime(2024, 3)),
-      ),
+      CvProfileDto(_cv(id: 'c', title: 'C-local', updatedAt: DateTime(2024, 3))),
     );
 
     await repo.pullAndReconcile(); // must not throw / hang
 
     final local = await repo.getAllCvs();
-    expect(local.map((cv) => cv.id), [
-      'c',
-    ], reason: 'local untouched when offline');
+    expect(local.map((cv) => cv.id), ['c'], reason: 'local untouched when offline');
   });
 
   test('anonymous → account upgrade keeps the user CVs (same uid)', () async {
@@ -193,9 +151,7 @@ void main() {
     final repo = buildRepository(remote: remote, auth: auth);
 
     // Guest builds a CV; it mirrors to the cloud under the guest uid.
-    await repo.saveCv(
-      _cv(id: 'a', title: 'Guest CV', updatedAt: DateTime(2024, 5)),
-    );
+    await repo.saveCv(_cv(id: 'a', title: 'Guest CV', updatedAt: DateTime(2024, 5)));
     await _flushMirror();
     expect(remote.store['u1']?.containsKey('a'), isTrue);
 
@@ -268,5 +224,6 @@ class _FakeAuth implements AuthRepository {
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) =>
+      super.noSuchMethod(invocation);
 }
