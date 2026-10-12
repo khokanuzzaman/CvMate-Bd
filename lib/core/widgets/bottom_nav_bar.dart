@@ -117,19 +117,46 @@ class _CenterAction extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  /// Circle diameter, from DESIGN_TOKENS.md ("raised amber circle (50px)").
+  static const double _circleSize = 50;
+
+  /// How far the circle rises above the bar's top edge.
+  static const double _lift = 16;
+
+  /// Matches the 24px icon slot of the regular [_NavButton]s so the "Tailor"
+  /// label sits on the same baseline as its neighbours.
+  static const double _iconSlot = 24;
+
   @override
   Widget build(BuildContext context) {
+    // The circle is a non-layout (Positioned) child that floats above the bar,
+    // so the cell only reserves space for the label — exactly like the other
+    // items — and the bar keeps its fixed height regardless of circle size.
     return InkWell(
       onTap: onTap,
-      child: Transform.translate(
-        offset: const Offset(0, -16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: _iconSlot),
+              const SizedBox(height: AppSpacing.s4),
+              Text(
+                item.label,
+                style: AppTextStyles.hint.copyWith(
+                  color: selected ? AppColors.primary : AppColors.muted2,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            top: -_lift,
+            child: Container(
+              width: _circleSize,
+              height: _circleSize,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: AppColors.accent,
@@ -139,16 +166,8 @@ class _CenterAction extends StatelessWidget {
               ),
               child: Icon(item.icon, size: 24, color: AppColors.onAccent),
             ),
-            const SizedBox(height: AppSpacing.s4),
-            Text(
-              item.label,
-              style: AppTextStyles.hint.copyWith(
-                color: selected ? AppColors.primary : AppColors.muted2,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
