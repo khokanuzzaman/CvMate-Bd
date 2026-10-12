@@ -11,6 +11,7 @@ abstract final class RouteNames {
   static const String cvBuilder = 'cv-builder';
   static const String cvPreview = 'cv-preview';
   static const String cvPdfPreview = 'cv-pdf-preview';
+  static const String cvTemplate = 'cv-template';
   static const String aiImprove = 'ai-improve';
   static const String coverLetter = 'cover-letter';
   static const String jobTracker = 'job-tracker';
@@ -34,6 +35,7 @@ abstract final class RouteNames {
   static const String cvBuilderPath = '/cvs/builder';
   static const String cvPreviewPath = '/cvs/preview';
   static const String cvPdfPreviewPath = '/cvs/pdf-preview';
+  static const String cvTemplatePath = '/cvs/template';
   static const String aiImprovePath = '/cvs/ai-improve';
   static const String coverLetterPath = '/cover-letter';
   static const String jobTrackerPath = '/job-tracker';

@@ -40,3 +40,14 @@ jobs:
 
       - name: Test
         run: flutter test
+
+      # The screenshot test renders the key screens at 390x844 into
+      # build/screenshots/; keep them so reviewers can look at the PNGs.
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: build/screenshots/
+          if-no-files-found: ignore
+          retention-days: 14

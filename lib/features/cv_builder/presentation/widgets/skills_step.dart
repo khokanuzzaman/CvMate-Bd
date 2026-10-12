@@ -1,194 +1,168 @@
-import 'package:careermatebd/core/widgets/custom_button.dart';
-import 'package:careermatebd/core/widgets/custom_card.dart';
-import 'package:careermatebd/core/widgets/custom_empty_state.dart';
-import 'package:careermatebd/core/widgets/custom_text_field.dart';
+import 'package:careermatebd/app/constants/app_strings.dart';
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_radii.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
+import 'package:careermatebd/core/widgets/section_label.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/skill_info.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
-import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_collection_item_card.dart';
-import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_step_section.dart';
+import 'package:careermatebd/features/cv_builder/presentation/utils/suggested_skills.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/skill_chips.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SkillsStep extends ConsumerWidget {
+/// Skills section: add input, removable skill chips and suggested skills.
+class SkillsStep extends ConsumerStatefulWidget {
   const SkillsStep({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final skills = ref.watch(cvBuilderControllerProvider).draft.skills;
-    final notifier = ref.read(cvBuilderControllerProvider.notifier);
-
-    return CvStepSection(
-      title: 'Skills',
-      description:
-          'Add tools, technologies, and practical strengths relevant to the jobs you want.',
-      helper:
-          'Try to include at least two strong skills. Focus on role-relevant keywords, not generic buzzwords.',
-      child: Column(
-        children: [
-          if (skills.isEmpty)
-            CustomCard(
-              child: CustomEmptyState(
-                title: 'No skills added yet',
-                message:
-                    'Add technical and practical skills such as Flutter, Firebase, communication, or problem solving.',
-                icon: Icons.psychology_alt_outlined,
-                actionLabel: 'Add skill',
-                onAction: () =>
-                    _openSkillSheet(context, onSave: notifier.addSkill),
-              ),
-            )
-          else ...[
-            for (final item in skills) ...[
-              CvCollectionItemCard(
-                title: item.name,
-                subtitle: item.level.trim().isEmpty
-                    ? 'Skill'
-                    : 'Level: ${item.level}',
-                details: const [],
-                onEdit: () => _openSkillSheet(
-                  context,
-                  initialValue: item,
-                  onSave: notifier.updateSkill,
-                ),
-                onDelete: () => notifier.removeSkill(item.id),
-              ),
-              const SizedBox(height: 14),
-            ],
-          ],
-          CustomButton.secondary(
-            label: skills.isEmpty ? 'Add skill' : 'Add another skill',
-            icon: Icons.add_rounded,
-            onPressed: () =>
-                _openSkillSheet(context, onSave: notifier.addSkill),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openSkillSheet(
-    BuildContext context, {
-    SkillInfo? initialValue,
-    required ValueChanged<SkillInfo> onSave,
-  }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) {
-        return _SkillEditorSheet(initialValue: initialValue, onSave: onSave);
-      },
-    );
-  }
+  ConsumerState<SkillsStep> createState() => _SkillsStepState();
 }
 
-class _SkillEditorSheet extends StatefulWidget {
-  const _SkillEditorSheet({this.initialValue, required this.onSave});
-
-  final SkillInfo? initialValue;
-  final ValueChanged<SkillInfo> onSave;
-
-  @override
-  State<_SkillEditorSheet> createState() => _SkillEditorSheetState();
-}
-
-class _SkillEditorSheetState extends State<_SkillEditorSheet> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
-  late String _level;
-
-  static const _levels = [
-    '',
-    'Beginner',
-    'Intermediate',
-    'Advanced',
-    'Comfortable',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(
-      text: widget.initialValue?.name ?? '',
-    );
-    _level = widget.initialValue?.level ?? '';
-  }
+class _SkillsStepState extends ConsumerState<SkillsStep> {
+  final _controller = TextEditingController();
+  final _focusNode = FocusNode();
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  void _add(String raw) {
+    final name = raw.trim();
+    if (name.isNotEmpty) {
+      final skills = ref.read(cvBuilderControllerProvider).draft.skills;
+      final exists = skills.any(
+        (skill) => skill.name.trim().toLowerCase() == name.toLowerCase(),
+      );
+      if (!exists) {
+        ref
+            .read(cvBuilderControllerProvider.notifier)
+            .addSkill(SkillInfo.empty().copyWith(name: name));
+      }
+    }
+    _controller.clear();
+    _focusNode.requestFocus();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.initialValue != null;
+    final draft = ref.watch(cvBuilderControllerProvider).draft;
+    final notifier = ref.read(cvBuilderControllerProvider.notifier);
+    final skills = draft.skills;
+    final suggestions = SuggestedSkills.forRole(
+      draft.personalInfo.desiredRole,
+      existing: skills.map((skill) => skill.name),
+    );
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: SectionLabel(AppStrings.builderSkillsLabel),
+        ),
+        const SizedBox(height: AppSpacing.s10),
+        _SkillInput(
+          controller: _controller,
+          focusNode: _focusNode,
+          onSubmit: _add,
+        ),
+        const SizedBox(height: AppSpacing.s4),
+        Wrap(
+          spacing: AppSpacing.s8,
+          children: [
+            for (final skill in skills)
+              SkillChip(
+                key: ValueKey(skill.id),
+                name: skill.name,
+                onRemove: () => notifier.removeSkill(skill.id),
+              ),
+          ],
+        ),
+        if (suggestions.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.s4),
+          Text(AppStrings.builderSuggested, style: AppTextStyles.caption),
+          Wrap(
+            spacing: AppSpacing.s8,
             children: [
-              Text(
-                isEditing ? 'Edit skill' : 'Add skill',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _nameController,
-                label: 'Skill name',
-                hintText: 'Flutter',
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Skill name is required.'
-                    : null,
-              ),
-              const SizedBox(height: 14),
-              DropdownButtonFormField<String>(
-                initialValue: _level,
-                decoration: const InputDecoration(labelText: 'Skill level'),
-                items: [
-                  for (final level in _levels)
-                    DropdownMenuItem<String>(
-                      value: level,
-                      child: Text(level.isEmpty ? 'Not specified' : level),
-                    ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _level = value ?? '';
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              CustomButton(
-                label: isEditing ? 'Update skill' : 'Save skill',
-                onPressed: () {
-                  if (!_formKey.currentState!.validate()) {
-                    return;
-                  }
-
-                  final nextValue = (widget.initialValue ?? SkillInfo.empty())
-                      .copyWith(
-                        name: _nameController.text.trim(),
-                        level: _level,
-                      );
-
-                  widget.onSave(nextValue);
-                  Navigator.of(context).pop();
-                },
-              ),
+              for (final name in suggestions)
+                SuggestedSkillChip(name: name, onAdd: () => _add(name)),
             ],
           ),
-        ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SkillInput extends StatelessWidget {
+  const _SkillInput({
+    required this.controller,
+    required this.focusNode,
+    required this.onSubmit,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final ValueChanged<String> onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(left: AppSpacing.s16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.card - 4),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              focusNode: focusNode,
+              textInputAction: TextInputAction.done,
+              textCapitalization: TextCapitalization.words,
+              onSubmitted: onSubmit,
+              style: AppTextStyles.bodySm,
+              decoration: const InputDecoration(
+                hintText: AppStrings.builderSkillInputHint,
+                filled: false,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+              ),
+            ),
+          ),
+          Semantics(
+            button: true,
+            label: AppStrings.builderAddSkill,
+            child: InkWell(
+              onTap: () => onSubmit(controller.text),
+              borderRadius: AppRadii.iconTileRadius,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.s4 + AppSpacing.s4),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: AppRadii.iconTileRadius,
+                  ),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    color: AppColors.onPrimary,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

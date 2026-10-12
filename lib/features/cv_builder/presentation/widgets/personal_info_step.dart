@@ -1,10 +1,18 @@
+import 'package:careermatebd/app/constants/app_strings.dart';
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_radii.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/utils/validators.dart';
-import 'package:careermatebd/core/widgets/custom_text_field.dart';
+import 'package:careermatebd/core/widgets/app_text_field.dart';
+import 'package:careermatebd/core/widgets/dashed_border.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/personal_info.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
-import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_step_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Personal page: photo placeholder, name, headline, phone / location and
+/// links, plus the CV title and email the app requires.
 class PersonalInfoStep extends ConsumerWidget {
   const PersonalInfoStep({super.key, required this.showValidationErrors});
 
@@ -12,112 +20,215 @@ class PersonalInfoStep extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final draft = ref.watch(cvBuilderControllerProvider).draft;
+    final draft = ref.read(cvBuilderControllerProvider).draft;
     final notifier = ref.read(cvBuilderControllerProvider.notifier);
     final info = draft.personalInfo;
-    final autoValidate = showValidationErrors
+    final autovalidate = showValidationErrors
         ? AutovalidateMode.always
         : AutovalidateMode.disabled;
 
-    return CvStepSection(
-      title: 'Personal information',
-      description:
-          'This section should make it easy for recruiters to contact you quickly.',
-      child: Column(
-        children: [
-          CustomTextField(
-            initialValue: draft.title,
-            label: 'CV title',
-            hintText: 'Software Engineer CV',
-            helperText: 'This helps you identify saved CVs later.',
-            autovalidateMode: autoValidate,
-            validator: (value) =>
-                Validators.requiredText(value, fieldName: 'CV title'),
-            onChanged: notifier.updateTitle,
+    void update(PersonalInfo Function(PersonalInfo current) change) {
+      final current = ref.read(cvBuilderControllerProvider).draft.personalInfo;
+      notifier.updatePersonalInfo(change(current));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _PhotoBlock(),
+        const SizedBox(height: AppSpacing.s22),
+        AppTextField(
+          initialValue: info.fullName,
+          label: AppStrings.builderFullName,
+          hintText: AppStrings.builderFullNameHint,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          fillColor: AppColors.surface,
+          autovalidateMode: autovalidate,
+          validator: (value) => Validators.requiredText(
+            value,
+            fieldName: AppStrings.builderFullName,
           ),
-          const SizedBox(height: 16),
-          CustomTextField(
-            initialValue: info.fullName,
-            label: 'Full name',
-            hintText: 'Khokan Uzzaman',
-            autovalidateMode: autoValidate,
-            validator: (value) =>
-                Validators.requiredText(value, fieldName: 'Full name'),
-            onChanged: (value) =>
-                notifier.updatePersonalInfo(info.copyWith(fullName: value)),
+          onChanged: (value) => update((i) => i.copyWith(fullName: value)),
+        ),
+        const SizedBox(height: AppSpacing.s16),
+        AppTextField(
+          initialValue: info.desiredRole,
+          label: AppStrings.builderHeadline,
+          hintText: AppStrings.builderHeadlineHint,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          fillColor: AppColors.surface,
+          autovalidateMode: autovalidate,
+          validator: (value) => Validators.requiredText(
+            value,
+            fieldName: AppStrings.builderHeadline,
           ),
-          const SizedBox(height: 16),
-          CustomTextField(
-            initialValue: info.desiredRole,
-            label: 'Target role',
-            hintText: 'Flutter Developer',
-            autovalidateMode: autoValidate,
-            validator: (value) =>
-                Validators.requiredText(value, fieldName: 'Target role'),
-            onChanged: (value) =>
-                notifier.updatePersonalInfo(info.copyWith(desiredRole: value)),
+          onChanged: (value) => update((i) => i.copyWith(desiredRole: value)),
+        ),
+        const SizedBox(height: AppSpacing.s16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: AppTextField(
+                initialValue: info.phone,
+                label: AppStrings.builderPhone,
+                hintText: AppStrings.builderPhoneHint,
+                keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.next,
+                fillColor: AppColors.surface,
+                autovalidateMode: autovalidate,
+                validator: Validators.bangladeshPhone,
+                onChanged: (value) => update((i) => i.copyWith(phone: value)),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s12),
+            Expanded(
+              child: AppTextField(
+                initialValue: info.address,
+                label: AppStrings.builderLocation,
+                hintText: AppStrings.builderLocationHint,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
+                fillColor: AppColors.surface,
+                autovalidateMode: autovalidate,
+                validator: (value) => Validators.requiredText(
+                  value,
+                  fieldName: AppStrings.builderLocation,
+                ),
+                onChanged: (value) => update((i) => i.copyWith(address: value)),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.s16),
+        AppTextField(
+          initialValue: info.linkedInUrl,
+          label: AppStrings.builderWebsite,
+          hintText: AppStrings.builderWebsiteHint,
+          keyboardType: TextInputType.url,
+          textInputAction: TextInputAction.next,
+          fillColor: AppColors.surface,
+          autovalidateMode: autovalidate,
+          validator: Validators.optionalUrl,
+          onChanged: (value) => update((i) => i.copyWith(linkedInUrl: value)),
+        ),
+        const SizedBox(height: AppSpacing.s16),
+        // Fields the app requires or stores that the design does not show.
+        AppTextField(
+          initialValue: info.email,
+          label: AppStrings.builderEmail,
+          hintText: AppStrings.builderEmailHint,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          fillColor: AppColors.surface,
+          autovalidateMode: autovalidate,
+          validator: Validators.email,
+          onChanged: (value) => update((i) => i.copyWith(email: value)),
+        ),
+        const SizedBox(height: AppSpacing.s16),
+        AppTextField(
+          initialValue: info.portfolioUrl,
+          label: AppStrings.builderPortfolio,
+          hintText: AppStrings.builderPortfolioHint,
+          keyboardType: TextInputType.url,
+          textInputAction: TextInputAction.next,
+          fillColor: AppColors.surface,
+          autovalidateMode: autovalidate,
+          validator: Validators.optionalUrl,
+          onChanged: (value) => update((i) => i.copyWith(portfolioUrl: value)),
+        ),
+        const SizedBox(height: AppSpacing.s16),
+        AppTextField(
+          initialValue: draft.title,
+          label: AppStrings.builderCvTitle,
+          hintText: AppStrings.builderCvTitleHint,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.done,
+          fillColor: AppColors.surface,
+          autovalidateMode: autovalidate,
+          validator: (value) => Validators.requiredText(
+            value,
+            fieldName: AppStrings.builderCvTitle,
           ),
-          const SizedBox(height: 16),
-          CustomTextField(
-            initialValue: info.email,
-            label: 'Email',
-            hintText: 'name@email.com',
-            keyboardType: TextInputType.emailAddress,
-            textCapitalization: TextCapitalization.none,
-            autovalidateMode: autoValidate,
-            validator: Validators.email,
-            onChanged: (value) =>
-                notifier.updatePersonalInfo(info.copyWith(email: value)),
+          onChanged: notifier.updateTitle,
+        ),
+      ],
+    );
+  }
+}
+
+/// Profile photo placeholder. Photo upload is not implemented (the CV model has
+/// no photo field), so the button is shown disabled instead of faking it.
+class _PhotoBlock extends StatelessWidget {
+  const _PhotoBlock();
+
+  static const double _size = 80;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        DashedBorder(
+          circle: true,
+          color: AppColors.placeholder.withValues(alpha: 0.6),
+          child: Container(
+            width: _size,
+            height: _size,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: AppColors.primarySoft,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.person_outline_rounded,
+              size: 34,
+              color: AppColors.primary,
+            ),
           ),
-          const SizedBox(height: 16),
-          CustomTextField(
-            initialValue: info.phone,
-            label: 'Phone',
-            hintText: '01XXXXXXXXX',
-            keyboardType: TextInputType.phone,
-            textCapitalization: TextCapitalization.none,
-            autovalidateMode: autoValidate,
-            validator: Validators.bangladeshPhone,
-            onChanged: (value) =>
-                notifier.updatePersonalInfo(info.copyWith(phone: value)),
+        ),
+        const SizedBox(width: AppSpacing.s18),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppStrings.builderPhotoTitle,
+                style: AppTextStyles.itemTitle,
+              ),
+              const SizedBox(height: AppSpacing.s4),
+              Text(AppStrings.builderPhotoHint, style: AppTextStyles.caption),
+              const SizedBox(height: AppSpacing.s8),
+              // TODO(photo-upload): enable once the CV model can store a photo.
+              Tooltip(
+                message: AppStrings.builderPhotoComingSoon,
+                child: Opacity(
+                  opacity: 0.55,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s16,
+                      vertical: AppSpacing.s8,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primarySoft,
+                      borderRadius: AppRadii.pillRadius,
+                    ),
+                    child: Text(
+                      AppStrings.builderPhotoUpload,
+                      style: AppTextStyles.bodySm.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          CustomTextField(
-            initialValue: info.address,
-            label: 'Address',
-            hintText: 'Dhaka, Bangladesh',
-            autovalidateMode: autoValidate,
-            validator: (value) =>
-                Validators.requiredText(value, fieldName: 'Address'),
-            onChanged: (value) =>
-                notifier.updatePersonalInfo(info.copyWith(address: value)),
-          ),
-          const SizedBox(height: 16),
-          CustomTextField(
-            initialValue: info.linkedInUrl,
-            label: 'LinkedIn URL',
-            hintText: 'https://linkedin.com/in/username',
-            keyboardType: TextInputType.url,
-            textCapitalization: TextCapitalization.none,
-            autovalidateMode: autoValidate,
-            validator: Validators.optionalUrl,
-            onChanged: (value) =>
-                notifier.updatePersonalInfo(info.copyWith(linkedInUrl: value)),
-          ),
-          const SizedBox(height: 16),
-          CustomTextField(
-            initialValue: info.portfolioUrl,
-            label: 'Portfolio / GitHub URL',
-            hintText: 'https://github.com/username',
-            keyboardType: TextInputType.url,
-            textCapitalization: TextCapitalization.none,
-            autovalidateMode: autoValidate,
-            validator: Validators.optionalUrl,
-            onChanged: (value) =>
-                notifier.updatePersonalInfo(info.copyWith(portfolioUrl: value)),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
