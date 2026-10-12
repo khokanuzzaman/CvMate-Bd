@@ -21,8 +21,18 @@ final interviewPrepControllerProvider =
     );
 
 class InterviewPrepController extends Notifier<InterviewPrepState> {
+  /// The answer text each question was generated with, to tell edits apart.
+  final Map<String, String> _generatedAnswers = {};
+
   @override
   InterviewPrepState build() => InterviewPrepState.initial();
+
+  /// Whether any answer differs from what was generated. Questions with no
+  /// known original (a reopened saved session) count as edited, so nothing the
+  /// user may have written is replaced without asking.
+  bool get hasEditedAnswers => state.questions.any(
+    (question) => _generatedAnswers[question.id] != question.answerText,
+  );
 
   Future<void> initialize({bool force = false}) async {
     if (state.hasInitialized && !force) {
@@ -165,9 +175,11 @@ class InterviewPrepController extends Notifier<InterviewPrepState> {
 
     result.when(
       success: (data) {
+        final questions = _toQuestions(data);
+        _rememberGenerated(questions, replace: true);
         state = state.copyWith(
           isGenerating: false,
-          questions: _toQuestions(data),
+          questions: questions,
           clearErrorMessage: true,
         );
       },
@@ -205,6 +217,7 @@ class InterviewPrepController extends Notifier<InterviewPrepState> {
           for (final question in _toQuestions(data))
             if (known.add(_normalizeQuestion(question.question))) question,
         ];
+        _rememberGenerated(fresh);
         state = state.copyWith(
           isGenerating: false,
           questions: [...state.questions, ...fresh],
@@ -255,6 +268,18 @@ class InterviewPrepController extends Notifier<InterviewPrepState> {
           isFavorite: false,
         ),
     ];
+  }
+
+  void _rememberGenerated(
+    List<InterviewPrepQuestion> questions, {
+    bool replace = false,
+  }) {
+    if (replace) {
+      _generatedAnswers.clear();
+    }
+    for (final question in questions) {
+      _generatedAnswers[question.id] = question.answerText;
+    }
   }
 
   String _normalizeQuestion(String value) =>
@@ -372,6 +397,7 @@ class InterviewPrepController extends Notifier<InterviewPrepState> {
       return;
     }
 
+    _generatedAnswers.clear();
     state = state.copyWith(
       activeSessionId: session.id,
       activeSessionCreatedAt: session.createdAt,
@@ -388,6 +414,7 @@ class InterviewPrepController extends Notifier<InterviewPrepState> {
   }
 
   void startOver() {
+    _generatedAnswers.clear();
     final selectedCv = state.selectedCv;
     state = state.copyWith(
       activeSessionId: null,

@@ -77,6 +77,9 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
   /// language through the controller's existing language option.
   Future<void> _toggleLanguage() async {
     final controller = ref.read(interviewPrepControllerProvider.notifier);
+    if (controller.hasEditedAnswers && !await _confirmReplaceAnswers()) {
+      return;
+    }
     final toBangla =
         ref.read(interviewPrepControllerProvider).language ==
         AiOutputLanguage.english;
@@ -91,6 +94,28 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
             : AppStrings.interviewRegeneratedEnglish,
       );
     }
+  }
+
+  /// Regenerating replaces every answer; ask first when some were edited.
+  Future<bool> _confirmReplaceAnswers() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(AppStrings.interviewReplaceEditedTitle),
+        content: const Text(AppStrings.interviewReplaceEditedBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(AppStrings.interviewReplaceEditedCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(AppStrings.interviewReplaceEditedContinue),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true && mounted;
   }
 
   Future<void> _generateMore() async {

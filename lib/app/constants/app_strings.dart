@@ -483,6 +483,10 @@ abstract final class AppStrings {
   static const String atsCheckAgainstJob = 'Check against a job post';
   static const String atsMenuImproveWithAi = 'Improve summary with AI';
   static const String atsMenuOpenAiImprove = 'Open AI Improve';
+  static const String atsMenuApplySkills = 'Apply detected skills';
+  static const String atsMenuCopySuggestions = 'Copy suggestions';
+  static const String atsNeedsJobPost =
+      'Paste a job post first — tap "Check against a job post".';
   static const String atsAiSheetTitle = 'Improve with AI';
   static const String atsAiSheetBody =
       'Generate an editable summary or objective. Review it and keep only '
@@ -525,6 +529,11 @@ abstract final class AppStrings {
       count == 1 ? 'Added 1 new question.' : 'Added $count new questions.';
   static const String interviewNoNewQuestions =
       'No new questions this time. Try again or adjust the job details.';
+  static const String interviewReplaceEditedTitle = 'Replace your answers?';
+  static const String interviewReplaceEditedBody =
+      'This replaces your edited answers. Continue?';
+  static const String interviewReplaceEditedCancel = 'Keep my answers';
+  static const String interviewReplaceEditedContinue = 'Continue';
   static const String interviewRegeneratedBangla =
       'Questions regenerated in Bangla.';
   static const String interviewRegeneratedEnglish =

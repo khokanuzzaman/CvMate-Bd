@@ -156,4 +156,85 @@ void main() {
     final questions = container.read(interviewPrepControllerProvider).questions;
     expect(questions.map((q) => q.question), [_extra.question]);
   });
+
+  group('hasEditedAnswers', () {
+    test('is false for a freshly generated set', () async {
+      final (container, _) = await _setUp();
+      final controller = container.read(
+        interviewPrepControllerProvider.notifier,
+      );
+      expect(controller.hasEditedAnswers, isFalse);
+
+      await controller.generateQuestions();
+
+      expect(controller.hasEditedAnswers, isFalse);
+    });
+
+    test('turns true on an edit and false again when it is reverted', () async {
+      final (container, _) = await _setUp();
+      final controller = container.read(
+        interviewPrepControllerProvider.notifier,
+      );
+      await controller.generateQuestions();
+      final first = container
+          .read(interviewPrepControllerProvider)
+          .questions
+          .first;
+
+      controller.updateAnswer(first.id, 'Mine.');
+      expect(controller.hasEditedAnswers, isTrue);
+
+      controller.updateAnswer(first.id, first.answerText);
+      expect(controller.hasEditedAnswers, isFalse);
+    });
+
+    test('questions added by Generate more start unedited', () async {
+      final (container, ai) = await _setUp();
+      final controller = container.read(
+        interviewPrepControllerProvider.notifier,
+      );
+      await controller.generateQuestions();
+      ai.interviewQuestions = [...ai.interviewQuestions, _extra];
+
+      await controller.generateMoreQuestions();
+
+      expect(controller.hasEditedAnswers, isFalse);
+    });
+
+    test(
+      'a reopened saved session counts as edited (originals unknown)',
+      () async {
+        final (container, _) = await _setUp();
+        final controller = container.read(
+          interviewPrepControllerProvider.notifier,
+        );
+        await controller.generateQuestions();
+        await controller.saveSession();
+        final sessionId = container
+            .read(interviewPrepControllerProvider)
+            .activeSessionId!;
+        await controller.reload();
+
+        controller.loadSession(sessionId);
+
+        expect(controller.hasEditedAnswers, isTrue);
+      },
+    );
+
+    test('start over forgets the old answers', () async {
+      final (container, _) = await _setUp();
+      final controller = container.read(
+        interviewPrepControllerProvider.notifier,
+      );
+      await controller.generateQuestions();
+      controller.updateAnswer(
+        container.read(interviewPrepControllerProvider).questions.first.id,
+        'Mine.',
+      );
+
+      controller.startOver();
+
+      expect(controller.hasEditedAnswers, isFalse);
+    });
+  });
 }

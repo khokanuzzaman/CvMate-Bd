@@ -16,6 +16,7 @@ import 'package:careermatebd/features/tailoring/presentation/screens/tailoring_s
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../helpers/clipboard_mock.dart';
 import '../../../../helpers/design_cv.dart';
 import '../../../../helpers/fake_cv_repository.dart';
 import '../../../../helpers/routed_screen_harness.dart';
@@ -171,6 +172,116 @@ void main() {
     expect(find.byType(CustomErrorView), findsOneWidget);
     expect(find.text(AppStrings.atsLoadErrorTitle), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
+  });
+
+  group('job-match actions (⋮ menu)', () {
+    // Names Firebase, which the design CV's project uses but its skills list
+    // does not — so it is a skill the CV can honestly gain.
+    const jobPost =
+        'We need a frontend developer with React, Firebase and Git to build '
+        'accessible interfaces and ship features every sprint.';
+
+    Future<void> choose(WidgetTester tester, String label) async {
+      await tester.tap(find.byTooltip(AppStrings.tailorMoreOptions));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label));
+      await tester.pump();
+      await tester.pumpAndSettle();
+    }
+
+    test('the job post used below really yields a detectable skill', () {
+      final match = const AtsRuleEngine().analyzeJobPost(
+        profile: designCv(),
+        jobPostText: jobPost,
+      );
+      expect(match.suggestedSkillsToAdd, contains('Firebase'));
+    });
+
+    test('the job post used for "nothing to add" yields no skill', () {
+      final match = const AtsRuleEngine().analyzeJobPost(
+        profile: designCv(),
+        jobPostText:
+            'Seeking someone skilled in React, JavaScript, Git and TypeScript.',
+      );
+      expect(match.suggestedSkillsToAdd, isEmpty);
+    });
+
+    testWidgets('both actions sit beside the summary generator', (
+      tester,
+    ) async {
+      await _open(tester);
+
+      await tester.tap(find.byTooltip(AppStrings.tailorMoreOptions));
+      await tester.pumpAndSettle();
+
+      for (final label in [
+        AppStrings.atsMenuImproveWithAi,
+        AppStrings.atsMenuApplySkills,
+        AppStrings.atsMenuCopySuggestions,
+        AppStrings.atsMenuOpenAiImprove,
+      ]) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+    });
+
+    testWidgets('without a job post they say what to do first', (tester) async {
+      final copied = mockClipboard(tester);
+      await _open(tester);
+
+      await choose(tester, AppStrings.atsMenuCopySuggestions);
+
+      expect(find.text(AppStrings.atsNeedsJobPost), findsOneWidget);
+      expect(copied, isEmpty);
+    });
+
+    testWidgets('Copy suggestions uses the job post pasted in Tailor', (
+      tester,
+    ) async {
+      final copied = mockClipboard(tester);
+      final app = await _open(tester);
+      app.container
+          .read(tailoringControllerProvider.notifier)
+          .updateJobPost(jobPostText: jobPost);
+
+      await choose(tester, AppStrings.atsMenuCopySuggestions);
+
+      expect(copied.single, contains('Job Match Score:'));
+      expect(copied.single, contains('Firebase'));
+      expect(find.text('Job match suggestions copied.'), findsOneWidget);
+    });
+
+    testWidgets('Apply detected skills adds them to the CV', (tester) async {
+      final repository = FakeCvRepository([designCv()]);
+      final app = await _open(tester, repository: repository);
+      app.container
+          .read(tailoringControllerProvider.notifier)
+          .updateJobPost(jobPostText: jobPost);
+
+      await choose(tester, AppStrings.atsMenuApplySkills);
+
+      final skills = repository.saved('cv-frontend')!.skills.map((s) => s.name);
+      expect(skills, contains('Firebase'));
+      expect(find.text('Detected skills added to CV.'), findsOneWidget);
+    });
+
+    testWidgets('nothing to add is reported, not silently ignored', (
+      tester,
+    ) async {
+      final repository = FakeCvRepository([designCv()]);
+      final app = await _open(tester, repository: repository);
+      app.container
+          .read(tailoringControllerProvider.notifier)
+          .updateJobPost(
+            jobPostText:
+                'Seeking someone skilled in React, JavaScript, Git and '
+                'TypeScript.',
+          );
+
+      await choose(tester, AppStrings.atsMenuApplySkills);
+
+      expect(find.text('No detected skills are ready to add.'), findsOneWidget);
+      expect(repository.saveCount, 0);
+    });
   });
 
   group('Improve with AI (⋮ menu)', () {

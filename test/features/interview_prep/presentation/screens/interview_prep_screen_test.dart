@@ -5,7 +5,9 @@ import 'package:careermatebd/core/widgets/app_chip.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
 import 'package:careermatebd/features/interview_prep/data/repositories/interview_prep_session_repository_impl.dart';
 import 'package:careermatebd/features/interview_prep/domain/entities/interview_answer_style.dart';
+import 'package:careermatebd/features/interview_prep/domain/entities/interview_prep_question.dart';
 import 'package:careermatebd/features/interview_prep/domain/entities/interview_prep_session.dart';
+import 'package:careermatebd/features/interview_prep/domain/entities/interview_question_category.dart';
 import 'package:careermatebd/features/interview_prep/domain/entities/interview_type.dart';
 import 'package:careermatebd/features/interview_prep/presentation/controllers/interview_prep_controller.dart';
 import 'package:careermatebd/features/interview_prep/presentation/controllers/interview_prep_state.dart';
@@ -336,6 +338,117 @@ void main() {
       expect(app.ai.lastInterviewLanguage, AiOutputLanguage.english);
       expect(find.textContaining('[bn]'), findsNothing);
       expect(find.text(AppStrings.interviewShowInBangla), findsOneWidget);
+    });
+  });
+
+  group('বাংলায় দেখো with edited answers', () {
+    Future<_App> edited(WidgetTester tester) async {
+      final app = await _generated(tester);
+      app.screen.container
+          .read(interviewPrepControllerProvider.notifier)
+          .updateAnswer(app.state.questions.first.id, 'My own answer.');
+      await tester.pumpAndSettle();
+      return app;
+    }
+
+    testWidgets('asks before replacing them', (tester) async {
+      final app = await edited(tester);
+
+      await _tap(tester, find.text(AppStrings.interviewShowInBangla));
+
+      expect(find.text(AppStrings.interviewReplaceEditedBody), findsOneWidget);
+      // Nothing has been regenerated yet.
+      expect(app.ai.interviewCalls, 1);
+      expect(app.state.language, AiOutputLanguage.english);
+    });
+
+    testWidgets('"Keep my answers" leaves everything as it was', (
+      tester,
+    ) async {
+      final app = await edited(tester);
+      await _tap(tester, find.text(AppStrings.interviewShowInBangla));
+
+      await _tap(tester, find.text(AppStrings.interviewReplaceEditedCancel));
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(app.ai.interviewCalls, 1);
+      expect(app.state.language, AiOutputLanguage.english);
+      expect(app.state.questions.first.answerText, 'My own answer.');
+      expect(find.text(AppStrings.interviewShowInBangla), findsOneWidget);
+    });
+
+    testWidgets('Continue regenerates in Bangla', (tester) async {
+      final app = await edited(tester);
+      await _tap(tester, find.text(AppStrings.interviewShowInBangla));
+
+      await _tap(tester, find.text(AppStrings.interviewReplaceEditedContinue));
+
+      expect(app.ai.interviewCalls, 2);
+      expect(app.state.language, AiOutputLanguage.bangla);
+      expect(app.state.questions.first.answerText, isNot('My own answer.'));
+      expect(find.text(AppStrings.interviewShowInEnglish), findsOneWidget);
+    });
+
+    testWidgets('does not ask when nothing was edited', (tester) async {
+      await _generated(tester);
+
+      await _tap(tester, find.text(AppStrings.interviewShowInBangla));
+
+      expect(find.byType(AlertDialog), findsNothing);
+    });
+
+    testWidgets('an answer edited in the Practice sheet counts too', (
+      tester,
+    ) async {
+      final app = await _generated(tester);
+      await _tap(tester, find.text(AppStrings.interviewPractice));
+      await tester.enterText(find.byType(TextField).last, 'Practised.');
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      await _tap(tester, find.text(AppStrings.interviewShowInBangla));
+
+      expect(find.text(AppStrings.interviewReplaceEditedBody), findsOneWidget);
+      expect(app.ai.interviewCalls, 1);
+    });
+
+    testWidgets('a reopened saved session always asks', (tester) async {
+      final now = DateTime.now();
+      final app = await _open(
+        tester,
+        sessions: FakeInterviewSessionRepository([
+          InterviewPrepSession(
+            id: 's1',
+            cvId: 'cv-frontend',
+            targetJobTitle: 'Designer',
+            companyName: '',
+            jobPost: '',
+            interviewType: InterviewType.hrInterview,
+            language: AiOutputLanguage.english,
+            answerStyle: InterviewAnswerStyle.professional,
+            generatedQuestions: [
+              InterviewPrepQuestion(
+                id: 'q1',
+                category: InterviewQuestionCategory.hr,
+                question: 'Why us?',
+                whyItMatters: '',
+                answerTip: '',
+                answerText: 'Saved answer.',
+                isFavorite: false,
+              ),
+            ],
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ]),
+      );
+      await _tap(tester, find.text('Designer'));
+
+      await _tap(tester, find.text(AppStrings.interviewShowInBangla));
+
+      expect(find.text(AppStrings.interviewReplaceEditedBody), findsOneWidget);
+      expect(app.ai.interviewCalls, 0);
     });
   });
 

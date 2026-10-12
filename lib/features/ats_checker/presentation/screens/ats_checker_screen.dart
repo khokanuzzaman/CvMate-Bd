@@ -104,6 +104,35 @@ class _AtsCheckerScreenState extends ConsumerState<AtsCheckerScreen> {
     await ref.read(atsCheckerControllerProvider.notifier).reload();
   }
 
+  /// Job-match actions need a match report. The screen has no job-post field
+  /// any more, so reuse the post pasted in Tailor; false when there is none.
+  Future<bool> _ensureJobMatch() async {
+    final ats = ref.read(atsCheckerControllerProvider.notifier);
+    if (ref.read(atsCheckerControllerProvider).jobMatchReport != null) {
+      return true;
+    }
+    final post = ref.read(tailoringControllerProvider).jobPostText.trim();
+    if (post.isNotEmpty) {
+      ats.updateJobPostText(post);
+      await ats.checkJobMatch();
+    }
+    return ref.read(atsCheckerControllerProvider).jobMatchReport != null;
+  }
+
+  Future<void> _runJobMatchAction(
+    Future<String?> Function(AtsCheckerController ats) action,
+  ) async {
+    final message = await _ensureJobMatch()
+        ? await action(ref.read(atsCheckerControllerProvider.notifier))
+        : AppStrings.atsNeedsJobPost;
+    if (!mounted || message == null || message.trim().isEmpty) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   void _checkAgainstJob(CvProfile cv) {
     ref.read(tailoringControllerProvider.notifier).selectCv(cv.id);
     context.push(RouteNames.tailoringPath);
@@ -140,6 +169,20 @@ class _AtsCheckerScreenState extends ConsumerState<AtsCheckerScreen> {
                           label: AppStrings.atsMenuImproveWithAi,
                           icon: Icons.auto_awesome_outlined,
                           onSelected: () => showAtsAiSheet(context),
+                        ),
+                        OverflowMenuItem(
+                          label: AppStrings.atsMenuApplySkills,
+                          icon: Icons.playlist_add_check_outlined,
+                          onSelected: () => _runJobMatchAction(
+                            (ats) => ats.applyDetectedSkillsToCv(),
+                          ),
+                        ),
+                        OverflowMenuItem(
+                          label: AppStrings.atsMenuCopySuggestions,
+                          icon: Icons.copy_all_outlined,
+                          onSelected: () => _runJobMatchAction(
+                            (ats) => ats.copyJobMatchSuggestions(),
+                          ),
                         ),
                         OverflowMenuItem(
                           label: AppStrings.atsMenuOpenAiImprove,
