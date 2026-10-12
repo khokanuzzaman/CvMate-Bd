@@ -134,10 +134,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       color: AppColors.muted2,
                     ),
                   ),
-                  validator: (value) => Validators.password(
-                    value,
-                    minLength: _minPasswordLength,
-                  ),
+                  validator: (value) =>
+                      Validators.password(value, minLength: _minPasswordLength),
                 ),
                 const SizedBox(height: AppSpacing.s10),
                 ValueListenableBuilder<TextEditingValue>(
@@ -277,7 +275,10 @@ class _TermsCheckbox extends StatelessWidget {
                     style: AppTextStyles.bodySm,
                     children: [
                       const TextSpan(text: AppStrings.registerTermsPrefix),
-                      TextSpan(text: AppStrings.registerTerms, style: linkStyle),
+                      TextSpan(
+                        text: AppStrings.registerTerms,
+                        style: linkStyle,
+                      ),
                       const TextSpan(text: AppStrings.registerTermsAnd),
                       TextSpan(
                         text: AppStrings.registerPrivacy,

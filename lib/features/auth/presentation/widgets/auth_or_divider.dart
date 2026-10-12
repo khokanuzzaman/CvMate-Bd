@@ -11,7 +11,10 @@ class AuthOrDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const line = Expanded(
-      child: SizedBox(height: 1, child: ColoredBox(color: AppColors.lineStrong)),
+      child: SizedBox(
+        height: 1,
+        child: ColoredBox(color: AppColors.lineStrong),
+      ),
     );
 
     return Row(

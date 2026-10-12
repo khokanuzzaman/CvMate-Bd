@@ -24,7 +24,8 @@ Future<void> pumpAuthScreen(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
-  Widget placeholder(String label) => Scaffold(body: Center(child: Text(label)));
+  Widget placeholder(String label) =>
+      Scaffold(body: Center(child: Text(label)));
 
   final router = GoRouter(
     initialLocation: initialLocation,

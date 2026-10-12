@@ -90,7 +90,11 @@ class _SkeletonCvCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.s10),
           const _Bar(widthFactor: 0.9, height: 7, color: AppColors.primarySoft),
           const SizedBox(height: AppSpacing.s10),
-          const _Bar(widthFactor: 0.68, height: 7, color: AppColors.primarySoft),
+          const _Bar(
+            widthFactor: 0.68,
+            height: 7,
+            color: AppColors.primarySoft,
+          ),
           const SizedBox(height: AppSpacing.s14),
           const Row(
             children: [
@@ -104,7 +108,11 @@ class _SkeletonCvCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.s14),
           const _Bar(widthFactor: 1, height: 7, color: AppColors.primarySoft),
           const SizedBox(height: AppSpacing.s10),
-          const _Bar(widthFactor: 0.58, height: 7, color: AppColors.primarySoft),
+          const _Bar(
+            widthFactor: 0.58,
+            height: 7,
+            color: AppColors.primarySoft,
+          ),
         ],
       ),
     );

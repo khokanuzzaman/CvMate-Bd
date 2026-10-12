@@ -75,7 +75,10 @@ class OnboardingScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.s16),
                     OnboardingCvIllustration(height: illustrationHeight),
                     const SizedBox(height: AppSpacing.s22),
-                    Text(AppStrings.onboardingHeadline, style: AppTextStyles.h1),
+                    Text(
+                      AppStrings.onboardingHeadline,
+                      style: AppTextStyles.h1,
+                    ),
                     const SizedBox(height: AppSpacing.s14),
                     Text(
                       AppStrings.onboardingBody,

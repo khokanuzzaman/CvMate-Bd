@@ -18,7 +18,9 @@ void main() {
     testWidgets('renders the crosshair glyph at the requested size', (
       tester,
     ) async {
-      await tester.pumpWidget(_wrap(const Center(child: BrandLogoTile(size: 88))));
+      await tester.pumpWidget(
+        _wrap(const Center(child: BrandLogoTile(size: 88))),
+      );
 
       expect(find.byIcon(Icons.gps_fixed), findsOneWidget);
       expect(tester.getSize(find.byType(BrandLogoTile)), const Size(88, 88));
