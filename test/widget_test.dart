@@ -36,8 +36,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(onboarding.seen, isTrue);
-    expect(find.text(AppStrings.homeHeroTitle), findsOneWidget);
-    expect(find.text(AppStrings.homeQuickActions), findsOneWidget);
+    expect(find.text(AppStrings.homeTitle), findsOneWidget);
+    expect(find.text(AppStrings.homeHeroCardTitle), findsOneWidget);
   });
 
   testWidgets('returning user (onboarding seen) lands on login', (

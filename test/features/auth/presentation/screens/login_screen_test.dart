@@ -121,6 +121,45 @@ void main() {
     expect(find.text(homePlaceholder), findsOneWidget);
   });
 
+  testWidgets('login accepts a 6-character password (no 8-char minimum)', (
+    tester,
+  ) async {
+    await pumpAuthScreen(
+      tester,
+      repository: repository,
+      initialLocation: '/login',
+    );
+
+    // Firebase allows 6+ characters; existing accounts must keep working.
+    await _fillCredentials(tester, password: 'abc123');
+    await tester.tap(_logInButton);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('at least'), findsNothing);
+    expect(repository.signInEmails, ['rahim@example.com']);
+    expect(find.text(homePlaceholder), findsOneWidget);
+  });
+
+  testWidgets('login still rejects passwords under 6 characters', (
+    tester,
+  ) async {
+    await pumpAuthScreen(
+      tester,
+      repository: repository,
+      initialLocation: '/login',
+    );
+
+    await _fillCredentials(tester, password: 'abc12');
+    await tester.tap(_logInButton);
+    await tester.pump();
+
+    expect(
+      find.text('Password must be at least 6 characters.'),
+      findsOneWidget,
+    );
+    expect(repository.signInEmails, isEmpty);
+  });
+
   testWidgets('a failed sign-in shows the error banner and stays on login', (
     tester,
   ) async {
