@@ -1,114 +1,114 @@
 import 'package:careermatebd/app/constants/app_constants.dart';
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
-import 'package:careermatebd/core/widgets/custom_button.dart';
-import 'package:careermatebd/core/widgets/custom_card.dart';
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
+import 'package:careermatebd/core/widgets/app_buttons.dart';
+import 'package:careermatebd/core/widgets/brand_logo_tile.dart';
+import 'package:careermatebd/core/widgets/pager_dots.dart';
+import 'package:careermatebd/features/auth/presentation/widgets/auth_switch_link.dart';
+import 'package:careermatebd/features/onboarding/presentation/controllers/onboarding_seen_controller.dart';
+import 'package:careermatebd/features/onboarding/presentation/widgets/onboarding_cv_illustration.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class OnboardingScreen extends StatelessWidget {
+/// First-run value prop: tailored-CV illustration, headline, and entry points.
+/// Leaving it (Get started / Skip / Log in) records that onboarding was seen so
+/// the router skips it on later launches.
+class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
 
+  // Only the first page is designed; the dots are ready for a future PageView.
+  static const int _pageCount = 3;
+
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final illustrationHeight = (screenHeight * 0.42).clamp(240.0, 380.0);
 
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Center(
+          child: Align(
+            alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(
                 maxWidth: AppConstants.contentMaxWidth,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [colorScheme.primary, const Color(0xFF144B7D)],
-                      ),
-                      borderRadius: BorderRadius.circular(32),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s22,
+                  AppSpacing.s12,
+                  AppSpacing.s22,
+                  AppSpacing.s16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.16),
-                            borderRadius: BorderRadius.circular(999),
+                        const BrandLogoTile(size: 36),
+                        const SizedBox(width: AppSpacing.s12),
+                        Text(AppStrings.brandName, style: AppTextStyles.title),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () => _enterApp(context, ref),
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(
+                              AppSpacing.minTouchTarget,
+                              AppSpacing.minTouchTarget,
+                            ),
+                            foregroundColor: AppColors.muted2,
                           ),
                           child: Text(
-                            AppStrings.shortTagline,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: Colors.white,
+                            AppStrings.onboardingSkip,
+                            style: AppTextStyles.body.copyWith(
+                              color: AppColors.muted2,
+                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          AppStrings.onboardingHeadline,
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          AppStrings.onboardingBody,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.88),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  const _OnboardingPoint(
-                    icon: Icons.description_outlined,
-                    title: 'Create ATS-friendly CVs',
-                    description:
-                        'Step-by-step CV building for freshers, internships, and junior professionals.',
-                  ),
-                  const SizedBox(height: 16),
-                  const _OnboardingPoint(
-                    icon: Icons.auto_awesome_outlined,
-                    title: 'Improve writing with AI',
-                    description:
-                        'Sharpen summaries, cover letters, and experience bullets without inventing fake achievements.',
-                  ),
-                  const SizedBox(height: 16),
-                  const _OnboardingPoint(
-                    icon: Icons.track_changes_outlined,
-                    title: 'Track applications clearly',
-                    description:
-                        'Keep company names, interview stages, and follow-ups organized instead of scattered in notes.',
-                  ),
-                  const SizedBox(height: 24),
-                  CustomButton(
-                    label: AppStrings.startBuilding,
-                    icon: Icons.arrow_forward_rounded,
-                    onPressed: () => context.push(RouteNames.loginPath),
-                  ),
-                  const SizedBox(height: 12),
-                  CustomButton.secondary(
-                    label: AppStrings.createAccount,
-                    onPressed: () => context.push(RouteNames.registerPath),
-                  ),
-                  const SizedBox(height: 12),
-                  CustomButton.secondary(
-                    label: AppStrings.exploreAsGuest,
-                    onPressed: () => context.go(RouteNames.homePath),
-                  ),
-                ],
+                    const SizedBox(height: AppSpacing.s16),
+                    OnboardingCvIllustration(height: illustrationHeight),
+                    const SizedBox(height: AppSpacing.s22),
+                    Text(AppStrings.onboardingHeadline, style: AppTextStyles.h1),
+                    const SizedBox(height: AppSpacing.s14),
+                    Text(
+                      AppStrings.onboardingBody,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.muted,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s22),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: PagerDots(
+                        count: _pageCount,
+                        index: 0,
+                        dotSize: 6,
+                        activeWidth: 22,
+                        activeColor: AppColors.primary,
+                        inactiveColor: AppColors.lineStrong,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s20),
+                    PrimaryButton(
+                      label: AppStrings.onboardingGetStarted,
+                      trailingIcon: Icons.arrow_forward_rounded,
+                      onPressed: () => _enterApp(context, ref),
+                    ),
+                    const SizedBox(height: AppSpacing.s6),
+                    AuthSwitchLink(
+                      prompt: AppStrings.authHaveAccount,
+                      actionLabel: AppStrings.authLogIn,
+                      onTap: () => _logIn(context, ref),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -116,47 +116,22 @@ class OnboardingScreen extends StatelessWidget {
       ),
     );
   }
-}
 
-class _OnboardingPoint extends StatelessWidget {
-  const _OnboardingPoint({
-    required this.icon,
-    required this.title,
-    required this.description,
-  });
+  /// Get started / Skip: explore the app as a guest, like the previous
+  /// "Explore first" entry point.
+  Future<void> _enterApp(BuildContext context, WidgetRef ref) async {
+    await ref.read(onboardingSeenControllerProvider.notifier).markSeen();
+    if (!context.mounted) {
+      return;
+    }
+    context.go(RouteNames.homePath);
+  }
 
-  final IconData icon;
-  final String title;
-  final String description;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return CustomCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-            foregroundColor: colorScheme.primary,
-            child: Icon(icon),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: theme.textTheme.titleMedium),
-                const SizedBox(height: 6),
-                Text(description, style: theme.textTheme.bodyMedium),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  Future<void> _logIn(BuildContext context, WidgetRef ref) async {
+    await ref.read(onboardingSeenControllerProvider.notifier).markSeen();
+    if (!context.mounted) {
+      return;
+    }
+    context.push(RouteNames.loginPath);
   }
 }

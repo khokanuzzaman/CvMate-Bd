@@ -1,11 +1,21 @@
-import 'package:careermatebd/app/constants/app_constants.dart';
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_radii.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/utils/validators.dart';
-import 'package:careermatebd/core/widgets/custom_app_bar.dart';
-import 'package:careermatebd/core/widgets/custom_button.dart';
-import 'package:careermatebd/core/widgets/custom_card.dart';
-import 'package:careermatebd/core/widgets/custom_text_field.dart';
+import 'package:careermatebd/core/widgets/app_buttons.dart';
+import 'package:careermatebd/core/widgets/app_text_field.dart';
+import 'package:careermatebd/core/widgets/app_top_bar.dart';
+import 'package:careermatebd/core/widgets/social_auth_button.dart';
+import 'package:careermatebd/features/auth/domain/password_strength.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/register_controller.dart';
+import 'package:careermatebd/features/auth/presentation/widgets/auth_error_banner.dart';
+import 'package:careermatebd/features/auth/presentation/widgets/auth_or_divider.dart';
+import 'package:careermatebd/features/auth/presentation/widgets/auth_page_layout.dart';
+import 'package:careermatebd/features/auth/presentation/widgets/auth_switch_link.dart';
+import 'package:careermatebd/features/auth/presentation/widgets/password_strength_meter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,30 +28,30 @@ class RegisterScreen extends ConsumerStatefulWidget {
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
+  static const int _minPasswordLength = 8;
+
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+  bool _acceptedTerms = false;
+  bool _showTermsError = false;
 
   @override
   void initState() {
     super.initState();
     _emailController.addListener(_clearFeedback);
     _passwordController.addListener(_clearFeedback);
-    _confirmPasswordController.addListener(_clearFeedback);
   }
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController
       ..removeListener(_clearFeedback)
       ..dispose();
     _passwordController
-      ..removeListener(_clearFeedback)
-      ..dispose();
-    _confirmPasswordController
       ..removeListener(_clearFeedback)
       ..dispose();
     super.dispose();
@@ -50,155 +60,135 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(registerControllerProvider);
-    final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: const CustomAppBar(title: 'Create account'),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            AppConstants.defaultPadding,
-            AppConstants.defaultPadding,
-            AppConstants.defaultPadding,
-            AppConstants.defaultPadding +
-                MediaQuery.of(context).viewInsets.bottom +
-                24,
+    return AuthPageLayout(
+      footer: AuthSwitchLink(
+        prompt: AppStrings.authHaveAccount,
+        actionLabel: AppStrings.authLogIn,
+        onTap: _goToLogin,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppTopBar(title: AppStrings.createAccount, onBack: _goToLogin),
+          const SizedBox(height: AppSpacing.s22),
+          Text(AppStrings.registerHeadline, style: AppTextStyles.h1),
+          const SizedBox(height: AppSpacing.s8),
+          Text(
+            AppStrings.registerSubtitle,
+            style: AppTextStyles.body.copyWith(color: AppColors.muted),
           ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: AppConstants.contentMaxWidth,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Create your account',
-                    style: theme.textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Email/password auth is ready, while your local CVs, drafts, and job-tracker data stay on this device.',
-                    style: theme.textTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: 20),
-                  CustomCard(
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (state.errorMessage != null) ...[
-                            _FeedbackCard(
-                              message: state.errorMessage!,
-                              isError: true,
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                          CustomTextField(
-                            controller: _emailController,
-                            label: 'Email',
-                            hintText: 'you@example.com',
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            prefixIcon: const Icon(Icons.email_outlined),
-                            validator: Validators.email,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: _passwordController,
-                            label: 'Password',
-                            hintText: 'Minimum 6 characters',
-                            keyboardType: TextInputType.visiblePassword,
-                            textInputAction: TextInputAction.next,
-                            prefixIcon: const Icon(Icons.lock_outline_rounded),
-                            suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                              ),
-                            ),
-                            obscureText: _obscurePassword,
-                            validator: Validators.password,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: _confirmPasswordController,
-                            label: 'Confirm password',
-                            hintText: 'Re-enter your password',
-                            keyboardType: TextInputType.visiblePassword,
-                            textInputAction: TextInputAction.done,
-                            prefixIcon: const Icon(
-                              Icons.verified_user_outlined,
-                            ),
-                            suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _obscureConfirmPassword =
-                                      !_obscureConfirmPassword;
-                                });
-                              },
-                              icon: Icon(
-                                _obscureConfirmPassword
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                              ),
-                            ),
-                            obscureText: _obscureConfirmPassword,
-                            validator: (value) => Validators.confirmPassword(
-                              value,
-                              password: _passwordController.text,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          CustomButton(
-                            label: state.isLoading
-                                ? 'Creating account...'
-                                : 'Create account',
-                            onPressed: state.isLoading ? null : _submit,
-                            icon: Icons.app_registration_rounded,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  CustomCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Already have an account?',
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Sign in with the same email later. Local drafts remain available even before cloud sync exists.',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 16),
-                        CustomButton.secondary(
-                          label: 'Go to login',
-                          onPressed: () => context.push(RouteNames.loginPath),
-                          icon: Icons.login_rounded,
-                          isExpanded: false,
-                        ),
-                      ],
-                    ),
-                  ),
+          const SizedBox(height: AppSpacing.s22),
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (state.errorMessage != null) ...[
+                  AuthErrorBanner(message: state.errorMessage!),
+                  const SizedBox(height: AppSpacing.s16),
                 ],
-              ),
+                // TODO(display-name): the name is validated but not yet saved —
+                // AuthRepository has no display-name API.
+                AppTextField(
+                  controller: _nameController,
+                  label: AppStrings.registerNameLabel,
+                  hintText: AppStrings.registerNameHint,
+                  keyboardType: TextInputType.name,
+                  textInputAction: TextInputAction.next,
+                  validator: (value) => Validators.requiredText(
+                    value,
+                    fieldName: AppStrings.registerNameLabel,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.s16),
+                AppTextField(
+                  controller: _emailController,
+                  label: AppStrings.authEmailLabel,
+                  hintText: AppStrings.authEmailHint,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  validator: Validators.email,
+                ),
+                const SizedBox(height: AppSpacing.s16),
+                AppTextField(
+                  controller: _passwordController,
+                  label: AppStrings.authPasswordLabel,
+                  hintText: AppStrings.registerPasswordHint,
+                  keyboardType: TextInputType.visiblePassword,
+                  textInputAction: TextInputAction.done,
+                  obscureText: _obscurePassword,
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                    tooltip: _obscurePassword
+                        ? AppStrings.authShowPassword
+                        : AppStrings.authHidePassword,
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: AppColors.muted2,
+                    ),
+                  ),
+                  validator: (value) => Validators.password(
+                    value,
+                    minLength: _minPasswordLength,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.s10),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _passwordController,
+                  builder: (context, value, _) => PasswordStrengthMeter(
+                    strength: PasswordStrength.evaluate(value.text),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.s14),
+                _TermsCheckbox(
+                  value: _acceptedTerms,
+                  showError: _showTermsError && !_acceptedTerms,
+                  onChanged: _setAcceptedTerms,
+                ),
+                const SizedBox(height: AppSpacing.s16),
+                PrimaryButton(
+                  label: state.isLoading
+                      ? AppStrings.registerSubmitting
+                      : AppStrings.createAccount,
+                  onPressed: state.isLoading ? null : _submit,
+                ),
+                const SizedBox(height: AppSpacing.s20),
+                const AuthOrDivider(),
+                const SizedBox(height: AppSpacing.s20),
+                // TODO(google-sign-in): wire once AuthRepository supports it.
+                const SocialAuthButton(
+                  label: AppStrings.registerGoogle,
+                  onPressed: null,
+                  disabledHint: AppStrings.authGoogleComingSoon,
+                ),
+              ],
             ),
           ),
-        ),
+        ],
       ),
     );
+  }
+
+  void _setAcceptedTerms(bool accepted) {
+    setState(() {
+      _acceptedTerms = accepted;
+    });
+  }
+
+  /// Register is only reachable from Login, so back / "Log in" returns there.
+  void _goToLogin() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(RouteNames.loginPath);
+    }
   }
 
   void _clearFeedback() {
@@ -206,17 +196,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _submit() async {
-    final formState = _formKey.currentState;
-    if (formState == null || !formState.validate()) {
+    final isFormValid = _formKey.currentState?.validate() ?? false;
+    if (!_acceptedTerms) {
+      setState(() {
+        _showTermsError = true;
+      });
+    }
+    if (!isFormValid || !_acceptedTerms) {
       return;
     }
 
+    // The design has a single password field, so the password confirms itself.
+    final password = _passwordController.text;
     final success = await ref
         .read(registerControllerProvider.notifier)
         .register(
           email: _emailController.text,
-          password: _passwordController.text,
-          confirmPassword: _confirmPasswordController.text,
+          password: password,
+          confirmPassword: password,
         );
     if (!mounted) {
       return;
@@ -234,33 +231,75 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 }
 
-class _FeedbackCard extends StatelessWidget {
-  const _FeedbackCard({required this.message, required this.isError});
+/// "I agree to the Terms and Privacy Policy." row with an inline error.
+class _TermsCheckbox extends StatelessWidget {
+  const _TermsCheckbox({
+    required this.value,
+    required this.showError,
+    required this.onChanged,
+  });
 
-  final String message;
-  final bool isError;
+  final bool value;
+  final bool showError;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final foreground = isError ? colorScheme.error : const Color(0xFF0D6B44);
-    final background = isError
-        ? colorScheme.error.withValues(alpha: 0.08)
-        : const Color(0xFFDFF7EA);
+    final linkStyle = AppTextStyles.bodySm.copyWith(
+      color: AppColors.primary,
+      fontWeight: FontWeight.w700,
+    );
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        message,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: foreground),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => onChanged(!value),
+          borderRadius: AppRadii.inputRadius,
+          child: Row(
+            children: [
+              Checkbox(
+                value: value,
+                onChanged: (checked) => onChanged(checked ?? false),
+                activeColor: AppColors.primary,
+                checkColor: AppColors.onPrimary,
+                side: const BorderSide(color: AppColors.muted2, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s4),
+              Expanded(
+                // TODO(legal-links): Terms / Privacy are styled as links but
+                // not tappable until the legal pages exist.
+                child: Text.rich(
+                  TextSpan(
+                    style: AppTextStyles.bodySm,
+                    children: [
+                      const TextSpan(text: AppStrings.registerTermsPrefix),
+                      TextSpan(text: AppStrings.registerTerms, style: linkStyle),
+                      const TextSpan(text: AppStrings.registerTermsAnd),
+                      TextSpan(
+                        text: AppStrings.registerPrivacy,
+                        style: linkStyle,
+                      ),
+                      const TextSpan(text: AppStrings.registerTermsSuffix),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showError)
+          Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.s12),
+            child: Text(
+              AppStrings.registerTermsRequired,
+              style: AppTextStyles.caption.copyWith(color: AppColors.danger),
+            ),
+          ),
+      ],
     );
   }
 }

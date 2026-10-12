@@ -20,6 +20,7 @@ import 'package:careermatebd/features/interview_prep/presentation/screens/interv
 import 'package:careermatebd/features/job_tracker/presentation/screens/job_application_details_screen.dart';
 import 'package:careermatebd/features/job_tracker/presentation/screens/job_application_form_screen.dart';
 import 'package:careermatebd/features/job_tracker/presentation/screens/job_tracker_screen.dart';
+import 'package:careermatebd/features/onboarding/presentation/controllers/onboarding_seen_controller.dart';
 import 'package:careermatebd/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:careermatebd/features/profile/presentation/screens/profile_screen.dart';
 import 'package:careermatebd/features/settings/presentation/screens/settings_screen.dart';
@@ -32,13 +33,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 final _splashGateProvider = FutureProvider<void>((ref) async {
-  await Future<void>.delayed(AppConstants.splashDuration);
+  final minimumSplash = Future<void>.delayed(AppConstants.splashDuration);
+  // Resolve the first-run flag during the splash so the redirect below can read
+  // it synchronously.
+  await ref.read(onboardingSeenControllerProvider.future);
+  await minimumSplash;
 });
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final repository = ref.watch(authRepositoryProvider);
   final authSession = ref.watch(authSessionProvider);
   final splashGate = ref.watch(_splashGateProvider);
+  // Read, not watch: marking onboarding as seen must not rebuild the router
+  // mid-navigation. Later rebuilds (e.g. on sign-out) pick up the saved value.
+  final isOnboardingSeen =
+      ref.read(onboardingSeenControllerProvider).asData?.value ?? false;
   final currentUser = authSession.asData?.value ?? repository.currentUser;
   final isLoggedIn = currentUser != null;
   final isAuthLoading = authSession.isLoading && currentUser == null;
@@ -59,7 +68,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         if (!isSplashReady || isAuthLoading) {
           return null;
         }
-        return isLoggedIn ? RouteNames.homePath : RouteNames.onboardingPath;
+        if (isLoggedIn) {
+          return RouteNames.homePath;
+        }
+        return isOnboardingSeen
+            ? RouteNames.loginPath
+            : RouteNames.onboardingPath;
       }
 
       if (isLoggedIn && isPublicAuthRoute) {
