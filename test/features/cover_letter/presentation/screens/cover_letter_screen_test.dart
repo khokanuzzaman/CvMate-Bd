@@ -9,6 +9,7 @@ import 'package:careermatebd/features/cover_letter/presentation/controllers/cove
 import 'package:careermatebd/features/cover_letter/presentation/controllers/cover_letter_state.dart';
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/core_flow_harness.dart';
@@ -36,6 +37,8 @@ CoverLetterDraft _draft() => CoverLetterDraft(
   createdAt: DateTime(2026, 10, 1),
   updatedAt: DateTime(2026, 10, 2),
 );
+
+List<String> _copied = [];
 
 Future<CoreFlowApp> _open(
   WidgetTester tester, {
@@ -249,6 +252,115 @@ void main() {
       await _tap(tester, find.byIcon(Icons.chevron_left_rounded));
 
       expect(find.text(homePlaceholder), findsOneWidget);
+    });
+  });
+  group('⋮ menu — Copy to clipboard', () {
+    String? mockClipboard(WidgetTester tester) {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add((call.arguments as Map)['text'] as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      _copied = copied;
+      return null;
+    }
+
+    testWidgets('copies the letter and says so', (tester) async {
+      mockClipboard(tester);
+      final app = await _open(tester);
+      await _generate(tester);
+
+      await _tap(tester, find.byTooltip(AppStrings.coverLetterMoreOptions));
+      await _tap(tester, find.text(AppStrings.coverLetterCopyToClipboard));
+
+      expect(_copied, hasLength(1));
+      expect(
+        _copied.single,
+        app.container.read(coverLetterControllerProvider).generatedContent,
+      );
+      expect(_copied.single, contains('Dear Hiring Manager,'));
+      expect(find.text('Copied to clipboard.'), findsOneWidget);
+    });
+
+    testWidgets('copies what the user edited', (tester) async {
+      mockClipboard(tester);
+      await _open(tester);
+      await _generate(tester);
+      await _tap(tester, find.text(AppStrings.coverLetterEdit));
+      await tester.enterText(find.byType(TextField).last, 'My own letter.');
+      await tester.pumpAndSettle();
+      await _tap(tester, find.text(AppStrings.coverLetterDoneEditing));
+
+      await _tap(tester, find.byTooltip(AppStrings.coverLetterMoreOptions));
+      await _tap(tester, find.text(AppStrings.coverLetterCopyToClipboard));
+
+      expect(_copied.single, 'My own letter.');
+    });
+  });
+
+  group('tailored CV', () {
+    testWidgets('a tailored profile is used to write the letter', (
+      tester,
+    ) async {
+      final app = await _open(tester);
+      final letters = app.container.read(
+        coverLetterControllerProvider.notifier,
+      );
+      await letters.initialize();
+      letters
+        ..selectCv('cv-frontend')
+        ..updateTargetCompany('Acme')
+        ..updateJobTitle('Frontend Developer')
+        ..updateJobDetails(_jobPost)
+        ..useTailoredProfile(
+          designCv().copyWith(professionalSummary: 'Tailored summary.'),
+        );
+
+      await letters.generateContent();
+
+      expect(
+        app.ai.lastCoverLetterProfile!.professionalSummary,
+        'Tailored summary.',
+      );
+    });
+
+    testWidgets('a new draft, another CV or a saved draft drop it', (
+      tester,
+    ) async {
+      final app = await _open(
+        tester,
+        letters: FakeCoverLetterRepository([_draft()]),
+      );
+      final letters = app.container.read(
+        coverLetterControllerProvider.notifier,
+      );
+      bool uses() =>
+          app.container.read(coverLetterControllerProvider).usesTailoredProfile;
+
+      await letters.initialize();
+      letters.useTailoredProfile(designCv());
+      expect(uses(), isTrue);
+      letters.startNewDraft();
+      expect(uses(), isFalse);
+
+      letters.useTailoredProfile(designCv());
+      letters.selectCv(null);
+      expect(uses(), isFalse);
+
+      letters.useTailoredProfile(designCv());
+      letters.loadDraft('draft-1');
+      expect(uses(), isFalse);
     });
   });
 }

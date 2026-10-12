@@ -34,12 +34,20 @@ class _CoverLetterScreenState extends ConsumerState<CoverLetterScreen> {
   /// UI only: show the form even though a letter exists ("Change details").
   bool _showSetup = false;
 
+  /// UI only: the job arrived filled in but without a company, so the form
+  /// opens with the company field focused. Used once.
+  late bool _focusCompany;
+
   CoverLetterController get _controller =>
       ref.read(coverLetterControllerProvider.notifier);
 
   @override
   void initState() {
     super.initState();
+    final initial = ref.read(coverLetterControllerProvider);
+    _focusCompany =
+        initial.targetCompany.trim().isEmpty &&
+        initial.jobDetails.trim().isNotEmpty;
     _company.addListener(() => _controller.updateTargetCompany(_company.text));
     _jobTitle.addListener(() => _controller.updateJobTitle(_jobTitle.text));
     _jobDetails.addListener(
@@ -106,7 +114,11 @@ class _CoverLetterScreenState extends ConsumerState<CoverLetterScreen> {
         subjectController: _subjectLine,
         onBack: () => context.pop(),
         onShare: () => _message(_controller.shareOutput()),
-        onChangeDetails: () => setState(() => _showSetup = true),
+        onCopy: () => _message(_controller.copyOutput()),
+        onChangeDetails: () => setState(() {
+          _showSetup = true;
+          _focusCompany = false;
+        }),
         onToneChanged: _controller.selectTone,
         onRegenerate: _controller.generateContent,
         onExport: _export,
@@ -122,6 +134,7 @@ class _CoverLetterScreenState extends ConsumerState<CoverLetterScreen> {
         hiringManager: _hiringManager,
         candidateSummary: _candidateSummary,
       ),
+      focusCompany: _focusCompany,
       onBack: () => context.pop(),
       onNewDraft: _controller.startNewDraft,
       onViewLetter: hasLetter ? () => setState(() => _showSetup = false) : null,
@@ -141,7 +154,10 @@ class _CoverLetterScreenState extends ConsumerState<CoverLetterScreen> {
       },
       onDeleteDraft: (draft) => _confirmDelete(context, draft),
       onGenerate: () {
-        setState(() => _showSetup = false);
+        setState(() {
+          _showSetup = false;
+          _focusCompany = false;
+        });
         _controller.generateContent();
       },
     );

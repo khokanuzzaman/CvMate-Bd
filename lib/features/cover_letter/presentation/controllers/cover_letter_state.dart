@@ -26,6 +26,7 @@ class CoverLetterState {
     required this.subjectLine,
     required this.generatedContent,
     required this.errorMessage,
+    this.tailoredProfile,
   });
 
   factory CoverLetterState.initial() => CoverLetterState(
@@ -70,6 +71,11 @@ class CoverLetterState {
   final String generatedContent;
   final String? errorMessage;
 
+  /// A tailored version of the selected CV (from "Tailor to a job"), used to
+  /// write the letter instead of the saved CV. Null when writing from the saved
+  /// CV or a manual summary.
+  final CvProfile? tailoredProfile;
+
   CvProfile? get selectedCv {
     final id = selectedCvId;
     if (id == null) {
@@ -89,6 +95,7 @@ class CoverLetterState {
   bool get hasRecentDrafts => recentDrafts.isNotEmpty;
   bool get hasGeneratedContent => generatedContent.trim().isNotEmpty;
   bool get isEditingSavedDraft => activeDraftId != null;
+  bool get usesTailoredProfile => tailoredProfile != null;
 
   CoverLetterState copyWith({
     bool? hasInitialized,
@@ -111,6 +118,7 @@ class CoverLetterState {
     String? generatedContent,
     String? errorMessage,
     bool clearErrorMessage = false,
+    Object? tailoredProfile = _coverLetterStateUnset,
   }) {
     return CoverLetterState(
       hasInitialized: hasInitialized ?? this.hasInitialized,
@@ -141,6 +149,9 @@ class CoverLetterState {
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
+      tailoredProfile: identical(tailoredProfile, _coverLetterStateUnset)
+          ? this.tailoredProfile
+          : tailoredProfile as CvProfile?,
     );
   }
 }

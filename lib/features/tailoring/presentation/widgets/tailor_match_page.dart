@@ -19,9 +19,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Step 2/3 — the keyword match: score ring with the real coverage %, matched
 /// and missing keyword chips, and the "tailor my CV" action.
 class TailorMatchPage extends ConsumerWidget {
-  const TailorMatchPage({super.key, required this.onBack});
+  const TailorMatchPage({
+    super.key,
+    required this.onBack,
+    required this.onStartOver,
+  });
 
   final VoidCallback onBack;
+  final VoidCallback onStartOver;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,6 +38,7 @@ class TailorMatchPage extends ConsumerWidget {
       page: TailoringPage.match,
       title: AppStrings.tailorMatchTitle,
       onBack: onBack,
+      onStartOver: onStartOver,
       body: report == null
           ? const SizedBox.shrink()
           : SingleChildScrollView(

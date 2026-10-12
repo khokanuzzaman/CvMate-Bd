@@ -56,10 +56,15 @@ class CoverLetterSetupView extends StatelessWidget {
     required this.onOpenDraft,
     required this.onDeleteDraft,
     required this.onGenerate,
+    this.focusCompany = false,
   });
 
   final CoverLetterState state;
   final CoverLetterFormControllers form;
+
+  /// Focus the company field on open: the job is already filled in (from the
+  /// tailoring flow) and the company is the one thing still missing.
+  final bool focusCompany;
   final VoidCallback onBack;
   final VoidCallback onNewDraft;
   final VoidCallback? onViewLetter;
@@ -132,7 +137,11 @@ class CoverLetterSetupView extends StatelessWidget {
                       onToneChanged: onToneChanged,
                     ),
                     const SizedBox(height: AppSpacing.s16),
-                    _DetailsCard(state: state, form: form),
+                    _DetailsCard(
+                      state: state,
+                      form: form,
+                      focusCompany: focusCompany,
+                    ),
                     if (state.errorMessage != null) ...[
                       const SizedBox(height: AppSpacing.s16),
                       _ErrorCard(message: state.errorMessage!),
@@ -201,6 +210,11 @@ class _HeaderCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.s12),
           if (!state.hasSavedCvs)
             Text(AppStrings.coverLetterNoCvs, style: AppTextStyles.bodySm)
+          else if (cv != null && state.usesTailoredProfile)
+            Text(
+              AppStrings.coverLetterTailoredCv(cv.displayTitle),
+              style: AppTextStyles.bodySm,
+            )
           else if (cv != null)
             Text(
               AppStrings.coverLetterSelectedCv(cv.displayTitle, cv.displayRole),
@@ -364,10 +378,15 @@ class _GeneratorCard extends StatelessWidget {
 }
 
 class _DetailsCard extends StatelessWidget {
-  const _DetailsCard({required this.state, required this.form});
+  const _DetailsCard({
+    required this.state,
+    required this.form,
+    required this.focusCompany,
+  });
 
   final CoverLetterState state;
   final CoverLetterFormControllers form;
+  final bool focusCompany;
 
   @override
   Widget build(BuildContext context) {
@@ -379,6 +398,7 @@ class _DetailsCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.s12),
           AppTextField(
             controller: form.company,
+            autofocus: focusCompany,
             label: AppStrings.coverLetterCompanyLabel,
             hintText: AppStrings.coverLetterCompanyHint,
             textInputAction: TextInputAction.next,

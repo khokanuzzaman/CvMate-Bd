@@ -23,6 +23,9 @@ class TailoringScreen extends ConsumerStatefulWidget {
 }
 
 class _TailoringScreenState extends ConsumerState<TailoringScreen> {
+  /// Bumped by "Start over" so the paste page rebuilds with empty fields.
+  int _startOverCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +38,34 @@ class _TailoringScreenState extends ConsumerState<TailoringScreen> {
     if (!ref.read(tailoringFlowProvider.notifier).back()) {
       context.pop();
     }
+  }
+
+  /// Asks first when there is a tailored CV that would be lost.
+  Future<void> _startOver() async {
+    if (ref.read(tailoringControllerProvider).hasResult) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text(AppStrings.tailorStartOverTitle),
+          content: const Text(AppStrings.tailorStartOverBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(AppStrings.tailorCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(AppStrings.tailorStartOver),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) {
+        return;
+      }
+    }
+    ref.read(tailoringFlowProvider.notifier).startOver();
+    setState(() => _startOverCount++);
   }
 
   @override
@@ -78,9 +109,19 @@ class _TailoringScreenState extends ConsumerState<TailoringScreen> {
         }
       },
       child: switch (page) {
-        TailoringPage.paste => TailorPastePage(onBack: _handleBack),
-        TailoringPage.match => TailorMatchPage(onBack: _handleBack),
-        TailoringPage.result => TailorResultPage(onBack: _handleBack),
+        TailoringPage.paste => TailorPastePage(
+          key: ValueKey(_startOverCount),
+          onBack: _handleBack,
+          onStartOver: _startOver,
+        ),
+        TailoringPage.match => TailorMatchPage(
+          onBack: _handleBack,
+          onStartOver: _startOver,
+        ),
+        TailoringPage.result => TailorResultPage(
+          onBack: _handleBack,
+          onStartOver: _startOver,
+        ),
       },
     );
   }

@@ -16,9 +16,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Step 1/3 — pick the CV, paste the job post, optionally name the role and
 /// company, then analyze the match.
 class TailorPastePage extends ConsumerStatefulWidget {
-  const TailorPastePage({super.key, required this.onBack});
+  const TailorPastePage({
+    super.key,
+    required this.onBack,
+    required this.onStartOver,
+  });
 
   final VoidCallback onBack;
+  final VoidCallback onStartOver;
 
   @override
   ConsumerState<TailorPastePage> createState() => _TailorPastePageState();
@@ -70,6 +75,7 @@ class _TailorPastePageState extends ConsumerState<TailorPastePage> {
       page: TailoringPage.paste,
       title: AppStrings.tailorTitle,
       onBack: widget.onBack,
+      onStartOver: widget.onStartOver,
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.screen,

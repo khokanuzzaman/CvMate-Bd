@@ -13,6 +13,7 @@ class FakeAiCareerService implements AiCareerService {
   String? lastCoverLetterCompany;
   String? lastCoverLetterJobTitle;
   String? lastCoverLetterSummary;
+  CvProfile? lastCoverLetterProfile;
 
   static const String tailoredSummary =
       'Front-end developer focused on building accessible, performant React '
@@ -75,6 +76,7 @@ class FakeAiCareerService implements AiCareerService {
     lastCoverLetterCompany = companyName;
     lastCoverLetterJobTitle = jobTitle;
     lastCoverLetterSummary = candidateSummary;
+    lastCoverLetterProfile = profile;
     return Success(
       AiDocumentDraft(
         title: 'Cover letter',

@@ -82,8 +82,15 @@ class CoverLetterController extends Notifier<CoverLetterState> {
       candidateSummary: _defaultCandidateSummary(selectedCv),
       subjectLine: '',
       generatedContent: '',
+      tailoredProfile: null,
       clearErrorMessage: true,
     );
+  }
+
+  /// Writes the letter from [profile] — a tailored version of the selected CV —
+  /// instead of the saved CV. Cleared by a new draft, another CV or a draft.
+  void useTailoredProfile(CvProfile? profile) {
+    state = state.copyWith(tailoredProfile: profile);
   }
 
   void selectCv(String? cvId) {
@@ -94,6 +101,7 @@ class CoverLetterController extends Notifier<CoverLetterState> {
     final nextCv = _findCv(state.availableCvs, cvId);
     state = state.copyWith(
       selectedCvId: cvId,
+      tailoredProfile: null,
       candidateSummary: state.candidateSummary.trim().isEmpty
           ? _defaultCandidateSummary(nextCv)
           : state.candidateSummary,
@@ -132,6 +140,7 @@ class CoverLetterController extends Notifier<CoverLetterState> {
       candidateSummary: draft.candidateSummary,
       subjectLine: draft.subjectLine,
       generatedContent: draft.content,
+      tailoredProfile: null,
       clearErrorMessage: true,
     );
   }
@@ -421,6 +430,11 @@ class CoverLetterController extends Notifier<CoverLetterState> {
   }
 
   CvProfile _buildGenerationProfile() {
+    final tailored = state.tailoredProfile;
+    if (tailored != null) {
+      return tailored;
+    }
+
     final selectedCv = state.selectedCv;
     if (selectedCv != null) {
       return selectedCv;

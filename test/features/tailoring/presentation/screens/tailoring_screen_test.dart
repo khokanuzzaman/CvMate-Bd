@@ -5,6 +5,7 @@ import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/app_chip.dart';
 import 'package:careermatebd/core/widgets/score_ring.dart';
+import 'package:careermatebd/features/cover_letter/presentation/controllers/cover_letter_controller.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_controller.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_flow_controller.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_record.dart';
@@ -380,17 +381,35 @@ void main() {
   });
 
   group('Cover letter hand-off', () {
-    testWidgets('opens aligned to the job and writes the letter', (
-      tester,
-    ) async {
-      final app = await _open(tester);
+    Future<CoreFlowApp> toResultWith(
+      WidgetTester tester, {
+      String company = '',
+      String title = '',
+      FakeCvRepository? repository,
+    }) async {
+      final app = await _open(tester, repository: repository);
       final fields = find.byType(TextField);
       await tester.enterText(fields.first, _jobPost);
-      await tester.enterText(fields.at(1), 'Frontend Developer');
-      await tester.enterText(fields.at(2), 'Acme');
+      if (title.isNotEmpty) {
+        await tester.enterText(fields.at(1), title);
+      }
+      if (company.isNotEmpty) {
+        await tester.enterText(fields.at(2), company);
+      }
       await tester.pumpAndSettle();
       await _tap(tester, find.text(AppStrings.tailorAnalyze));
       await _tap(tester, find.text(AppStrings.tailorTailorMyCv));
+      return app;
+    }
+
+    testWidgets('opens aligned to the job and writes the letter', (
+      tester,
+    ) async {
+      final app = await toResultWith(
+        tester,
+        company: 'Acme',
+        title: 'Frontend Developer',
+      );
 
       await _tap(tester, find.text(AppStrings.tailorCoverLetter));
 
@@ -408,17 +427,164 @@ void main() {
       );
     });
 
-    testWidgets('without a company it opens the form with the job filled in', (
+    testWidgets('writes the letter from the tailored CV, not the saved one', (
+      tester,
+    ) async {
+      final repository = FakeCvRepository([designCv()]);
+      final app = await toResultWith(
+        tester,
+        company: 'Acme',
+        title: 'Frontend Developer',
+        repository: repository,
+      );
+      // An edit on the result page must reach the letter too.
+      await _tap(tester, find.text(AppStrings.tailorEdit).at(1));
+      await tester.enterText(find.byType(TextField).first, 'React, Go');
+      await tester.pumpAndSettle();
+      await _tap(tester, find.text(AppStrings.tailorDone));
+
+      await _tap(tester, find.text(AppStrings.tailorCoverLetter));
+
+      final profile = app.ai.lastCoverLetterProfile!;
+      expect(profile.id, 'cv-frontend');
+      expect(profile.professionalSummary, FakeAiCareerService.tailoredSummary);
+      expect(profile.skills.map((skill) => skill.name), contains('Go'));
+      expect(
+        repository.store['cv-frontend']!.professionalSummary,
+        isNot(FakeAiCareerService.tailoredSummary),
+        reason: 'the saved CV is not changed',
+      );
+      expect(repository.saveCount, 0, reason: 'nothing was saved on the way');
+    });
+
+    testWidgets('the job post and title carry over without retyping', (
+      tester,
+    ) async {
+      final app = await toResultWith(
+        tester,
+        company: 'Acme',
+        title: 'Frontend Developer',
+      );
+
+      await _tap(tester, find.text(AppStrings.tailorCoverLetter));
+
+      expect(app.ai.lastCoverLetterJobTitle, 'Frontend Developer');
+      final letters = app.container.read(coverLetterControllerProvider);
+      expect(letters.jobDetails, _jobPost);
+      expect(letters.selectedCvId, 'cv-frontend');
+      expect(letters.usesTailoredProfile, isTrue);
+    });
+
+    testWidgets('without a company it is one tap from generating', (
+      tester,
+    ) async {
+      final app = await toResultWith(tester, title: 'Frontend Developer');
+
+      await _tap(tester, find.text(AppStrings.tailorCoverLetter));
+
+      // Nothing is generated yet, but the form already holds the job and the
+      // tailored CV, and the company field has the cursor.
+      expect(app.ai.coverLetterCalls, 0);
+      expect(find.text(_jobPost), findsOneWidget);
+      expect(find.text('Frontend Developer'), findsOneWidget);
+      expect(
+        find.text(AppStrings.coverLetterTailoredCv('Frontend Developer CV')),
+        findsOneWidget,
+      );
+      final company = tester.widget<EditableText>(
+        find.byType(EditableText).first,
+      );
+      expect(company.focusNode.hasFocus, isTrue);
+
+      // Type only the company, tap Generate.
+      await tester.enterText(find.byType(TextField).first, 'Acme');
+      await tester.pumpAndSettle();
+      await _tap(tester, find.text(AppStrings.coverLetterGenerate));
+
+      expect(app.ai.coverLetterCalls, 1);
+      expect(app.ai.lastCoverLetterCompany, 'Acme');
+      expect(app.ai.lastCoverLetterJobTitle, 'Frontend Developer');
+      expect(
+        app.ai.lastCoverLetterProfile!.professionalSummary,
+        FakeAiCareerService.tailoredSummary,
+      );
+      expect(
+        find.text(AppStrings.coverLetterAlignedTo('Frontend Developer · Acme')),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('⋮ menu — Start over', () {
+    Future<void> openMenu(WidgetTester tester) async {
+      await _tap(tester, find.byTooltip(AppStrings.tailorMoreOptions));
+    }
+
+    testWidgets('is on every page', (tester) async {
+      await _open(tester);
+      await openMenu(tester);
+      expect(find.text(AppStrings.tailorStartOver), findsOneWidget);
+      expect(find.text(AppStrings.tailorPrint), findsNothing);
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+
+      await _toMatch(tester);
+      await openMenu(tester);
+      expect(find.text(AppStrings.tailorStartOver), findsOneWidget);
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+
+      await _tap(tester, find.text(AppStrings.tailorTailorMyCv));
+      await openMenu(tester);
+      expect(find.text(AppStrings.tailorStartOver), findsOneWidget);
+      expect(find.text(AppStrings.tailorPrint), findsOneWidget);
+    });
+
+    testWidgets('from the match page resets the controller and the fields', (
+      tester,
+    ) async {
+      final app = await _open(tester);
+      await _toMatch(tester);
+
+      await openMenu(tester);
+      await _tap(tester, find.text(AppStrings.tailorStartOver));
+
+      final state = app.container.read(tailoringControllerProvider);
+      expect(state.jobPostText, isEmpty);
+      expect(state.matchReport, isNull);
+      expect(state.cvId, 'cv-frontend', reason: 'the CV choice is kept');
+      expect(find.text(AppStrings.tailorStepPill(1)), findsOneWidget);
+      expect(find.text(_jobPost), findsNothing, reason: 'the field is empty');
+      expect(_onPressed(tester, AppStrings.tailorAnalyze), isNull);
+    });
+
+    testWidgets('after tailoring it asks first, and Cancel keeps the work', (
       tester,
     ) async {
       final app = await _open(tester);
       await _toResult(tester);
 
-      await _tap(tester, find.text(AppStrings.tailorCoverLetter));
+      await openMenu(tester);
+      await _tap(tester, find.text(AppStrings.tailorStartOver));
+      expect(find.text(AppStrings.tailorStartOverTitle), findsOneWidget);
 
-      expect(app.ai.coverLetterCalls, 0);
-      expect(find.text(AppStrings.coverLetterGenerate), findsOneWidget);
-      expect(find.text(_jobPost), findsOneWidget);
+      await _tap(tester, find.text(AppStrings.tailorCancel));
+      expect(app.container.read(tailoringControllerProvider).result, isNotNull);
+      expect(find.text(AppStrings.tailorStepPill(3)), findsOneWidget);
+
+      await openMenu(tester);
+      await _tap(tester, find.text(AppStrings.tailorStartOver));
+      await _tap(
+        tester,
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(AppStrings.tailorStartOver),
+        ),
+      );
+      final state = app.container.read(tailoringControllerProvider);
+      expect(state.result, isNull);
+      expect(state.jobPostText, isEmpty);
+      expect(find.text(AppStrings.tailorStepPill(1)), findsOneWidget);
     });
   });
 }

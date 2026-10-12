@@ -5,7 +5,7 @@ import 'package:careermatebd/core/theme/app_radii.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
-import 'package:careermatebd/core/widgets/print_menu_button.dart';
+import 'package:careermatebd/core/widgets/overflow_menu_button.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_controller.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_flow_controller.dart';
 import 'package:careermatebd/features/tailoring/presentation/tailoring_export.dart';
@@ -18,9 +18,14 @@ import 'package:go_router/go_router.dart';
 /// Step 3/3 — the tailored CV: summary, emphasized skills and the before/after
 /// bullet rewrites (all editable), then Cover letter and Save & export.
 class TailorResultPage extends ConsumerWidget {
-  const TailorResultPage({super.key, required this.onBack});
+  const TailorResultPage({
+    super.key,
+    required this.onBack,
+    required this.onStartOver,
+  });
 
   final VoidCallback onBack;
+  final VoidCallback onStartOver;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,12 +37,15 @@ class TailorResultPage extends ConsumerWidget {
       page: TailoringPage.result,
       title: AppStrings.tailorResultTitle,
       onBack: onBack,
-      headerTrailing: PrintMenuButton(
-        tooltip: AppStrings.tailorMoreOptions,
-        printLabel: AppStrings.tailorPrint,
-        enabled: result != null && !state.isBusy,
-        onPrint: () => printTailored(ref, context),
-      ),
+      onStartOver: onStartOver,
+      extraMenuItems: [
+        OverflowMenuItem(
+          label: AppStrings.tailorPrint,
+          icon: Icons.print_outlined,
+          enabled: result != null && !state.isBusy,
+          onSelected: () => printTailored(ref, context),
+        ),
+      ],
       stepsTrailing: matchPercent == null
           ? null
           : _MatchBadge(percent: matchPercent),

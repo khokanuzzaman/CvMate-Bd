@@ -6,9 +6,9 @@ import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/app_top_bar.dart';
-import 'package:careermatebd/core/widgets/print_menu_button.dart';
 import 'package:careermatebd/core/widgets/custom_empty_state.dart';
 import 'package:careermatebd/core/widgets/custom_loading_view.dart';
+import 'package:careermatebd/core/widgets/overflow_menu_button.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_preview_content.dart';
@@ -90,11 +90,17 @@ class CvPreviewScreen extends ConsumerWidget {
                     template: draft.template,
                     onTap: () => context.push(RouteNames.cvTemplatePath),
                   ),
-                  PrintMenuButton(
+                  OverflowMenuButton(
                     tooltip: AppStrings.previewMoreOptions,
-                    printLabel: AppStrings.previewPrint,
-                    enabled: draft.hasContent,
-                    onPrint: () => _export(context, ref, _ExportKind.print),
+                    items: [
+                      OverflowMenuItem(
+                        label: AppStrings.previewPrint,
+                        icon: Icons.print_outlined,
+                        enabled: draft.hasContent,
+                        onSelected: () =>
+                            _export(context, ref, _ExportKind.print),
+                      ),
+                    ],
                   ),
                 ],
               ),

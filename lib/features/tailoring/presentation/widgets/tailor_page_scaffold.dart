@@ -2,6 +2,7 @@ import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/widgets/app_top_bar.dart';
+import 'package:careermatebd/core/widgets/overflow_menu_button.dart';
 import 'package:careermatebd/core/widgets/progress_bar.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_flow_controller.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +17,8 @@ class TailorPageScaffold extends StatelessWidget {
     required this.onBack,
     required this.body,
     required this.footer,
-    this.headerTrailing,
+    required this.onStartOver,
+    this.extraMenuItems = const [],
     this.stepsTrailing,
   });
 
@@ -26,8 +28,11 @@ class TailorPageScaffold extends StatelessWidget {
   final Widget body;
   final Widget footer;
 
-  /// Extra widget at the end of the top bar (e.g. the ⋮ menu).
-  final Widget? headerTrailing;
+  /// "Start over" in the ⋮ menu, on every page.
+  final VoidCallback onStartOver;
+
+  /// Page-specific ⋮ items, shown above Start over (e.g. Print).
+  final List<OverflowMenuItem> extraMenuItems;
 
   /// Widget to the right of the segmented steps (e.g. the match badge).
   final Widget? stepsTrailing;
@@ -55,7 +60,17 @@ class TailorPageScaffold extends StatelessWidget {
                       stepLabel: AppStrings.tailorStepPill(page.step),
                     ),
                   ),
-                  ?headerTrailing,
+                  OverflowMenuButton(
+                    tooltip: AppStrings.tailorMoreOptions,
+                    items: [
+                      ...extraMenuItems,
+                      OverflowMenuItem(
+                        label: AppStrings.tailorStartOver,
+                        icon: Icons.restart_alt_rounded,
+                        onSelected: onStartOver,
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

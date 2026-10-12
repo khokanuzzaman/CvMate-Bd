@@ -74,6 +74,24 @@ void main() {
     expect(painter.width, inInclusiveRange(150, 280));
   });
 
+  test('৳ and Bangla text use the bundled Bengali font, not boxes', () {
+    double width(String text, {bool fallback = true}) {
+      final style = fallback
+          ? AppTextStyles.body
+          : AppTextStyles.body.copyWith(fontFamilyFallback: const <String>[]);
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      return painter.width;
+    }
+
+    // Without the fallback these glyphs are missing and drawn as one narrow
+    // placeholder each; with it they get real Bengali glyph widths.
+    expect(width('৳'), isNot(width('৳', fallback: false)));
+    expect(width('বাংলা'), isNot(width('বাংলা', fallback: false)));
+  });
+
   group('home + auth', () {
     testWidgets('home', (tester) async {
       useScreenshotSurface(tester);

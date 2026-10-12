@@ -329,10 +329,18 @@ abstract final class AppStrings {
   static String tailorSavedSnack(String title) => 'Saved "$title".';
   static const String tailorMoreOptions = 'More options';
   static const String tailorPrint = 'Print';
+  static const String tailorStartOver = 'Start over';
+  static const String tailorStartOverTitle = 'Start over?';
+  static const String tailorStartOverBody =
+      'This clears the job post, the match and your tailored CV. Your saved '
+      'CVs are not affected.';
+  static const String tailorCancel = 'Cancel';
 
   // Cover letter
   static const String coverLetterTitle = 'Cover letter';
   static const String coverLetterShare = 'Share';
+  static const String coverLetterMoreOptions = 'More options';
+  static const String coverLetterCopyToClipboard = 'Copy to clipboard';
   static String coverLetterAlignedTo(String target) => 'Aligned to $target';
   static const String coverLetterChangeDetails = 'Change details';
   static const String coverLetterTone = 'Tone';
@@ -361,6 +369,8 @@ abstract final class AppStrings {
       'create a CV first for stronger role-based results.';
   static String coverLetterSelectedCv(String title, String role) =>
       'Selected CV: $title • $role';
+  static String coverLetterTailoredCv(String title) =>
+      'Using the tailored version of $title';
   static const String coverLetterCreateCv = 'Create CV';
   static const String coverLetterCreateAnotherCv = 'Create another CV';
   static const String coverLetterOpenSelectedCv = 'Open selected CV';

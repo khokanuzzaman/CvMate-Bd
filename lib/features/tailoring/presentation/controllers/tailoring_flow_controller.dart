@@ -45,6 +45,13 @@ class TailoringFlowController extends Notifier<TailoringPage> {
     }
   }
 
+  /// Clears the job, the match and the result (the controller's `reset()`) and
+  /// goes back to the first page. The selected CV is kept.
+  void startOver() {
+    ref.read(tailoringControllerProvider.notifier).reset();
+    state = TailoringPage.paste;
+  }
+
   /// Moves to the previous page. Returns false on the first page, where the
   /// caller should leave the screen instead.
   bool back() {
@@ -59,8 +66,8 @@ class TailoringFlowController extends Notifier<TailoringPage> {
     return true;
   }
 
-  /// Hands the job context to the cover-letter feature (company, title, post,
-  /// CV and the tailored summary) so its screen opens already aligned to this
+  /// Hands the job context to the cover-letter feature (company, title, post and
+  /// the tailored CV) so its screen opens already aligned to this
   /// job. Generation starts straight away when a company name is known;
   /// otherwise the screen opens on its form so the user can add one.
   Future<void> prepareCoverLetter() async {
@@ -85,6 +92,12 @@ class TailoringFlowController extends Notifier<TailoringPage> {
     if (summary.isNotEmpty) {
       letters.updateCandidateSummary(summary);
     }
+
+    // Write the letter from the tailored CV (with the user's edits applied), not
+    // the saved one, so its summary, skills and bullets match the job.
+    letters.useTailoredProfile(
+      ref.read(tailoringControllerProvider.notifier).buildTailoredCv(),
+    );
 
     if (company.isNotEmpty) {
       unawaited(letters.generateContent());
