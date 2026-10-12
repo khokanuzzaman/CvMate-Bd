@@ -58,11 +58,17 @@ class AppChip extends StatelessWidget {
           Icon(Icons.add, size: 16, color: _foreground),
           const SizedBox(width: AppSpacing.s6),
         ],
-        Text(
-          label,
-          style: AppTextStyles.bodySm.copyWith(
-            color: _foreground,
-            fontWeight: FontWeight.w600,
+        // Flexible + ellipsis so a long keyword shrinks the chip instead of
+        // overflowing it.
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodySm.copyWith(
+              color: _foreground,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         if (variant == AppChipVariant.removable) ...[
@@ -94,12 +100,19 @@ class AppChip extends StatelessWidget {
       return chip;
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
+    // A tappable chip keeps its look but its whole 48dp-high row is the target.
+    return Semantics(
+      button: true,
+      selected: variant == AppChipVariant.selected,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        borderRadius: AppRadii.pillRadius,
-        child: chip,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppSpacing.minTouchTarget,
+          ),
+          child: Center(widthFactor: 1, child: chip),
+        ),
       ),
     );
   }

@@ -15,7 +15,7 @@ class SectionLabel extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(text.toUpperCase(), style: AppTextStyles.label),
+        Flexible(child: Text(text.toUpperCase(), style: AppTextStyles.label)),
         if (trailing != null) ...[
           const SizedBox(width: AppSpacing.s8),
           trailing!,

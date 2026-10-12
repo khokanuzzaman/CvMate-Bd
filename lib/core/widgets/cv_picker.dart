@@ -8,20 +8,27 @@ import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:flutter/material.dart';
 
-/// "Which CV?" card: the selected CV and its template, with a chevron. Tapping
-/// opens [showCvPickerSheet]; [onTap] is null while a step is running.
+/// The selected CV and its template, with a chevron. Tapping opens
+/// [showCvPickerSheet]; [onTap] is null while a step is running. [emptyLabel] is
+/// shown when no CV is selected (for flows that can run without one).
 class CvPickerCard extends StatelessWidget {
-  const CvPickerCard({super.key, required this.cv, required this.onTap});
+  const CvPickerCard({
+    super.key,
+    required this.cv,
+    required this.onTap,
+    this.emptyLabel,
+  });
 
   final CvProfile? cv;
   final VoidCallback? onTap;
+  final String? emptyLabel;
 
   @override
   Widget build(BuildContext context) {
     final selected = cv;
     return Semantics(
       button: true,
-      label: AppStrings.tailorChooseCv,
+      label: AppStrings.cvPickerChoose,
       child: AppCard(
         onTap: onTap,
         padding: const EdgeInsets.symmetric(
@@ -49,16 +56,14 @@ class CvPickerCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    selected?.displayTitle ?? '',
+                    selected?.displayTitle ?? emptyLabel ?? '',
                     style: AppTextStyles.itemTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (selected != null)
                     Text(
-                      AppStrings.tailorTemplateSubtitle(
-                        selected.template.label,
-                      ),
+                      AppStrings.cvPickerTemplate(selected.template.label),
                       style: AppTextStyles.bodySm.copyWith(
                         color: AppColors.muted,
                       ),
@@ -77,11 +82,16 @@ class CvPickerCard extends StatelessWidget {
   }
 }
 
-/// Bottom sheet listing [cvs]; resolves to the chosen CV's id (or null).
+/// Id returned by [showCvPickerSheet] when the "no CV" entry is chosen.
+const String kNoCvChoice = '';
+
+/// Bottom sheet listing [cvs]; resolves to the chosen CV's id, [kNoCvChoice]
+/// for the optional [noneLabel] entry, or null when dismissed.
 Future<String?> showCvPickerSheet(
   BuildContext context, {
   required List<CvProfile> cvs,
   required String? selectedId,
+  String? noneLabel,
 }) {
   return showModalBottomSheet<String>(
     context: context,
@@ -108,10 +118,16 @@ Future<String?> showCvPickerSheet(
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.s8),
               child: Text(
-                AppStrings.tailorChooseCv,
+                AppStrings.cvPickerChoose,
                 style: AppTextStyles.title,
               ),
             ),
+            if (noneLabel != null)
+              _NoneOption(
+                label: noneLabel,
+                selected: selectedId == null,
+                onTap: () => Navigator.of(context).pop(kNoCvChoice),
+              ),
             for (final cv in cvs)
               _CvOption(
                 cv: cv,
@@ -158,7 +174,7 @@ class _CvOption extends StatelessWidget {
                     children: [
                       Text(cv.displayTitle, style: AppTextStyles.itemTitle),
                       Text(
-                        AppStrings.tailorTemplateSubtitle(cv.template.label),
+                        AppStrings.cvPickerTemplate(cv.template.label),
                         style: AppTextStyles.bodySm.copyWith(
                           color: AppColors.muted,
                         ),
@@ -166,6 +182,45 @@ class _CvOption extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (selected)
+                  const Icon(Icons.check_rounded, color: AppColors.primary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NoneOption extends StatelessWidget {
+  const _NoneOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadii.inputRadius,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppSpacing.minTouchTarget,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s8),
+            child: Row(
+              children: [
+                Expanded(child: Text(label, style: AppTextStyles.itemTitle)),
                 if (selected)
                   const Icon(Icons.check_rounded, color: AppColors.primary),
               ],

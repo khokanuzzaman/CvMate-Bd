@@ -14,6 +14,10 @@ class FakeAiCareerService implements AiCareerService {
   String? lastCoverLetterJobTitle;
   String? lastCoverLetterSummary;
   CvProfile? lastCoverLetterProfile;
+  int interviewCalls = 0;
+  String? lastInterviewType;
+  String? lastInterviewStyle;
+  AiOutputLanguage? lastInterviewLanguage;
 
   static const String tailoredSummary =
       'Front-end developer focused on building accessible, performant React '
@@ -97,6 +101,86 @@ class FakeAiCareerService implements AiCareerService {
       ),
     );
   }
+
+  @override
+  Future<Result<InterviewQuestionSet>> generateInterviewQuestions({
+    required CvProfile profile,
+    AiOutputLanguage language = AiOutputLanguage.english,
+    String jobTitle = '',
+    String companyName = '',
+    String jobPostText = '',
+    String interviewType = '',
+    String answerStyle = '',
+  }) async {
+    interviewCalls++;
+    lastInterviewType = interviewType;
+    lastInterviewStyle = answerStyle;
+    lastInterviewLanguage = language;
+    return Success(
+      InterviewQuestionSet(
+        title: 'Interview set',
+        language: language,
+        questions: const [
+          InterviewQuestionItem(
+            category: 'hr',
+            question: 'Tell me about yourself.',
+            whyItMatters: 'It sets the tone of the interview.',
+            answerTip: 'Start with your current focus.',
+            sampleAnswer: 'I am a front-end developer.',
+          ),
+          InterviewQuestionItem(
+            category: 'technical',
+            question: 'How do you keep a React app fast?',
+            whyItMatters: 'Performance is part of the role.',
+            answerTip: 'Name one measurement and one fix.',
+            sampleAnswer: 'I profile first, then memoise.',
+          ),
+          InterviewQuestionItem(
+            category: 'behavioral',
+            question: 'Describe a disagreement with a designer.',
+            whyItMatters: 'Teams need clear communication.',
+            answerTip: 'Use situation, action, result.',
+            sampleAnswer: 'We agreed on a prototype test.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// A scripted summary / objective for the ATS Checker's AI card.
+  @override
+  Future<Result<AiTextSuggestion>> generateProfessionalSummary({
+    required CvProfile profile,
+    AiOutputLanguage language = AiOutputLanguage.english,
+    AiTone tone = AiTone.professional,
+    String jobTitle = '',
+    String jobPostText = '',
+  }) async => Success(
+    AiTextSuggestion(
+      title: 'Professional summary',
+      originalText: profile.professionalSummary,
+      suggestedText: 'An ATS-friendly professional summary.',
+      guidancePoints: const [],
+      language: language,
+    ),
+  );
+
+  @override
+  Future<Result<AiTextSuggestion>> generateCareerObjective({
+    required CvProfile profile,
+    AiOutputLanguage language = AiOutputLanguage.english,
+    AiTone tone = AiTone.professional,
+    String jobTitle = '',
+    String jobPostText = '',
+  }) async => Success(
+    AiTextSuggestion(
+      title: 'Career objective',
+      originalText: profile.careerObjective,
+      suggestedText: 'An ATS-friendly career objective.',
+      guidancePoints: const [],
+      language: language,
+    ),
+  );
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>

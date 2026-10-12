@@ -77,6 +77,7 @@ class SecondaryButton extends StatelessWidget {
     this.trailingIcon,
     this.expanded = true,
     this.outlineColor = AppColors.primary,
+    this.foregroundColor = AppColors.primary,
   });
 
   final String label;
@@ -88,6 +89,9 @@ class SecondaryButton extends StatelessWidget {
   /// Border colour (design uses a light `lineStrong` outline in footers).
   final Color outlineColor;
 
+  /// Label and icon colour (use `danger` for destructive actions).
+  final Color foregroundColor;
+
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
@@ -95,7 +99,7 @@ class SecondaryButton extends StatelessWidget {
       label: label,
       leadingIcon: leadingIcon,
       trailingIcon: trailingIcon,
-      foreground: AppColors.primary,
+      foreground: foregroundColor,
       expanded: expanded,
     );
 

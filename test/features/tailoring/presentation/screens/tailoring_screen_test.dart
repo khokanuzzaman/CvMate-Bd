@@ -80,10 +80,7 @@ void main() {
 
       expect(find.text(AppStrings.tailorStepPill(1)), findsOneWidget);
       expect(find.text('Frontend Developer CV'), findsOneWidget);
-      expect(
-        find.text(AppStrings.tailorTemplateSubtitle('Modern')),
-        findsOneWidget,
-      );
+      expect(find.text(AppStrings.cvPickerTemplate('Modern')), findsOneWidget);
       expect(find.text(AppStrings.tailorWorksForAnyRole), findsOneWidget);
       expect(
         find.textContaining(AppStrings.tailorOptional, findRichText: true),
@@ -130,7 +127,7 @@ void main() {
       );
 
       await _tap(tester, find.text('Frontend Developer CV'));
-      expect(find.text(AppStrings.tailorChooseCv), findsOneWidget);
+      expect(find.text(AppStrings.cvPickerChoose), findsOneWidget);
       await _tap(tester, find.text('Product Designer CV'));
 
       expect(app.container.read(tailoringControllerProvider).cvId, 'cv-2');

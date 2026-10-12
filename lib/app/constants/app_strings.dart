@@ -266,10 +266,12 @@ abstract final class AppStrings {
   static String tailorStepPill(int step) => 'Step $step/3';
   static const String tailorBack = 'Back';
 
+  // CV picker (shared)
+  static const String cvPickerChoose = 'Choose a CV';
+  static String cvPickerTemplate(String template) => '$template template';
+
   // Tailor 1 — paste
   static const String tailorWhichCv = 'Which CV?';
-  static const String tailorChooseCv = 'Choose a CV';
-  static String tailorTemplateSubtitle(String template) => '$template template';
   static const String tailorPasteLabel = 'Paste the job post';
   static const String tailorPasteHint =
       "Paste the full job description here — responsibilities, requirements, "
@@ -443,4 +445,272 @@ abstract final class AppStrings {
   static const String paywallCta = 'Coming soon';
   static const String paywallFooter = 'No auto-renew tricks · cancel anytime';
   static const String paywallRestore = 'Restore purchase';
+
+  // ATS Checker
+  static const String atsTitle = 'ATS Checker';
+  static const String atsLoading = 'Loading your saved CVs...';
+  static const String atsLoadErrorTitle = 'Could not load ATS Checker';
+  static const String atsNoCvTitle = 'No CV available yet';
+  static const String atsNoCvBody =
+      'Create your first CV before checking ATS-friendly quality and '
+      'job-post match.';
+  static const String atsCreateCv = 'Create CV';
+  static const String atsNoSelectionTitle = 'No CV selected';
+  static const String atsNoSelectionBody =
+      'Please reload the screen and select a saved CV.';
+  static const String atsScoreStrong = 'Looking ATS-friendly';
+  static const String atsScoreFair = 'A few fixes will help';
+  static const String atsScoreLow = 'Needs work';
+  static String atsScoreOutOf(int score) => '$score / 100';
+  static const String atsScoreNote =
+      'A rule-based improvement score, not a guarantee of ATS approval or '
+      'shortlisting.';
+  static String atsWords(int count) => '$count words';
+  static const String atsOpenBuilder = 'CV Builder';
+  static const String atsOpenAiImprove = 'AI Improve';
+  static const String atsMatchTitle = 'Job post match';
+  static const String atsMatchBody =
+      'Paste a job post to compare its keywords with your CV and get honest '
+      'suggestions.';
+  static const String atsJobPostLabel = 'Job post';
+  static const String atsJobPostHint =
+      'Paste responsibilities, required skills, tools and keywords.';
+  static const String atsCheckMatch = 'Check match';
+  static const String atsChecking = 'Checking match...';
+  static const String atsRecheck = 'Re-check match';
+  static const String atsCopySuggestions = 'Copy suggestions';
+  static const String atsPasteFirst =
+      'Paste a full job post, then tap Check match.';
+  static const String atsReadyToCheck =
+      'Ready. Tap Check match to extract keywords and see how well your CV '
+      'fits.';
+  static const String atsMatchScore = 'Job match';
+  static const String atsMatchStrong =
+      'Strong base. Fine-tune the wording for a tighter match.';
+  static const String atsMatchModerate =
+      'Moderate match. Update your most relevant sections before applying.';
+  static const String atsMatchLow =
+      'Low match. Rework your role-focused wording before sending this CV.';
+  static const String atsHonestNote =
+      'Only add skills, tools, projects or achievements that are true.';
+  static const String atsSectionsToImprove = 'Sections to improve';
+  static const String atsNoSections = 'No priority sections suggested.';
+  static const String atsExtracted = 'Keywords in the post';
+  static const String atsNoKeywords = 'No keywords found.';
+  static const String atsMatched = 'Matched';
+  static const String atsNoMatched = 'No matched keywords yet.';
+  static const String atsMissing = 'Missing';
+  static const String atsNoMissing = 'No missing keywords detected.';
+  static const String atsDetected = 'Skills you can add honestly';
+  static const String atsNoDetected =
+      'No additional already-supported skills detected.';
+  static const String atsApplySkills = 'Apply detected skills to CV';
+  static const String atsAiTitle = 'Optional AI improvement';
+  static const String atsAiBody =
+      'Generate an editable ATS-friendly summary or objective. Review it '
+      'before applying.';
+  static const String atsAiImprove = 'Improve with AI';
+  static const String atsAiGenerating = 'Generating...';
+  static const String atsAiSuggestionLabel = 'AI suggestion';
+  static const String atsAiApply = 'Apply to CV';
+  static const String atsAiCopy = 'Copy';
+  static const String atsCategoriesTitle = 'Results by category';
+  static const String atsNotChecked = 'Not checked';
+  static String atsCategoryScore(int score) => '$score/100';
+  static const String atsNoIssues =
+      'No major ATS-friendly issues found in this category right now.';
+  static const String atsJobMatchPlaceholder =
+      'Paste a job post above to see job-match issues and keyword '
+      'suggestions.';
+  static const String severityHigh = 'High';
+  static const String severityMedium = 'Medium';
+  static const String severityLow = 'Low';
+
+  // Shared
+  static const String commonEnglish = 'English';
+  static const String commonBangla = 'Bangla';
+  static const String commonStartOver = 'Start over';
+
+  // Interview Prep
+  static const String interviewTitle = 'Interview Prep';
+  static const String interviewLoading = 'Loading interview prep...';
+  static const String interviewLoadErrorTitle = 'Could not load Interview Prep';
+  static const String interviewNoCvTitle = 'No saved CV yet';
+  static const String interviewNoCvBody =
+      'You can still practise with a target role and job post, but a CV makes '
+      'the questions more personal.';
+  static const String interviewCreateCv = 'Create CV';
+  static const String interviewSetupTitle = 'Interview setup';
+  static const String interviewSetupBody =
+      'Pick a saved CV for personal questions, or continue with just a role '
+      'and job details.';
+  static const String interviewNoCv = 'Continue without CV';
+  static const String interviewJobTitleLabel = 'Target job title';
+  static const String interviewJobTitleHint = 'e.g. Flutter Developer';
+  static const String interviewCompanyLabel = 'Company';
+  static const String interviewCompanyHint = 'e.g. CareerMate BD';
+  static const String interviewJobPostLabel = 'Job post / details';
+  static const String interviewJobPostHint =
+      'Paste responsibilities, required skills or role context.';
+  static const String interviewOptional = '(optional)';
+  static const String interviewTypeLabel = 'Interview type';
+  static const String interviewLanguageLabel = 'Language';
+  static const String interviewStyleLabel = 'Answer style';
+  static const String interviewGenerate = 'Generate interview questions';
+  static const String interviewGenerating = 'Generating...';
+  static const String interviewOpenBuilder = 'CV Builder';
+  static const String interviewOpenCvList = 'CV list';
+  static const String interviewOpenAiImprove = 'AI Improve';
+  static const String interviewSessionsTitle = 'Recent sessions';
+  static String interviewSessionMeta(String subtitle, String updated) =>
+      '$subtitle • Updated $updated';
+  static const String interviewQuickTitle = 'Common quick practice';
+  static const String interviewQuickBody =
+      'Built-in questions you can use any time, even before generating a '
+      'personal set.';
+  static const String interviewCopyQuestion = 'Copy question';
+  static const String interviewQuestionCopied = 'Question copied.';
+  static const String interviewResultsTitle = 'Generated interview set';
+  static const String interviewResultsBody =
+      'Answers are editable. Review everything before using it in a real '
+      'interview, and never claim skills or experience you do not have.';
+  static const String interviewCopyAllQuestions = 'Copy questions';
+  static const String interviewCopyAllAnswers = 'Copy answers';
+  static const String interviewSaveSession = 'Save session';
+  static const String interviewSaving = 'Saving...';
+  static const String interviewGeneratingMessage =
+      'Generating interview questions...';
+  static const String interviewEmptyTitle = 'No interview set yet';
+  static const String interviewEmptyBody =
+      'Pick a CV or enter a target role, then generate a set to start '
+      'practising.';
+  static String interviewAnswerTip(String tip) => 'Answer tip: $tip';
+  static const String interviewAnswerLabel = 'Editable sample answer';
+  static const String interviewCopyAnswer = 'Copy answer';
+  static const String interviewFavorite = 'Save favorite';
+  static const String interviewUnfavorite = 'Unfavorite';
+  static const String interviewShowAnswer = 'Show answer';
+  static const String interviewHideAnswer = 'Hide answer';
+
+  // Job Tracker — list
+  static const String trackerTitle = 'Job Tracker';
+  static const String trackerLoading = 'Loading your job applications...';
+  static const String trackerLoadErrorTitle = 'Could not load applications';
+  static const String trackerLoadErrorBody =
+      'Something went wrong. Please try again.';
+  static const String trackerAddJob = 'Add job';
+  static const String trackerSummaryTotal = 'Total';
+  static const String trackerSummaryTotalNote = 'Tracked applications';
+  static const String trackerSummaryFollowUp = 'Follow-up';
+  static const String trackerSummaryFollowUpNote = 'Due or overdue';
+  static const String trackerSummaryInterview = 'Interview';
+  static const String trackerSummaryInterviewNote = 'Scheduled now';
+  static const String trackerSummaryOffers = 'Offers';
+  static const String trackerSummaryOffersNote = 'Positive outcomes';
+  static const String trackerSearchLabel = 'Search';
+  static const String trackerSearchHint = 'Company or job title';
+  static const String trackerFilterAll = 'All';
+  static const String trackerClearFilters = 'Clear filters';
+  static const String trackerEmptyTitle = 'No job applications yet';
+  static const String trackerEmptyBody =
+      'Track your first application to keep an eye on follow-ups, interviews '
+      'and the CV you used.';
+  static const String trackerAddApplication = 'Add application';
+  static const String trackerNoMatchTitle = 'No matching applications';
+  static const String trackerNoMatchBody =
+      'Try another company name, job title or status.';
+  static const String trackerUntitledRole = 'Untitled role';
+  static const String trackerUnknownCompany = 'Unknown company';
+  static String trackerApplied(String date) => 'Applied $date';
+  static String trackerInterviewOn(String date) => 'Interview $date';
+  static const String trackerLinkedCv = 'Linked CV';
+  static const String trackerLinkedCoverLetter = 'Linked cover letter';
+  static const String trackerFollowUpDue = 'Follow-up due';
+
+  // Job Tracker — form
+  static const String jobFormAddTitle = 'Add application';
+  static const String jobFormEditTitle = 'Edit application';
+  static const String jobFormLoading = 'Loading application form...';
+  static const String jobFormLoadErrorTitle = 'Could not load application';
+  static const String jobFormBasics = 'Application basics';
+  static const String jobFormCompany = 'Company name';
+  static const String jobFormCompanyHint = 'BRAC Bank, Unilever Bangladesh';
+  static const String jobFormJobTitle = 'Job title';
+  static const String jobFormJobTitleHint =
+      'Management Trainee, Flutter Developer';
+  static const String jobFormSource = 'Job source';
+  static const String jobFormLinked = 'Linked assets';
+  static const String jobFormLinkedBody =
+      'Connect the CV and cover letter you used for this application.';
+  static const String jobFormLinkedCv = 'Linked CV';
+  static const String jobFormNoLinkedCv = 'No linked CV';
+  static const String jobFormLinkedCoverLetter = 'Linked cover letter';
+  static const String jobFormNoLinkedCoverLetter = 'No linked cover letter';
+  static const String jobFormTimeline = 'Timeline and status';
+  static const String jobFormStatus = 'Status';
+  static const String jobFormAppliedDate = 'Applied date';
+  static const String jobFormDeadlineDate = 'Deadline date';
+  static const String jobFormInterviewDate = 'Interview date';
+  static const String jobFormFollowUpDate = 'Follow-up reminder date';
+  static const String jobFormOptional = 'Optional';
+  static const String jobFormClearDate = 'Clear date';
+  static const String jobFormReference = 'Reference details';
+  static const String jobFormLink = 'Job post link';
+  static const String jobFormSalary = 'Salary range';
+  static const String jobFormContactPerson = 'Contact person';
+  static const String jobFormContactEmail = 'Contact email';
+  static const String jobFormNotes = 'Notes';
+  static const String jobFormNotesHint =
+      'Interview rounds, recruiter messages, next follow-up, salary '
+      'expectations.';
+  static const String jobFormSave = 'Save application';
+  static const String jobFormSaving = 'Saving...';
+
+  // Job Tracker — details
+  static const String jobDetailsTitle = 'Application details';
+  static const String jobDetailsEdit = 'Edit application';
+  static const String jobDetailsNotFoundTitle = 'Application not found';
+  static const String jobDetailsNoIdBody =
+      'A valid application ID was not provided.';
+  static const String jobDetailsMissingBody =
+      'This saved application could not be found.';
+  static const String jobDetailsLoading = 'Loading application details...';
+  static const String jobDetailsLoadErrorTitle = 'Could not load application';
+  static String jobDetailsCreated(String date) => 'Created $date';
+  static const String jobDetailsUpdateStatus = 'Update status';
+  static const String jobDetailsNotAdded = 'Not added';
+  static const String jobDetailsApplied = 'Applied date';
+  static const String jobDetailsDeadline = 'Deadline';
+  static const String jobDetailsInterview = 'Interview date';
+  static const String jobDetailsFollowUp = 'Follow-up reminder';
+  static const String jobDetailsLink = 'Job post link';
+  static const String jobDetailsSalary = 'Salary range';
+  static const String jobDetailsContact = 'Contact person';
+  static const String jobDetailsEmail = 'Contact email';
+  static const String jobDetailsLinkedCv = 'Linked CV';
+  static const String jobDetailsLinkedCvMissing = 'Saved CV not found';
+  static const String jobDetailsNoLinkedCv = 'No linked CV';
+  static const String jobDetailsLinkedCoverLetter = 'Linked cover letter';
+  static const String jobDetailsLinkedCoverLetterMissing =
+      'Saved cover letter not found';
+  static const String jobDetailsNoLinkedCoverLetter = 'No linked cover letter';
+  static const String jobDetailsNotes = 'Notes';
+  static const String jobDetailsNoNotesTitle = 'No notes yet';
+  static const String jobDetailsNoNotesBody =
+      'Add recruiter messages, interview instructions or follow-up reminders '
+      'in the application form.';
+  static const String jobDetailsTemplates = 'Quick copy templates';
+  static const String jobDetailsTemplatesBody =
+      'Local templates for a follow-up, an interview confirmation and a polite '
+      'status check.';
+  static const String jobDetailsArchive = 'Archive';
+  static const String jobDetailsRestore = 'Mark as Applied';
+  static const String jobDetailsDelete = 'Delete';
+  static const String jobDetailsDeleteTitle = 'Delete application';
+  static String jobDetailsDeleteBody(String title) =>
+      'Delete "$title" from local storage? This cannot be undone.';
+  static const String jobDetailsCancel = 'Cancel';
+  static String jobDetailsStatusUpdated(String status) =>
+      'Status updated to $status.';
+  static String jobDetailsTemplateCopied(String label) => '$label copied.';
 }

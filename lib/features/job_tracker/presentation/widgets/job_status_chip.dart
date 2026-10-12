@@ -1,6 +1,13 @@
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_radii.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/features/job_tracker/domain/entities/job_application_status.dart';
 import 'package:flutter/material.dart';
 
+/// A status as a pill, coloured from the design tokens: draft / archived are
+/// quiet, applied is indigo, shortlisted and offered are green (offered solid),
+/// interview is amber and rejected is `danger`.
 class JobStatusChip extends StatelessWidget {
   const JobStatusChip({super.key, required this.status});
 
@@ -8,50 +15,44 @@ class JobStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final colors = _colorsForStatus(scheme, status);
-
-    return Chip(
-      label: Text(status.label),
-      backgroundColor: colors.$1,
-      labelStyle: TextStyle(color: colors.$2),
-      side: BorderSide(color: colors.$2.withValues(alpha: 0.22)),
-    );
-  }
-
-  (Color, Color) _colorsForStatus(
-    ColorScheme scheme,
-    JobApplicationStatus status,
-  ) {
-    return switch (status) {
-      JobApplicationStatus.draft => (
-        scheme.surfaceContainerHighest,
-        scheme.onSurfaceVariant,
-      ),
+    final (background, foreground) = switch (status) {
+      JobApplicationStatus.draft => (AppColors.lineStrong, AppColors.muted),
       JobApplicationStatus.applied => (
-        scheme.primary.withValues(alpha: 0.14),
-        scheme.primary,
+        AppColors.primarySoft,
+        AppColors.primary,
       ),
       JobApplicationStatus.shortlisted => (
-        const Color(0xFFE7F3E8),
-        const Color(0xFF1E6B34),
+        AppColors.successSoft,
+        AppColors.successText,
       ),
       JobApplicationStatus.interview => (
-        const Color(0xFFFFF4DB),
-        const Color(0xFF946200),
+        AppColors.accentSoft,
+        AppColors.accentInk,
       ),
-      JobApplicationStatus.offered => (
-        const Color(0xFFDFF6EA),
-        const Color(0xFF0D6B44),
-      ),
+      JobApplicationStatus.offered => (AppColors.success, AppColors.onPrimary),
       JobApplicationStatus.rejected => (
-        scheme.error.withValues(alpha: 0.12),
-        scheme.error,
+        AppColors.danger.withValues(alpha: 0.12),
+        AppColors.danger,
       ),
-      JobApplicationStatus.archived => (
-        const Color(0xFFECECEC),
-        const Color(0xFF5B5B5B),
-      ),
+      JobApplicationStatus.archived => (AppColors.line, AppColors.muted2),
     };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s12,
+        vertical: AppSpacing.s6,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: AppRadii.pillRadius,
+      ),
+      child: Text(
+        status.label,
+        style: AppTextStyles.caption.copyWith(
+          color: foreground,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
   }
 }

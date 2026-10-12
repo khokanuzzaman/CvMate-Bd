@@ -14,10 +14,20 @@ import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_bui
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_builder_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_preview_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_template_screen.dart';
+import 'package:careermatebd/features/ats_checker/presentation/screens/ats_checker_screen.dart';
 import 'package:careermatebd/features/cover_letter/data/repositories/cover_letter_repository_impl.dart';
 import 'package:careermatebd/features/cover_letter/presentation/controllers/cover_letter_controller.dart';
 import 'package:careermatebd/features/cover_letter/presentation/screens/cover_letter_screen.dart';
 import 'package:careermatebd/features/home/presentation/screens/home_screen.dart';
+import 'package:careermatebd/features/interview_prep/data/repositories/interview_prep_session_repository_impl.dart';
+import 'package:careermatebd/features/interview_prep/presentation/screens/interview_prep_screen.dart';
+import 'package:careermatebd/features/job_tracker/data/repositories/job_application_repository_impl.dart';
+import 'package:careermatebd/features/job_tracker/domain/entities/job_application.dart';
+import 'package:careermatebd/features/job_tracker/domain/entities/job_application_status.dart';
+import 'package:careermatebd/features/job_tracker/domain/entities/job_source.dart';
+import 'package:careermatebd/features/job_tracker/presentation/screens/job_application_details_screen.dart';
+import 'package:careermatebd/features/job_tracker/presentation/screens/job_application_form_screen.dart';
+import 'package:careermatebd/features/job_tracker/presentation/screens/job_tracker_screen.dart';
 import 'package:careermatebd/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:careermatebd/features/splash/presentation/screens/splash_screen.dart';
 import 'package:careermatebd/features/subscription/presentation/screens/paywall_screen.dart';
@@ -332,6 +342,133 @@ void main() {
         const PaywallScreen(source: 'screenshot'),
       );
       await expectCaptured(tester, key, '20_paywall');
+    });
+  });
+  group('ats, interview prep, job tracker', () {
+    const jobPost =
+        'We are hiring a Frontend Developer to build accessible, performant '
+        'interfaces with React, JavaScript, TypeScript, Next.js, REST API and '
+        'Git. Experience with CI/CD, design systems and Agile teams is a plus.';
+
+    final jobs = FakeJobApplicationRepository([
+      JobApplication.empty().copyWith(
+        id: 'j1',
+        companyName: 'Acme Ltd.',
+        jobTitle: 'Frontend Developer',
+        jobSource: JobSource.linkedIn,
+        status: JobApplicationStatus.interview,
+        appliedDate: DateTime(2026, 9, 12),
+        interviewDate: DateTime(2026, 10, 20),
+        followUpDate: DateTime(2026, 10, 1),
+        cvId: 'cv-frontend',
+        notes: 'Second round with the design lead. Bring the case study.',
+        createdAt: DateTime(2026, 9, 12),
+        updatedAt: DateTime(2026, 10, 3),
+      ),
+      JobApplication.empty().copyWith(
+        id: 'j2',
+        companyName: 'BRAC Bank',
+        jobTitle: 'Management Trainee',
+        jobSource: JobSource.bdjobs,
+        status: JobApplicationStatus.applied,
+        appliedDate: DateTime(2026, 9, 28),
+        createdAt: DateTime(2026, 9, 28),
+        updatedAt: DateTime(2026, 9, 29),
+      ),
+      JobApplication.empty().copyWith(
+        id: 'j3',
+        companyName: 'Beta Soft',
+        jobTitle: 'UI Engineer',
+        jobSource: JobSource.reference,
+        status: JobApplicationStatus.offered,
+        appliedDate: DateTime(2026, 8, 30),
+        createdAt: DateTime(2026, 8, 30),
+        updatedAt: DateTime(2026, 9, 20),
+      ),
+    ]);
+
+    List<Override> overrides(FakeAiCareerService ai) => [
+      cvRepositoryProvider.overrideWithValue(FakeCvRepository([designCv()])),
+      aiCareerServiceProvider.overrideWithValue(ai),
+      coverLetterRepositoryProvider.overrideWithValue(
+        FakeCoverLetterRepository(),
+      ),
+      interviewPrepSessionRepositoryProvider.overrideWithValue(
+        FakeInterviewSessionRepository(),
+      ),
+      jobApplicationRepositoryProvider.overrideWithValue(jobs),
+    ];
+
+    Future<GlobalKey> open(WidgetTester tester, Widget screen) async {
+      useScreenshotSurface(tester);
+      final key = GlobalKey();
+      await pumpScreenshotScreen(
+        tester,
+        key,
+        screen,
+        overrides: overrides(FakeAiCareerService()),
+      );
+      return key;
+    }
+
+    testWidgets('ats checker', (tester) async {
+      final key = await open(tester, const AtsCheckerScreen());
+      await expectCaptured(tester, key, '21_ats_checker');
+    });
+
+    testWidgets('ats checker job match', (tester) async {
+      final key = await open(tester, const AtsCheckerScreen());
+      await tester.enterText(find.byType(TextField).first, jobPost);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text(AppStrings.atsCheckMatch));
+      await tester.tap(find.text(AppStrings.atsCheckMatch));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.text(AppStrings.atsMissing.toUpperCase()),
+      );
+      await tester.pumpAndSettle();
+      await expectCaptured(tester, key, '22_ats_job_match');
+    });
+
+    testWidgets('interview prep', (tester) async {
+      final key = await open(tester, const InterviewPrepScreen());
+      await expectCaptured(tester, key, '23_interview_prep');
+    });
+
+    testWidgets('interview prep results', (tester) async {
+      final key = await open(tester, const InterviewPrepScreen());
+      final generate = find.text(AppStrings.interviewGenerate);
+      await tester.ensureVisible(generate);
+      await tester.tap(generate);
+      await tester.pumpAndSettle();
+      final question = find.text('How do you keep a React app fast?');
+      await tester.ensureVisible(question);
+      await tester.tap(question);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text(AppStrings.interviewAnswerLabel));
+      await tester.pumpAndSettle();
+      await expectCaptured(tester, key, '24_interview_results');
+    });
+
+    testWidgets('job tracker', (tester) async {
+      final key = await open(tester, const JobTrackerScreen());
+      await expectCaptured(tester, key, '25_job_tracker');
+    });
+
+    testWidgets('job application form', (tester) async {
+      final key = await open(
+        tester,
+        const JobApplicationFormScreen(applicationId: 'j1'),
+      );
+      await expectCaptured(tester, key, '26_job_form');
+    });
+
+    testWidgets('job application details', (tester) async {
+      final key = await open(
+        tester,
+        const JobApplicationDetailsScreen(applicationId: 'j1'),
+      );
+      await expectCaptured(tester, key, '27_job_details');
     });
   });
 }
