@@ -1,11 +1,13 @@
-import 'package:careermatebd/core/widgets/custom_button.dart';
-import 'package:careermatebd/core/widgets/custom_card.dart';
-import 'package:careermatebd/core/widgets/custom_empty_state.dart';
-import 'package:careermatebd/core/widgets/custom_text_field.dart';
+import 'package:careermatebd/app/constants/app_strings.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/widgets/app_text_field.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
+import 'package:careermatebd/features/cv_builder/presentation/controllers/ai_improve_type.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
-import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_collection_item_card.dart';
-import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_step_section.dart';
+import 'package:careermatebd/features/cv_builder/presentation/utils/cv_field_codec.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/ai_action_pill.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/builder_add_button.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/builder_item_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,259 +22,172 @@ class ExperienceStep extends ConsumerWidget {
         .experiences;
     final notifier = ref.read(cvBuilderControllerProvider.notifier);
 
-    return CvStepSection(
-      title: 'Experience',
-      description:
-          'Add internships, part-time work, or full-time experience. Freshers can skip this step.',
-      helper:
-          'If you do not have formal experience yet, make sure the projects step is strong.',
-      child: Column(
-        children: [
-          if (experiences.isEmpty)
-            CustomCard(
-              child: CustomEmptyState(
-                title: 'No experience added',
-                message:
-                    'This is optional. Skip if you are a fresher, or add internship and freelance work if relevant.',
-                icon: Icons.work_outline_rounded,
-                actionLabel: 'Add experience',
-                onAction: () => _openExperienceSheet(
-                  context,
-                  onSave: notifier.addExperience,
-                ),
-              ),
-            )
-          else ...[
-            for (final item in experiences) ...[
-              CvCollectionItemCard(
-                title: item.jobTitle,
-                subtitle: item.companyName,
-                details: [
-                  [
-                    item.location.trim(),
-                    item.isCurrentRole
-                        ? '${item.startDate} - Present'
-                        : [
-                            item.startDate.trim(),
-                            item.endDate.trim(),
-                          ].where((value) => value.isNotEmpty).join(' - '),
-                  ].where((value) => value.isNotEmpty).join(' • '),
-                  if (item.highlights.isNotEmpty) item.highlights.first,
-                  if (item.highlights.length > 1)
-                    '${item.highlights.length - 1} more highlight(s)',
-                ],
-                onEdit: () => _openExperienceSheet(
-                  context,
-                  initialValue: item,
-                  onSave: notifier.updateExperience,
-                ),
-                onDelete: () => notifier.removeExperience(item.id),
-              ),
-              const SizedBox(height: 14),
-            ],
-          ],
-          CustomButton.secondary(
-            label: experiences.isEmpty
-                ? 'Add experience'
-                : 'Add another experience',
-            icon: Icons.add_rounded,
-            onPressed: () =>
-                _openExperienceSheet(context, onSave: notifier.addExperience),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < experiences.length; i++) ...[
+          _ExperienceCard(
+            key: ValueKey(experiences[i].id),
+            index: i + 1,
+            item: experiences[i],
+            onChanged: notifier.updateExperience,
+            onRemove: () => notifier.removeExperience(experiences[i].id),
           ),
+          const SizedBox(height: AppSpacing.s14),
         ],
-      ),
-    );
-  }
-
-  Future<void> _openExperienceSheet(
-    BuildContext context, {
-    ExperienceInfo? initialValue,
-    required ValueChanged<ExperienceInfo> onSave,
-  }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) {
-        return _ExperienceEditorSheet(
-          initialValue: initialValue,
-          onSave: onSave,
-        );
-      },
+        BuilderAddButton(
+          label: experiences.isEmpty
+              ? AppStrings.builderAddFirstRole
+              : AppStrings.builderAddAnotherRole,
+          onPressed: () => notifier.addExperience(ExperienceInfo.empty()),
+        ),
+      ],
     );
   }
 }
 
-class _ExperienceEditorSheet extends StatefulWidget {
-  const _ExperienceEditorSheet({this.initialValue, required this.onSave});
+class _ExperienceCard extends StatefulWidget {
+  const _ExperienceCard({
+    super.key,
+    required this.index,
+    required this.item,
+    required this.onChanged,
+    required this.onRemove,
+  });
 
-  final ExperienceInfo? initialValue;
-  final ValueChanged<ExperienceInfo> onSave;
+  final int index;
+  final ExperienceInfo item;
+  final ValueChanged<ExperienceInfo> onChanged;
+  final VoidCallback onRemove;
 
   @override
-  State<_ExperienceEditorSheet> createState() => _ExperienceEditorSheetState();
+  State<_ExperienceCard> createState() => _ExperienceCardState();
 }
 
-class _ExperienceEditorSheetState extends State<_ExperienceEditorSheet> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _companyController;
-  late final TextEditingController _jobTitleController;
-  late final TextEditingController _locationController;
-  late final TextEditingController _startDateController;
-  late final TextEditingController _endDateController;
-  late final TextEditingController _highlightsController;
-  late bool _isCurrentRole;
+class _ExperienceCardState extends State<_ExperienceCard> {
+  late final TextEditingController _jobTitle;
+  late final TextEditingController _company;
+  late final TextEditingController _dates;
+  late final TextEditingController _highlights;
+  late final TextEditingController _location;
+  late final String _initialDates;
+  late final String _initialHighlights;
 
   @override
   void initState() {
     super.initState();
-    final item = widget.initialValue;
-    _companyController = TextEditingController(text: item?.companyName ?? '');
-    _jobTitleController = TextEditingController(text: item?.jobTitle ?? '');
-    _locationController = TextEditingController(text: item?.location ?? '');
-    _startDateController = TextEditingController(text: item?.startDate ?? '');
-    _endDateController = TextEditingController(text: item?.endDate ?? '');
-    _highlightsController = TextEditingController(
-      text: item?.highlights.join('\n') ?? '',
+    final item = widget.item;
+    _jobTitle = TextEditingController(text: item.jobTitle);
+    _company = TextEditingController(text: item.companyName);
+    _initialDates = DateRangeCodec.format(
+      start: item.startDate,
+      end: item.endDate,
+      ongoing: item.isCurrentRole,
     );
-    _isCurrentRole = item?.isCurrentRole ?? false;
+    _dates = TextEditingController(text: _initialDates);
+    _initialHighlights = BulletsCodec.format(item.highlights);
+    _highlights = TextEditingController(text: _initialHighlights);
+    _location = TextEditingController(text: item.location);
   }
 
   @override
   void dispose() {
-    _companyController.dispose();
-    _jobTitleController.dispose();
-    _locationController.dispose();
-    _startDateController.dispose();
-    _endDateController.dispose();
-    _highlightsController.dispose();
+    _jobTitle.dispose();
+    _company.dispose();
+    _dates.dispose();
+    _highlights.dispose();
+    _location.dispose();
     super.dispose();
+  }
+
+  void _emit() {
+    var next = widget.item.copyWith(
+      jobTitle: _jobTitle.text.trim(),
+      companyName: _company.text.trim(),
+      location: _location.text.trim(),
+    );
+
+    // Only re-parse the combined boxes if the user edited them.
+    if (_dates.text != _initialDates) {
+      final range = DateRangeCodec.parse(_dates.text);
+      next = next.copyWith(
+        startDate: range.start,
+        endDate: range.end,
+        isCurrentRole: range.ongoing,
+      );
+    }
+    if (_highlights.text != _initialHighlights) {
+      next = next.copyWith(highlights: BulletsCodec.parse(_highlights.text));
+    }
+
+    widget.onChanged(next);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.initialValue != null;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
+    return BuilderItemCard(
+      title: AppStrings.builderRoleTitle(widget.index),
+      onRemove: widget.onRemove,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppTextField(
+            controller: _jobTitle,
+            label: AppStrings.builderJobTitle,
+            hintText: AppStrings.builderJobTitleHint,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            onChanged: (_) => _emit(),
+          ),
+          const SizedBox(height: AppSpacing.s14),
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                isEditing ? 'Edit experience' : 'Add experience',
-                style: Theme.of(context).textTheme.titleLarge,
+              Expanded(
+                child: AppTextField(
+                  controller: _company,
+                  label: AppStrings.builderCompany,
+                  hintText: AppStrings.builderCompanyHint,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  onChanged: (_) => _emit(),
+                ),
               ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _companyController,
-                label: 'Company',
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Company name is required.'
-                    : null,
-              ),
-              const SizedBox(height: 14),
-              CustomTextField(
-                controller: _jobTitleController,
-                label: 'Job title',
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Job title is required.'
-                    : null,
-              ),
-              const SizedBox(height: 14),
-              CustomTextField(
-                controller: _locationController,
-                label: 'Location',
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomTextField(
-                      controller: _startDateController,
-                      label: 'Start date',
-                      hintText: 'Jan 2024',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: CustomTextField(
-                      controller: _endDateController,
-                      label: 'End date',
-                      hintText: 'Dec 2024',
-                      readOnly: _isCurrentRole,
-                    ),
-                  ),
-                ],
-              ),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                value: _isCurrentRole,
-                title: const Text('I currently work here'),
-                onChanged: (value) {
-                  setState(() {
-                    _isCurrentRole = value;
-                    if (value) {
-                      _endDateController.clear();
-                    }
-                  });
-                },
-              ),
-              CustomTextField(
-                controller: _highlightsController,
-                label: 'Highlights',
-                hintText: 'Write one responsibility or achievement per line.',
-                minLines: 4,
-                maxLines: 6,
-                validator: (value) => _splitLines(value).isEmpty
-                    ? 'Add at least one highlight.'
-                    : null,
-              ),
-              const SizedBox(height: 20),
-              CustomButton(
-                label: isEditing ? 'Update experience' : 'Save experience',
-                onPressed: () {
-                  if (!_formKey.currentState!.validate()) {
-                    return;
-                  }
-
-                  final nextValue =
-                      (widget.initialValue ?? ExperienceInfo.empty()).copyWith(
-                        companyName: _companyController.text.trim(),
-                        jobTitle: _jobTitleController.text.trim(),
-                        location: _locationController.text.trim(),
-                        startDate: _startDateController.text.trim(),
-                        endDate: _isCurrentRole
-                            ? ''
-                            : _endDateController.text.trim(),
-                        isCurrentRole: _isCurrentRole,
-                        highlights: _splitLines(_highlightsController.text),
-                      );
-
-                  widget.onSave(nextValue);
-                  Navigator.of(context).pop();
-                },
+              const SizedBox(width: AppSpacing.s12),
+              Expanded(
+                child: AppTextField(
+                  controller: _dates,
+                  label: AppStrings.builderDates,
+                  hintText: AppStrings.builderExperienceDatesHint,
+                  textInputAction: TextInputAction.next,
+                  onChanged: (_) => _emit(),
+                ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: AppSpacing.s14),
+          AppTextArea(
+            controller: _highlights,
+            label: AppStrings.builderWhatYouDid,
+            hintText: AppStrings.builderBulletsHint,
+            labelTrailing: const AiActionPill(
+              type: AiImproveType.experienceBullet,
+              label: AppStrings.builderImproveWithAi,
+            ),
+            minLines: 4,
+            maxLines: 8,
+            onChanged: (_) => _emit(),
+          ),
+          const SizedBox(height: AppSpacing.s14),
+          AppTextField(
+            controller: _location,
+            label: AppStrings.builderLocationOpt,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.done,
+            onChanged: (_) => _emit(),
+          ),
+        ],
       ),
     );
-  }
-
-  List<String> _splitLines(String? value) {
-    return (value ?? '')
-        .split('\n')
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toList();
   }
 }

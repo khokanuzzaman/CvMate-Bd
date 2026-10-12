@@ -1,151 +1,149 @@
-import 'package:careermatebd/app/constants/app_constants.dart';
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
-import 'package:careermatebd/core/utils/date_formatter.dart';
-import 'package:careermatebd/core/widgets/custom_app_bar.dart';
-import 'package:careermatebd/core/widgets/custom_button.dart';
-import 'package:careermatebd/core/widgets/custom_card.dart';
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_radii.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
+import 'package:careermatebd/core/widgets/app_buttons.dart';
+import 'package:careermatebd/core/widgets/app_top_bar.dart';
 import 'package:careermatebd/core/widgets/custom_empty_state.dart';
 import 'package:careermatebd/core/widgets/custom_loading_view.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_preview_content.dart';
+import 'package:careermatebd/features/subscription/presentation/export_gate.dart';
+import 'package:careermatebd/shared/services/pdf/cv_pdf_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:printing/printing.dart';
 
+/// Paper-style CV preview with the template picker and PDF export. Export still
+/// goes through [runGatedExport] (first export free, then the paywall).
 class CvPreviewScreen extends ConsumerWidget {
   const CvPreviewScreen({super.key});
+
+  static const String _exportSource = 'cv_preview';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(cvBuilderControllerProvider);
-    final warnings = ref
-        .read(cvBuilderControllerProvider.notifier)
-        .previewWarnings();
 
     if (state.isLoading && !state.hasActiveDraft) {
       return const Scaffold(
-        appBar: CustomAppBar(title: 'CV Preview'),
+        backgroundColor: AppColors.previewBg,
         body: SafeArea(
-          child: CustomLoadingView(message: 'Loading your CV preview...'),
+          child: CustomLoadingView(message: AppStrings.previewLoading),
         ),
       );
     }
 
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'CV Preview',
-        actions: [
-          IconButton(
-            onPressed: state.hasActiveDraft
-                ? () => context.push(RouteNames.aiImprovePath)
-                : null,
-            icon: const Icon(Icons.auto_awesome_outlined),
-            tooltip: 'AI Improve',
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: !state.hasActiveDraft
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: CustomEmptyState(
-                    title: 'No CV draft ready',
-                    message:
-                        'Open a saved CV or create a new one before previewing.',
-                    icon: Icons.preview_outlined,
-                    actionLabel: 'Open CV list',
-                    onAction: () => context.go(RouteNames.cvListPath),
-                  ),
-                ),
-              )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: AppConstants.contentMaxWidth,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          state.draft.displayTitle,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Template: ${state.draft.template.label}',
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
-                        const SizedBox(height: 6),
-                        if (state.lastSavedAt != null)
-                          Text(
-                            'Saved ${DateFormatter.shortDateTime(state.lastSavedAt!)}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomButton.secondary(
-                                label: 'Back to builder',
-                                icon: Icons.edit_outlined,
-                                onPressed: () => context.pop(),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CustomButton(
-                                label: 'Open PDF Preview',
-                                icon: Icons.picture_as_pdf_outlined,
-                                onPressed: () => _openPdfPreview(context, ref),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (warnings.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          CustomCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Review notes',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium,
-                                ),
-                                const SizedBox(height: 12),
-                                for (final warning in warnings)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: Text(warning),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-                        CvPreviewContent(profile: state.draft),
-                      ],
-                    ),
-                  ),
-                ),
+    if (!state.hasActiveDraft) {
+      return Scaffold(
+        backgroundColor: AppColors.previewBg,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.s22),
+              child: CustomEmptyState(
+                title: AppStrings.builderNoDraftTitle,
+                message: AppStrings.previewNoDraftBody,
+                icon: Icons.preview_outlined,
+                actionLabel: AppStrings.previewOpenCvList,
+                onAction: () => context.go(RouteNames.cvListPath),
               ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final draft = state.draft;
+
+    return Scaffold(
+      backgroundColor: AppColors.previewBg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                AppSpacing.s12,
+                AppSpacing.screen,
+                AppSpacing.s8,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: AppTopBar(
+                      title: AppStrings.previewTitle,
+                      onBack: () => context.pop(),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s8),
+                  _TemplatePill(
+                    template: draft.template,
+                    onTap: () => context.push(RouteNames.cvTemplatePath),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen,
+                  AppSpacing.s8,
+                  AppSpacing.screen,
+                  AppSpacing.s16,
+                ),
+                child: CvPreviewContent(profile: draft),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                AppSpacing.s4,
+                AppSpacing.screen,
+                AppSpacing.s16,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 40,
+                    child: SecondaryButton(
+                      label: AppStrings.previewTemplate,
+                      leadingIcon: Icons.grid_view_rounded,
+                      outlineColor: AppColors.lineStrong,
+                      onPressed: () => context.push(RouteNames.cvTemplatePath),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s12),
+                  Expanded(
+                    flex: 60,
+                    child: PrimaryButton(
+                      label: AppStrings.previewExport,
+                      leadingIcon: Icons.file_download_outlined,
+                      onPressed: draft.hasContent
+                          ? () => _export(context, ref)
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Future<void> _openPdfPreview(BuildContext context, WidgetRef ref) async {
+  Future<void> _export(BuildContext context, WidgetRef ref) async {
     await ref.read(cvBuilderControllerProvider.notifier).flushAutosave();
-    final state = ref.read(cvBuilderControllerProvider);
-
     if (!context.mounted) {
       return;
     }
 
+    final state = ref.read(cvBuilderControllerProvider);
     if (state.errorMessage != null) {
       ScaffoldMessenger.of(
         context,
@@ -153,6 +151,66 @@ class CvPreviewScreen extends ConsumerWidget {
       return;
     }
 
-    context.push(RouteNames.cvPdfPreviewPath);
+    final profile = state.draft;
+    final pdfService = ref.read(cvPdfServiceProvider);
+    final fileName = pdfService.buildFileName(profile);
+
+    await runGatedExport(
+      ref: ref,
+      context: context,
+      source: _exportSource,
+      exportType: 'share',
+      export: () async {
+        final bytes = await pdfService.generateCvPdf(profile: profile);
+        await Printing.sharePdf(bytes: bytes, filename: fileName);
+      },
+    );
+  }
+}
+
+/// The current template's name as a white pill; tapping opens the picker.
+class _TemplatePill extends StatelessWidget {
+  const _TemplatePill({required this.template, required this.onTap});
+
+  final CvTemplate template;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: AppStrings.previewChangeTemplate,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppSpacing.minTouchTarget,
+          ),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s16,
+                vertical: AppSpacing.s10,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: AppRadii.pillRadius,
+                border: Border.all(color: AppColors.line),
+              ),
+              child: ExcludeSemantics(
+                child: Text(
+                  template.label,
+                  style: AppTextStyles.bodySm.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

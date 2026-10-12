@@ -11,20 +11,22 @@ class PrimaryButton extends StatelessWidget {
     super.key,
     required this.label,
     required this.onPressed,
+    this.leadingIcon,
     this.trailingIcon,
     this.expanded = true,
   });
 
   final String label;
   final VoidCallback? onPressed;
+  final IconData? leadingIcon;
   final IconData? trailingIcon;
   final bool expanded;
-
   @override
   Widget build(BuildContext context) {
     return _SolidButton(
       label: label,
       onPressed: onPressed,
+      leadingIcon: leadingIcon,
       trailingIcon: trailingIcon,
       expanded: expanded,
       background: AppColors.primary,
@@ -40,20 +42,22 @@ class AmberCtaButton extends StatelessWidget {
     super.key,
     required this.label,
     required this.onPressed,
+    this.leadingIcon,
     this.trailingIcon,
     this.expanded = true,
   });
 
   final String label;
   final VoidCallback? onPressed;
+  final IconData? leadingIcon;
   final IconData? trailingIcon;
   final bool expanded;
-
   @override
   Widget build(BuildContext context) {
     return _SolidButton(
       label: label,
       onPressed: onPressed,
+      leadingIcon: leadingIcon,
       trailingIcon: trailingIcon,
       expanded: expanded,
       background: AppColors.accent,
@@ -69,20 +73,27 @@ class SecondaryButton extends StatelessWidget {
     super.key,
     required this.label,
     required this.onPressed,
+    this.leadingIcon,
     this.trailingIcon,
     this.expanded = true,
+    this.outlineColor = AppColors.primary,
   });
 
   final String label;
   final VoidCallback? onPressed;
+  final IconData? leadingIcon;
   final IconData? trailingIcon;
   final bool expanded;
+
+  /// Border colour (design uses a light `lineStrong` outline in footers).
+  final Color outlineColor;
 
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
     final content = _buttonContent(
       label: label,
+      leadingIcon: leadingIcon,
       trailingIcon: trailingIcon,
       foreground: AppColors.primary,
       expanded: expanded,
@@ -103,7 +114,7 @@ class SecondaryButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
             decoration: BoxDecoration(
               borderRadius: AppRadii.buttonRadius,
-              border: Border.all(color: AppColors.primary, width: 1.5),
+              border: Border.all(color: outlineColor, width: 1.5),
             ),
             child: Center(child: content),
           ),
@@ -122,6 +133,7 @@ class _SolidButton extends StatelessWidget {
     required this.background,
     required this.foreground,
     required this.expanded,
+    this.leadingIcon,
     this.trailingIcon,
   });
 
@@ -130,6 +142,7 @@ class _SolidButton extends StatelessWidget {
   final Color background;
   final Color foreground;
   final bool expanded;
+  final IconData? leadingIcon;
   final IconData? trailingIcon;
 
   @override
@@ -152,6 +165,7 @@ class _SolidButton extends StatelessWidget {
             child: Center(
               child: _buttonContent(
                 label: label,
+                leadingIcon: leadingIcon,
                 trailingIcon: trailingIcon,
                 foreground: foreground,
                 expanded: expanded,
@@ -168,6 +182,7 @@ class _SolidButton extends StatelessWidget {
 
 Widget _buttonContent({
   required String label,
+  required IconData? leadingIcon,
   required IconData? trailingIcon,
   required Color foreground,
   required bool expanded,
@@ -176,6 +191,10 @@ Widget _buttonContent({
     mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
+      if (leadingIcon != null) ...[
+        Icon(leadingIcon, size: 18, color: foreground),
+        const SizedBox(width: AppSpacing.s8),
+      ],
       Flexible(
         child: Text(
           label,

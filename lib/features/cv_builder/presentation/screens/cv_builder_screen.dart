@@ -1,29 +1,31 @@
-import 'package:careermatebd/app/constants/app_constants.dart';
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
-import 'package:careermatebd/core/utils/date_formatter.dart';
-import 'package:careermatebd/core/widgets/custom_app_bar.dart';
-import 'package:careermatebd/core/widgets/custom_button.dart';
-import 'package:careermatebd/core/widgets/custom_card.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/widgets/app_top_bar.dart';
 import 'package:careermatebd/core/widgets/custom_error_view.dart';
 import 'package:careermatebd/core/widgets/custom_loading_view.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
+import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_flow.dart';
+import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_refresh.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_state.dart';
-import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_step.dart';
-import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_builder_stepper.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/builder_footer.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/builder_progress_header.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/builder_section_chips.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/education_step.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/experience_step.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/languages_step.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/personal_info_step.dart';
-import 'package:careermatebd/features/cv_builder/presentation/widgets/preview_step.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/projects_step.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/skills_step.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/summary_objective_step.dart';
-import 'package:careermatebd/features/cv_builder/presentation/widgets/template_step.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/training_step.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+/// Hosts the CV builder pages. The controller still owns the current step,
+/// validation and saving; this screen maps its steps onto the design's pages
+/// (see [CvBuilderFlow]) and navigates with `goToStep` / `validateStep`.
 class CvBuilderScreen extends ConsumerStatefulWidget {
   const CvBuilderScreen({super.key});
 
@@ -33,6 +35,7 @@ class CvBuilderScreen extends ConsumerStatefulWidget {
 
 class _CvBuilderScreenState extends ConsumerState<CvBuilderScreen> {
   bool _allowPop = false;
+  bool _showValidationErrors = false;
 
   @override
   void initState() {
@@ -45,8 +48,19 @@ class _CvBuilderScreenState extends ConsumerState<CvBuilderScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(cvBuilderControllerProvider);
-    final notifier = ref.read(cvBuilderControllerProvider.notifier);
-    final currentStep = state.currentStep;
+    final refreshEpoch = ref.watch(cvBuilderRefreshProvider);
+    final page = CvBuilderFlow.pageFor(state.currentStep);
+
+    // Surface autosave failures (the status card that used to show them is
+    // gone from the design).
+    ref.listen<String?>(
+      cvBuilderControllerProvider.select((value) => value.errorMessage),
+      (previous, next) {
+        if (next != null && next != previous) {
+          _showMessage(next);
+        }
+      },
+    );
 
     return PopScope(
       canPop: _allowPop,
@@ -55,16 +69,14 @@ class _CvBuilderScreenState extends ConsumerState<CvBuilderScreen> {
           return;
         }
 
-        await notifier.flushAutosave();
+        await ref.read(cvBuilderControllerProvider.notifier).flushAutosave();
         if (!context.mounted) {
           return;
         }
 
         final nextState = ref.read(cvBuilderControllerProvider);
         if (nextState.errorMessage != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(nextState.errorMessage!)));
+          _showMessage(nextState.errorMessage!);
           return;
         }
 
@@ -72,247 +84,151 @@ class _CvBuilderScreenState extends ConsumerState<CvBuilderScreen> {
         Navigator.of(context).pop(result);
       },
       child: Scaffold(
-        appBar: CustomAppBar(
-          title: 'CV Builder',
-          actions: [
-            IconButton(
-              onPressed: state.isLoading
-                  ? null
-                  : () => _saveDraft(context, ref, showSuccess: true),
-              icon: const Icon(Icons.save_outlined),
-              tooltip: 'Save draft',
-            ),
-            IconButton(
-              onPressed: state.isLoading ? null : () => _openAiImprove(context),
-              icon: const Icon(Icons.auto_awesome_outlined),
-              tooltip: 'AI Improve',
-            ),
-            IconButton(
-              onPressed: state.isLoading
-                  ? null
-                  : () => _openPreview(context, ref),
-              icon: const Icon(Icons.preview_outlined),
-              tooltip: 'Preview',
-            ),
-          ],
-        ),
-        body: SafeArea(child: _buildBody(context, state, currentStep)),
+        body: SafeArea(child: _buildBody(state, page, refreshEpoch)),
       ),
     );
   }
 
   Widget _buildBody(
-    BuildContext context,
     CvBuilderState state,
-    CvBuilderStep currentStep,
+    CvBuilderPage page,
+    int refreshEpoch,
   ) {
-    final notifier = ref.read(cvBuilderControllerProvider.notifier);
-
     if (state.isLoading && !state.hasActiveDraft) {
-      return const CustomLoadingView(message: 'Preparing your CV draft...');
+      return const CustomLoadingView(message: AppStrings.builderPreparing);
     }
 
     if (!state.hasActiveDraft) {
       return CustomErrorView(
-        title: 'No CV draft ready',
-        message:
-            state.errorMessage ??
-            'Create a new CV or open a saved one from your CV list.',
-        onRetry: notifier.ensureDraftReady,
+        title: AppStrings.builderNoDraftTitle,
+        message: state.errorMessage ?? AppStrings.builderNoDraftBody,
+        onRetry: ref
+            .read(cvBuilderControllerProvider.notifier)
+            .ensureDraftReady,
       );
     }
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        AppConstants.defaultPadding,
-        AppConstants.defaultPadding,
-        AppConstants.defaultPadding,
-        AppConstants.defaultPadding +
-            MediaQuery.of(context).viewInsets.bottom +
-            24,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: AppConstants.contentMaxWidth,
+    final isLast = CvBuilderFlow.isLast(page);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            AppSpacing.s12,
+            AppSpacing.screen,
+            AppSpacing.s4,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CustomCard(child: _BuilderStatusCard(state: state)),
-              const SizedBox(height: 20),
-              CustomCard(
-                child: CvBuilderStepper(
-                  currentStep: currentStep,
-                  onStepSelected: notifier.goToStep,
-                ),
-              ),
-              const SizedBox(height: 20),
-              CustomCard(
-                child: KeyedSubtree(
-                  key: ValueKey('${state.draft.id}_${currentStep.name}'),
-                  child: _stepWidget(
-                    currentStep,
-                    showValidationErrors: state.showValidationErrors,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  if (!state.isFirstStep)
-                    Expanded(
-                      child: CustomButton.secondary(
-                        label: 'Back',
-                        icon: Icons.arrow_back_rounded,
-                        onPressed: notifier.previousStep,
-                      ),
-                    ),
-                  if (!state.isFirstStep) const SizedBox(width: 12),
-                  Expanded(
-                    child: currentStep.isPreview
-                        ? CustomButton(
-                            label: 'Open preview screen',
-                            icon: Icons.open_in_full_rounded,
-                            onPressed: () => _openPreview(context, ref),
-                          )
-                        : CustomButton(
-                            label: 'Continue',
-                            icon: Icons.arrow_forward_rounded,
-                            onPressed: () {
-                              final error = notifier.nextStep();
-                              if (error != null) {
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(SnackBar(content: Text(error)));
-                              }
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ],
+          child: AppTopBar(
+            title: state.draft.displayTitle,
+            onBack: () => Navigator.of(context).maybePop(),
+            trailingIcon: Icons.visibility_outlined,
+            onTrailingTap: state.isLoading ? null : _openPreview,
           ),
         ),
-      ),
+        BuilderSectionChips(current: page, onSelected: _goToPage),
+        const SizedBox(height: AppSpacing.s4),
+        BuilderProgressHeader(page: page),
+        const SizedBox(height: AppSpacing.s12),
+        Expanded(
+          child: SingleChildScrollView(
+            key: ValueKey('${state.draft.id}_${page.name}_$refreshEpoch'),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen,
+              AppSpacing.s4,
+              AppSpacing.screen,
+              AppSpacing.s16,
+            ),
+            child: _pageWidget(page),
+          ),
+        ),
+        BuilderFooter(
+          primaryLabel: isLast
+              ? AppStrings.builderPreviewCv
+              : AppStrings.builderContinue,
+          onBack: () => _back(page),
+          onPrimary: () => _continue(page),
+        ),
+      ],
     );
   }
 
-  Widget _stepWidget(CvBuilderStep step, {required bool showValidationErrors}) {
-    return switch (step) {
-      CvBuilderStep.personalInfo => PersonalInfoStep(
-        showValidationErrors: showValidationErrors,
+  Widget _pageWidget(CvBuilderPage page) {
+    return switch (page) {
+      CvBuilderPage.personal => PersonalInfoStep(
+        showValidationErrors: _showValidationErrors,
       ),
-      CvBuilderStep.summaryObjective => SummaryObjectiveStep(
-        showValidationErrors: showValidationErrors,
+      CvBuilderPage.education => const EducationStep(),
+      CvBuilderPage.experience => const ExperienceStep(),
+      CvBuilderPage.skills => const Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SkillsStep(),
+          SizedBox(height: AppSpacing.s22),
+          LanguagesStep(),
+        ],
       ),
-      CvBuilderStep.education => const EducationStep(),
-      CvBuilderStep.experience => const ExperienceStep(),
-      CvBuilderStep.skills => const SkillsStep(),
-      CvBuilderStep.projects => const ProjectsStep(),
-      CvBuilderStep.training => const TrainingStep(),
-      CvBuilderStep.languages => const LanguagesStep(),
-      CvBuilderStep.template => const TemplateStep(),
-      CvBuilderStep.preview => const PreviewStep(),
+      CvBuilderPage.projects => const ProjectsStep(),
+      CvBuilderPage.training => const TrainingStep(),
+      CvBuilderPage.summary => SummaryObjectiveStep(
+        showValidationErrors: _showValidationErrors,
+      ),
     };
   }
 
-  Future<void> _saveDraft(
-    BuildContext context,
-    WidgetRef ref, {
-    bool showSuccess = false,
-  }) async {
-    await ref.read(cvBuilderControllerProvider.notifier).saveNow();
-    final state = ref.read(cvBuilderControllerProvider);
-
-    if (!context.mounted) {
-      return;
-    }
-
-    if (state.errorMessage != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
-      return;
-    }
-
-    if (showSuccess) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('CV updated.')));
-    }
+  void _goToPage(CvBuilderPage page) {
+    setState(() => _showValidationErrors = false);
+    ref
+        .read(cvBuilderControllerProvider.notifier)
+        .goToStep(page.entryStep.index);
   }
 
-  Future<void> _openPreview(BuildContext context, WidgetRef ref) async {
-    await _saveDraft(context, ref);
-    final state = ref.read(cvBuilderControllerProvider);
-    if (!context.mounted || state.errorMessage != null) {
+  void _back(CvBuilderPage page) {
+    final previous = CvBuilderFlow.previous(page);
+    if (previous == null) {
+      Navigator.of(context).maybePop();
+      return;
+    }
+    _goToPage(previous);
+  }
+
+  Future<void> _continue(CvBuilderPage page) async {
+    final notifier = ref.read(cvBuilderControllerProvider.notifier);
+    final error = CvBuilderFlow.firstError(page, notifier.validateStep);
+
+    if (error != null) {
+      setState(() => _showValidationErrors = true);
+      _showMessage(error);
+      return;
+    }
+
+    final next = CvBuilderFlow.next(page);
+    if (next == null) {
+      await _openPreview();
+      return;
+    }
+    _goToPage(next);
+  }
+
+  Future<void> _openPreview() async {
+    await ref.read(cvBuilderControllerProvider.notifier).saveNow();
+    if (!mounted) {
+      return;
+    }
+
+    final error = ref.read(cvBuilderControllerProvider).errorMessage;
+    if (error != null) {
+      _showMessage(error);
       return;
     }
 
     context.push(RouteNames.cvPreviewPath);
   }
 
-  Future<void> _openAiImprove(BuildContext context) async {
-    await ref.read(cvBuilderControllerProvider.notifier).flushAutosave();
-    final state = ref.read(cvBuilderControllerProvider);
-    if (!context.mounted || state.errorMessage != null) {
-      return;
-    }
-
-    context.push(RouteNames.aiImprovePath);
-  }
-}
-
-class _BuilderStatusCard extends StatelessWidget {
-  const _BuilderStatusCard({required this.state});
-
-  final CvBuilderState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final statusText = _statusText(state);
-    final statusColor = state.errorMessage != null
-        ? theme.colorScheme.error
-        : theme.textTheme.bodySmall?.color;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(state.draft.displayTitle, style: theme.textTheme.titleLarge),
-        const SizedBox(height: 6),
-        Text(state.draft.displayRole, style: theme.textTheme.bodyMedium),
-        const SizedBox(height: 10),
-        Text(
-          statusText,
-          style: theme.textTheme.bodySmall?.copyWith(color: statusColor),
-        ),
-        if (state.isSaving) ...[
-          const SizedBox(height: 12),
-          const LinearProgressIndicator(),
-        ],
-      ],
-    );
-  }
-
-  String _statusText(CvBuilderState state) {
-    if (state.errorMessage != null) {
-      return state.errorMessage!;
-    }
-
-    if (state.isSaving) {
-      return 'Saving draft...';
-    }
-
-    if (state.hasUnsavedChanges) {
-      return 'Unsaved changes. Autosave will run shortly.';
-    }
-
-    if (state.lastSavedAt != null) {
-      return 'Draft saved at ${DateFormatter.shortTime(state.lastSavedAt!)}';
-    }
-
-    return 'Draft not saved yet.';
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }

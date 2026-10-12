@@ -15,6 +15,7 @@ import 'package:careermatebd/features/cv_builder/presentation/screens/cv_builder
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_list_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_pdf_preview_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_preview_screen.dart';
+import 'package:careermatebd/features/cv_builder/presentation/screens/cv_template_screen.dart';
 import 'package:careermatebd/features/home/presentation/screens/home_screen.dart';
 import 'package:careermatebd/features/interview_prep/presentation/screens/interview_prep_screen.dart';
 import 'package:careermatebd/features/job_tracker/presentation/screens/job_application_details_screen.dart';
@@ -123,6 +124,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteNames.cvPreviewPath,
         name: RouteNames.cvPreview,
         builder: (context, state) => const CvPreviewScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.cvTemplatePath,
+        name: RouteNames.cvTemplate,
+        builder: (context, state) => const CvTemplateScreen(),
       ),
       GoRoute(
         path: RouteNames.cvPdfPreviewPath,

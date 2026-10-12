@@ -1,12 +1,13 @@
-import 'package:careermatebd/core/utils/validators.dart';
-import 'package:careermatebd/core/widgets/custom_button.dart';
-import 'package:careermatebd/core/widgets/custom_card.dart';
-import 'package:careermatebd/core/widgets/custom_empty_state.dart';
-import 'package:careermatebd/core/widgets/custom_text_field.dart';
+import 'package:careermatebd/app/constants/app_strings.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/widgets/app_text_field.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/project_info.dart';
+import 'package:careermatebd/features/cv_builder/presentation/controllers/ai_improve_type.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
-import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_collection_item_card.dart';
-import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_step_section.dart';
+import 'package:careermatebd/features/cv_builder/presentation/utils/cv_field_codec.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/ai_action_pill.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/builder_add_button.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/builder_item_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,215 +19,159 @@ class ProjectsStep extends ConsumerWidget {
     final projects = ref.watch(cvBuilderControllerProvider).draft.projects;
     final notifier = ref.read(cvBuilderControllerProvider.notifier);
 
-    return CvStepSection(
-      title: 'Projects',
-      description:
-          'Projects are especially valuable for students, fresh graduates, and career switchers.',
-      helper:
-          'Describe what you built, what tools you used, and what impact or purpose it had.',
-      child: Column(
-        children: [
-          if (projects.isEmpty)
-            CustomCard(
-              child: CustomEmptyState(
-                title: 'No projects added yet',
-                message:
-                    'Projects can prove hands-on ability even without formal work experience.',
-                icon: Icons.folder_special_outlined,
-                actionLabel: 'Add project',
-                onAction: () =>
-                    _openProjectSheet(context, onSave: notifier.addProject),
-              ),
-            )
-          else ...[
-            for (final item in projects) ...[
-              CvCollectionItemCard(
-                title: item.title,
-                subtitle: item.role.trim().isEmpty ? 'Project' : item.role,
-                details: [
-                  item.description,
-                  if (item.technologies.isNotEmpty)
-                    'Technologies: ${item.technologies.join(', ')}',
-                  if (item.link.trim().isNotEmpty) item.link,
-                ],
-                onEdit: () => _openProjectSheet(
-                  context,
-                  initialValue: item,
-                  onSave: notifier.updateProject,
-                ),
-                onDelete: () => notifier.removeProject(item.id),
-              ),
-              const SizedBox(height: 14),
-            ],
-          ],
-          CustomButton.secondary(
-            label: projects.isEmpty ? 'Add project' : 'Add another project',
-            icon: Icons.add_rounded,
-            onPressed: () =>
-                _openProjectSheet(context, onSave: notifier.addProject),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < projects.length; i++) ...[
+          _ProjectCard(
+            key: ValueKey(projects[i].id),
+            index: i + 1,
+            item: projects[i],
+            onChanged: notifier.updateProject,
+            onRemove: () => notifier.removeProject(projects[i].id),
           ),
+          const SizedBox(height: AppSpacing.s14),
         ],
-      ),
-    );
-  }
-
-  Future<void> _openProjectSheet(
-    BuildContext context, {
-    ProjectInfo? initialValue,
-    required ValueChanged<ProjectInfo> onSave,
-  }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) {
-        return _ProjectEditorSheet(initialValue: initialValue, onSave: onSave);
-      },
+        BuilderAddButton(
+          label: projects.isEmpty
+              ? AppStrings.builderAddFirstProject
+              : AppStrings.builderAddAnotherProject,
+          onPressed: () => notifier.addProject(ProjectInfo.empty()),
+        ),
+      ],
     );
   }
 }
 
-class _ProjectEditorSheet extends StatefulWidget {
-  const _ProjectEditorSheet({this.initialValue, required this.onSave});
+class _ProjectCard extends StatefulWidget {
+  const _ProjectCard({
+    super.key,
+    required this.index,
+    required this.item,
+    required this.onChanged,
+    required this.onRemove,
+  });
 
-  final ProjectInfo? initialValue;
-  final ValueChanged<ProjectInfo> onSave;
+  final int index;
+  final ProjectInfo item;
+  final ValueChanged<ProjectInfo> onChanged;
+  final VoidCallback onRemove;
 
   @override
-  State<_ProjectEditorSheet> createState() => _ProjectEditorSheetState();
+  State<_ProjectCard> createState() => _ProjectCardState();
 }
 
-class _ProjectEditorSheetState extends State<_ProjectEditorSheet> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _titleController;
-  late final TextEditingController _roleController;
-  late final TextEditingController _descriptionController;
-  late final TextEditingController _technologiesController;
-  late final TextEditingController _linkController;
+class _ProjectCardState extends State<_ProjectCard> {
+  late final TextEditingController _name;
+  late final TextEditingController _tech;
+  late final TextEditingController _link;
+  late final TextEditingController _description;
+  late final TextEditingController _role;
+  late final String _initialTech;
 
   @override
   void initState() {
     super.initState();
-    final item = widget.initialValue;
-    _titleController = TextEditingController(text: item?.title ?? '');
-    _roleController = TextEditingController(text: item?.role ?? '');
-    _descriptionController = TextEditingController(
-      text: item?.description ?? '',
-    );
-    _technologiesController = TextEditingController(
-      text: item?.technologies.join(', ') ?? '',
-    );
-    _linkController = TextEditingController(text: item?.link ?? '');
+    final item = widget.item;
+    _name = TextEditingController(text: item.title);
+    _initialTech = CommaListCodec.format(item.technologies);
+    _tech = TextEditingController(text: _initialTech);
+    _link = TextEditingController(text: item.link);
+    _description = TextEditingController(text: item.description);
+    _role = TextEditingController(text: item.role);
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _roleController.dispose();
-    _descriptionController.dispose();
-    _technologiesController.dispose();
-    _linkController.dispose();
+    _name.dispose();
+    _tech.dispose();
+    _link.dispose();
+    _description.dispose();
+    _role.dispose();
     super.dispose();
+  }
+
+  void _emit() {
+    var next = widget.item.copyWith(
+      title: _name.text.trim(),
+      link: _link.text.trim(),
+      description: _description.text.trim(),
+      role: _role.text.trim(),
+    );
+
+    if (_tech.text != _initialTech) {
+      next = next.copyWith(technologies: CommaListCodec.parse(_tech.text));
+    }
+
+    widget.onChanged(next);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.initialValue != null;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
+    return BuilderItemCard(
+      title: AppStrings.builderProjectTitle(widget.index),
+      onRemove: widget.onRemove,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppTextField(
+            controller: _name,
+            label: AppStrings.builderProjectName,
+            hintText: AppStrings.builderProjectNameHint,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            onChanged: (_) => _emit(),
+          ),
+          const SizedBox(height: AppSpacing.s14),
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                isEditing ? 'Edit project' : 'Add project',
-                style: Theme.of(context).textTheme.titleLarge,
+              Expanded(
+                child: AppTextField(
+                  controller: _tech,
+                  label: AppStrings.builderTechRole,
+                  hintText: AppStrings.builderTechHint,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  onChanged: (_) => _emit(),
+                ),
               ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _titleController,
-                label: 'Project title',
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Project title is required.'
-                    : null,
-              ),
-              const SizedBox(height: 14),
-              CustomTextField(
-                controller: _roleController,
-                label: 'Your role',
-                hintText: 'Developer, team lead, designer',
-              ),
-              const SizedBox(height: 14),
-              CustomTextField(
-                controller: _descriptionController,
-                label: 'Description',
-                hintText:
-                    'Explain what the project does and what you contributed.',
-                minLines: 4,
-                maxLines: 5,
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Project description is required.'
-                    : null,
-              ),
-              const SizedBox(height: 14),
-              CustomTextField(
-                controller: _technologiesController,
-                label: 'Technologies',
-                hintText: 'Flutter, Firebase, REST API',
-              ),
-              const SizedBox(height: 14),
-              CustomTextField(
-                controller: _linkController,
-                label: 'Project link',
-                hintText: 'https://github.com/...',
-                keyboardType: TextInputType.url,
-                textCapitalization: TextCapitalization.none,
-                validator: Validators.optionalUrl,
-              ),
-              const SizedBox(height: 20),
-              CustomButton(
-                label: isEditing ? 'Update project' : 'Save project',
-                onPressed: () {
-                  if (!_formKey.currentState!.validate()) {
-                    return;
-                  }
-
-                  final nextValue = (widget.initialValue ?? ProjectInfo.empty())
-                      .copyWith(
-                        title: _titleController.text.trim(),
-                        role: _roleController.text.trim(),
-                        description: _descriptionController.text.trim(),
-                        technologies: _splitCommaValues(
-                          _technologiesController.text,
-                        ),
-                        link: _linkController.text.trim(),
-                      );
-
-                  widget.onSave(nextValue);
-                  Navigator.of(context).pop();
-                },
+              const SizedBox(width: AppSpacing.s12),
+              Expanded(
+                child: AppTextField(
+                  controller: _link,
+                  label: AppStrings.builderLink,
+                  hintText: AppStrings.builderLinkHint,
+                  keyboardType: TextInputType.url,
+                  textInputAction: TextInputAction.next,
+                  onChanged: (_) => _emit(),
+                ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: AppSpacing.s14),
+          AppTextArea(
+            controller: _description,
+            label: AppStrings.builderWhatItDoes,
+            hintText: AppStrings.builderBulletsHint,
+            labelTrailing: const AiActionPill(
+              type: AiImproveType.projectDescription,
+              label: AppStrings.builderImproveWithAi,
+            ),
+            minLines: 4,
+            maxLines: 8,
+            onChanged: (_) => _emit(),
+          ),
+          const SizedBox(height: AppSpacing.s14),
+          AppTextField(
+            controller: _role,
+            label: AppStrings.builderRoleOpt,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.done,
+            onChanged: (_) => _emit(),
+          ),
+        ],
       ),
     );
-  }
-
-  List<String> _splitCommaValues(String value) {
-    return value
-        .split(',')
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toList();
   }
 }
