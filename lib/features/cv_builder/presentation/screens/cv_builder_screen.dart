@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
@@ -33,16 +35,39 @@ class CvBuilderScreen extends ConsumerStatefulWidget {
   ConsumerState<CvBuilderScreen> createState() => _CvBuilderScreenState();
 }
 
-class _CvBuilderScreenState extends ConsumerState<CvBuilderScreen> {
+class _CvBuilderScreenState extends ConsumerState<CvBuilderScreen>
+    with WidgetsBindingObserver {
   bool _allowPop = false;
   bool _showValidationErrors = false;
+
+  // Kept so the draft can still be flushed from dispose().
+  late final CvBuilderController _builder;
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => ref.read(cvBuilderControllerProvider.notifier).ensureDraftReady(),
-    );
+    _builder = ref.read(cvBuilderControllerProvider.notifier);
+    WidgetsBinding.instance.addObserver(this);
+    Future.microtask(_builder.ensureDraftReady);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // Leaving the builder by any route (not only the back button) must not lose
+    // edits that are still waiting on the autosave timer. Deferred: Riverpod
+    // forbids changing provider state while the widget tree is being torn down.
+    final builder = _builder;
+    scheduleMicrotask(builder.flushAutosave);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The app may be killed while in the background: save now.
+    if (state != AppLifecycleState.resumed) {
+      unawaited(_builder.flushAutosave());
+    }
   }
 
   @override
@@ -178,10 +203,11 @@ class _CvBuilderScreenState extends ConsumerState<CvBuilderScreen> {
   }
 
   void _goToPage(CvBuilderPage page) {
+    // Save whatever was edited on the page being left (no-op if nothing is
+    // pending) instead of waiting for the autosave timer.
+    unawaited(_builder.flushAutosave());
     setState(() => _showValidationErrors = false);
-    ref
-        .read(cvBuilderControllerProvider.notifier)
-        .goToStep(page.entryStep.index);
+    _builder.goToStep(page.entryStep.index);
   }
 
   void _back(CvBuilderPage page) {

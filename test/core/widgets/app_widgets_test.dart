@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Widget _wrap(Widget child) {
-  return MaterialApp(home: Scaffold(body: Center(child: child)));
+  return MaterialApp(
+    home: Scaffold(body: Center(child: child)),
+  );
 }
 
 void main() {
@@ -52,6 +54,47 @@ void main() {
     });
   });
 
+  group('button width', () {
+    Future<double> widthOf(WidgetTester tester, Widget button) async {
+      await tester.pumpWidget(_wrap(button));
+      return tester.getSize(find.byType(button.runtimeType)).width;
+    }
+
+    testWidgets('expanded buttons fill the available width', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      expect(
+        await widthOf(tester, PrimaryButton(label: 'Go', onPressed: () {})),
+        390,
+      );
+      expect(
+        await widthOf(tester, SecondaryButton(label: 'Go', onPressed: () {})),
+        390,
+      );
+    });
+
+    testWidgets('non-expanded buttons hug their content', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      expect(
+        await widthOf(
+          tester,
+          PrimaryButton(label: 'Go', expanded: false, onPressed: () {}),
+        ),
+        lessThan(200),
+      );
+      expect(
+        await widthOf(
+          tester,
+          SecondaryButton(label: 'Go', expanded: false, onPressed: () {}),
+        ),
+        lessThan(200),
+      );
+    });
+  });
+
   group('AppChip', () {
     testWidgets('every variant renders its label', (tester) async {
       await tester.pumpWidget(
@@ -68,20 +111,30 @@ void main() {
         ),
       );
 
-      for (final label in ['Neutral', 'Selected', 'Matched', 'Missing', 'Removable']) {
+      for (final label in [
+        'Neutral',
+        'Selected',
+        'Matched',
+        'Missing',
+        'Removable',
+      ]) {
         expect(find.text(label), findsOneWidget);
       }
     });
 
     testWidgets('missing variant shows a leading "+" icon', (tester) async {
       await tester.pumpWidget(
-        _wrap(const AppChip(label: 'TypeScript', variant: AppChipVariant.missing)),
+        _wrap(
+          const AppChip(label: 'TypeScript', variant: AppChipVariant.missing),
+        ),
       );
 
       expect(find.byIcon(Icons.add), findsOneWidget);
     });
 
-    testWidgets('removable variant shows "×" and fires onRemove', (tester) async {
+    testWidgets('removable variant shows "×" and fires onRemove', (
+      tester,
+    ) async {
       var removed = 0;
       await tester.pumpWidget(
         _wrap(

@@ -116,7 +116,7 @@ class SecondaryButton extends StatelessWidget {
               borderRadius: AppRadii.buttonRadius,
               border: Border.all(color: outlineColor, width: 1.5),
             ),
-            child: Center(child: content),
+            child: Center(widthFactor: expanded ? null : 1, child: content),
           ),
         ),
       ),
@@ -163,6 +163,7 @@ class _SolidButton extends StatelessWidget {
             ),
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
             child: Center(
+              widthFactor: expanded ? null : 1,
               child: _buttonContent(
                 label: label,
                 leadingIcon: leadingIcon,

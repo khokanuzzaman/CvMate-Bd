@@ -22,61 +22,65 @@ class SkillChip extends StatelessWidget {
     const verticalSlack =
         (AppSpacing.minTouchTarget - _pillHeight) / 2; // keeps the row 48 high
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    // The pill is painted once behind both halves so no anti-aliasing seam
+    // shows where the label meets the × at fractional pixel widths.
+    return Stack(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: verticalSlack),
-          child: Container(
-            height: _pillHeight,
-            padding: const EdgeInsets.only(
-              left: AppSpacing.s14,
-              right: AppSpacing.s4,
-            ),
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(
+        const Positioned.fill(
+          top: verticalSlack,
+          bottom: verticalSlack,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
               color: AppColors.primary,
-              borderRadius: BorderRadius.horizontal(
-                left: Radius.circular(AppRadii.pill),
-              ),
-            ),
-            child: Text(
-              name,
-              style: AppTextStyles.bodySm.copyWith(
-                color: AppColors.onPrimary,
-                fontWeight: FontWeight.w700,
-              ),
+              borderRadius: AppRadii.pillRadius,
             ),
           ),
         ),
-        Semantics(
-          button: true,
-          label: AppStrings.builderRemoveSkill(name),
-          child: InkWell(
-            onTap: onRemove,
-            borderRadius: AppRadii.pillRadius,
-            child: Padding(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
               padding: const EdgeInsets.symmetric(vertical: verticalSlack),
               child: Container(
-                width: _removeWidth,
                 height: _pillHeight,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.horizontal(
-                    right: Radius.circular(AppRadii.pill),
-                  ),
+                padding: const EdgeInsets.only(
+                  left: AppSpacing.s14,
+                  right: AppSpacing.s4,
                 ),
-                child: const ExcludeSemantics(
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 16,
+                alignment: Alignment.center,
+                child: Text(
+                  name,
+                  style: AppTextStyles.bodySm.copyWith(
                     color: AppColors.onPrimary,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ),
-          ),
+            Semantics(
+              button: true,
+              label: AppStrings.builderRemoveSkill(name),
+              child: InkWell(
+                onTap: onRemove,
+                borderRadius: AppRadii.pillRadius,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: verticalSlack),
+                  child: Container(
+                    width: _removeWidth,
+                    height: _pillHeight,
+                    alignment: Alignment.center,
+                    child: const ExcludeSemantics(
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: AppColors.onPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

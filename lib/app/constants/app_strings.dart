@@ -239,6 +239,8 @@ abstract final class AppStrings {
   static const String previewTemplate = 'Template';
   static const String previewExport = 'Export PDF';
   static const String previewChangeTemplate = 'Change template';
+  static const String previewMoreOptions = 'More options';
+  static const String previewPrint = 'Print';
   static const String previewLoading = 'Loading your CV preview...';
   static const String previewNoDraftBody =
       'Open a saved CV or create a new one before previewing.';
@@ -251,6 +253,10 @@ abstract final class AppStrings {
   static const String previewProjects = 'Projects';
   static const String previewTraining = 'Training / certifications';
   static const String previewLanguages = 'Languages';
+  static String previewWarningsSummary(int count) =>
+      count == 1 ? '1 thing to fix' : '$count things to fix';
+  static const String previewWarningsExpand = 'Show details';
+  static const String previewWarningsCollapse = 'Hide details';
   static const String templateTitle = 'Choose a template';
   static const String templateAtsBadge = 'ATS';
   static String templateUse(String name) => 'Use $name template';

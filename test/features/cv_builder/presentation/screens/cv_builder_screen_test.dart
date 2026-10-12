@@ -1,4 +1,5 @@
 import 'package:careermatebd/app/constants/app_strings.dart';
+import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/app_top_bar.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
@@ -11,6 +12,7 @@ import 'package:careermatebd/features/cv_builder/presentation/controllers/ai_imp
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_refresh.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -680,6 +682,132 @@ void main() {
         container.read(aiImproveControllerProvider).improvementType,
         AiImproveType.professionalSummary,
       );
+    });
+  });
+
+  group('draft safety', () {
+    Future<ProviderContainer> openBuilderOverList(WidgetTester tester) async {
+      final container = await pumpBuilderApp(
+        tester,
+        repository: repository,
+        initialLocation: RouteNames.cvListPath,
+      );
+      GoRouter.of(tester.element(find.text('cv-list-page'))).push(builderPath);
+      await tester.pumpAndSettle();
+      return container;
+    }
+
+    String savedName(ProviderContainer container) {
+      final id = container.read(cvBuilderControllerProvider).draft.id;
+      return repository.saved(id)?.personalInfo.fullName ?? '';
+    }
+
+    testWidgets('moving to another page saves at once, not after the delay', (
+      tester,
+    ) async {
+      final container = await pumpBuilderApp(tester, repository: repository);
+
+      await _type(tester, AppStrings.builderFullNameHint, 'Ayesha Rahman');
+      expect(
+        savedName(container),
+        '',
+        reason: 'still waiting on the autosave timer',
+      );
+
+      await tester.tap(find.text(AppStrings.builderChipEducation));
+      await tester.pump(); // one frame only: far less than the 800ms delay
+      expect(savedName(container), 'Ayesha Rahman');
+      await _flush(tester);
+    });
+
+    testWidgets('the Continue / Back buttons save the page being left', (
+      tester,
+    ) async {
+      final container = await pumpBuilderApp(tester, repository: repository);
+      await _tapChip(tester, AppStrings.builderChipEducation);
+
+      await tester.tap(find.text(AppStrings.builderAddFirstDegree));
+      await tester.pumpAndSettle();
+      await _type(tester, AppStrings.builderDegreeHint, 'BSc');
+      await tester.tap(_back);
+      await tester.pump();
+
+      final id = container.read(cvBuilderControllerProvider).draft.id;
+      expect(repository.saved(id)?.education.single.degree, 'BSc');
+      await _flush(tester);
+    });
+
+    testWidgets('does not save again when there is nothing new to save', (
+      tester,
+    ) async {
+      await pumpBuilderApp(tester, repository: repository);
+
+      await _type(tester, AppStrings.builderFullNameHint, 'Ayesha Rahman');
+      await tester.tap(find.text(AppStrings.builderChipEducation));
+      await tester.pump();
+      final afterFirstMove = repository.saveCount;
+      expect(afterFirstMove, 1);
+
+      await tester.tap(find.text(AppStrings.builderChipPersonal));
+      await tester.pump();
+      await tester.tap(find.text(AppStrings.builderChipEducation));
+      await tester.pump();
+
+      expect(repository.saveCount, afterFirstMove);
+      await _flush(tester);
+    });
+
+    testWidgets('leaving with the back button saves the draft', (tester) async {
+      final container = await openBuilderOverList(tester);
+
+      await _type(tester, AppStrings.builderFullNameHint, 'Ayesha Rahman');
+      await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+      await tester.pumpAndSettle();
+
+      expect(find.text('cv-list-page'), findsOneWidget);
+      expect(savedName(container), 'Ayesha Rahman');
+    });
+
+    testWidgets('leaving by any other route also saves the draft', (
+      tester,
+    ) async {
+      final container = await openBuilderOverList(tester);
+
+      await _type(tester, AppStrings.builderFullNameHint, 'Ayesha Rahman');
+      expect(savedName(container), '');
+
+      // Not the back button: a plain navigation away disposes the builder.
+      GoRouter.of(
+        tester.element(find.text(AppStrings.builderFullName)),
+      ).go(RouteNames.cvListPath);
+      await tester.pumpAndSettle();
+
+      expect(find.text('cv-list-page'), findsOneWidget);
+      expect(savedName(container), 'Ayesha Rahman');
+    });
+
+    testWidgets('sending the app to the background saves the draft', (
+      tester,
+    ) async {
+      final container = await pumpBuilderApp(tester, repository: repository);
+
+      await _type(tester, AppStrings.builderFullNameHint, 'Ayesha Rahman');
+      expect(savedName(container), '');
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
+
+      expect(savedName(container), 'Ayesha Rahman');
+      await _flush(tester);
+    });
+
+    testWidgets('there is no manual Save button in the top bar', (
+      tester,
+    ) async {
+      await pumpBuilderApp(tester, repository: repository);
+
+      expect(find.byIcon(Icons.save_outlined), findsNothing);
+      expect(find.byTooltip('Save draft'), findsNothing);
     });
   });
 }

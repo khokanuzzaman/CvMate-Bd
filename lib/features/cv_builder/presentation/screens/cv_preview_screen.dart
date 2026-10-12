@@ -11,6 +11,7 @@ import 'package:careermatebd/core/widgets/custom_loading_view.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_preview_content.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/preview_warnings_banner.dart';
 import 'package:careermatebd/features/subscription/presentation/export_gate.dart';
 import 'package:careermatebd/shared/services/pdf/cv_pdf_service.dart';
 import 'package:flutter/material.dart';
@@ -59,6 +60,9 @@ class CvPreviewScreen extends ConsumerWidget {
     }
 
     final draft = state.draft;
+    final warnings = ref
+        .read(cvBuilderControllerProvider.notifier)
+        .previewWarnings();
 
     return Scaffold(
       backgroundColor: AppColors.previewBg,
@@ -85,6 +89,10 @@ class CvPreviewScreen extends ConsumerWidget {
                     template: draft.template,
                     onTap: () => context.push(RouteNames.cvTemplatePath),
                   ),
+                  _OverflowMenu(
+                    canPrint: draft.hasContent,
+                    onPrint: () => _export(context, ref, _ExportKind.print),
+                  ),
                 ],
               ),
             ),
@@ -96,7 +104,15 @@ class CvPreviewScreen extends ConsumerWidget {
                   AppSpacing.screen,
                   AppSpacing.s16,
                 ),
-                child: CvPreviewContent(profile: draft),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PreviewWarningsBanner(warnings: warnings),
+                    if (warnings.isNotEmpty)
+                      const SizedBox(height: AppSpacing.s12),
+                    CvPreviewContent(profile: draft),
+                  ],
+                ),
               ),
             ),
             Padding(
@@ -124,7 +140,7 @@ class CvPreviewScreen extends ConsumerWidget {
                       label: AppStrings.previewExport,
                       leadingIcon: Icons.file_download_outlined,
                       onPressed: draft.hasContent
-                          ? () => _export(context, ref)
+                          ? () => _export(context, ref, _ExportKind.share)
                           : null,
                     ),
                   ),
@@ -137,7 +153,13 @@ class CvPreviewScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _export(BuildContext context, WidgetRef ref) async {
+  /// Shares or prints the PDF. Both go through [runGatedExport], so the fair
+  /// export rule (first export free, then the paywall) applies to each.
+  Future<void> _export(
+    BuildContext context,
+    WidgetRef ref,
+    _ExportKind kind,
+  ) async {
     await ref.read(cvBuilderControllerProvider.notifier).flushAutosave();
     if (!context.mounted) {
       return;
@@ -159,11 +181,64 @@ class CvPreviewScreen extends ConsumerWidget {
       ref: ref,
       context: context,
       source: _exportSource,
-      exportType: 'share',
+      exportType: kind.name,
       export: () async {
-        final bytes = await pdfService.generateCvPdf(profile: profile);
-        await Printing.sharePdf(bytes: bytes, filename: fileName);
+        switch (kind) {
+          case _ExportKind.share:
+            final bytes = await pdfService.generateCvPdf(profile: profile);
+            await Printing.sharePdf(bytes: bytes, filename: fileName);
+          case _ExportKind.print:
+            await Printing.layoutPdf(
+              name: fileName,
+              onLayout: (format) => pdfService.generateCvPdf(
+                profile: profile,
+                pageFormat: format,
+              ),
+            );
+        }
       },
+    );
+  }
+}
+
+enum _ExportKind { share, print }
+
+/// The ⋮ menu in the top bar; currently just Print.
+class _OverflowMenu extends StatelessWidget {
+  const _OverflowMenu({required this.canPrint, required this.onPrint});
+
+  final bool canPrint;
+  final VoidCallback onPrint;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_ExportKind>(
+      tooltip: AppStrings.previewMoreOptions,
+      icon: const Icon(Icons.more_vert_rounded, color: AppColors.ink),
+      color: AppColors.surface,
+      surfaceTintColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: AppRadii.inputRadius,
+        side: BorderSide(color: AppColors.line),
+      ),
+      onSelected: (_) => onPrint(),
+      itemBuilder: (context) => [
+        PopupMenuItem<_ExportKind>(
+          value: _ExportKind.print,
+          enabled: canPrint,
+          child: Row(
+            children: [
+              const Icon(
+                Icons.print_outlined,
+                size: 20,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: AppSpacing.s12),
+              Text(AppStrings.previewPrint, style: AppTextStyles.body),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
