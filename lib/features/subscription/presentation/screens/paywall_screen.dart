@@ -54,6 +54,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // On short screens (iPhone SE) the header and cards tighten up so the
+    // prices are visible without scrolling; only the button stays pinned.
+    final compact = MediaQuery.sizeOf(context).height < _compactHeight;
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
@@ -64,7 +67,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.screen,
-                  AppSpacing.s12,
+                  AppSpacing.s4,
                   AppSpacing.screen,
                   0,
                 ),
@@ -79,18 +82,26 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   AppSpacing.screen,
                   AppSpacing.s16,
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [_Header(), _Benefits(), _Plans()],
+                  children: [
+                    _Header(compact: compact),
+                    _Benefits(compact: compact),
+                    _Plans(compact: compact),
+                    const _Notes(),
+                  ],
                 ),
               ),
             ),
-            const _Footer(),
+            const _CtaBar(),
           ],
         ),
       ),
     );
   }
+
+  /// Screens shorter than this (logical px) get the compact layout.
+  static const double _compactHeight = 700;
 }
 
 class _CloseButton extends StatelessWidget {
@@ -130,37 +141,42 @@ class _CloseButton extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header();
+  const _Header({required this.compact});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final body = AppTextStyles.body.copyWith(
       color: AppColors.muted,
-      fontSize: 15,
-      height: 1.45,
+      fontSize: compact ? 13.5 : 15,
+      height: compact ? 1.35 : 1.45,
     );
+    final iconSize = compact ? 44.0 : 60.0;
     return Column(
       children: [
         Container(
-          width: 60,
-          height: 60,
+          width: iconSize,
+          height: iconSize,
           decoration: BoxDecoration(
             color: AppColors.primary,
-            borderRadius: BorderRadius.circular(AppRadii.card),
+            borderRadius: BorderRadius.circular(
+              compact ? AppRadii.button : AppRadii.card,
+            ),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.lock_outline_rounded,
             color: AppColors.onPrimary,
-            size: 28,
+            size: compact ? 22 : 28,
           ),
         ),
-        const SizedBox(height: AppSpacing.s20),
+        SizedBox(height: compact ? AppSpacing.s10 : AppSpacing.s20),
         Text(
           AppStrings.paywallTitle,
           textAlign: TextAlign.center,
-          style: AppTextStyles.h1,
+          style: compact ? AppTextStyles.h2 : AppTextStyles.h1,
         ),
-        const SizedBox(height: AppSpacing.s12),
+        SizedBox(height: compact ? AppSpacing.s8 : AppSpacing.s12),
         Text.rich(
           TextSpan(
             style: body,
@@ -178,14 +194,16 @@ class _Header extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: AppSpacing.s22),
+        SizedBox(height: compact ? AppSpacing.s12 : AppSpacing.s22),
       ],
     );
   }
 }
 
 class _Benefits extends StatelessWidget {
-  const _Benefits();
+  const _Benefits({required this.compact});
+
+  final bool compact;
 
   static const List<String> _items = [
     AppStrings.paywallBenefitTailoring,
@@ -196,14 +214,15 @@ class _Benefits extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      padding: const EdgeInsets.symmetric(
+      padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.s16,
-        vertical: AppSpacing.s16,
+        vertical: compact ? AppSpacing.s12 : AppSpacing.s16,
       ),
       child: Column(
         children: [
           for (var i = 0; i < _items.length; i++) ...[
-            if (i > 0) const SizedBox(height: AppSpacing.s14),
+            if (i > 0)
+              SizedBox(height: compact ? AppSpacing.s8 : AppSpacing.s14),
             Row(
               children: [
                 Container(
@@ -238,12 +257,14 @@ class _Benefits extends StatelessWidget {
 }
 
 class _Plans extends StatelessWidget {
-  const _Plans();
+  const _Plans({required this.compact});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.s20),
+      padding: EdgeInsets.only(top: compact ? AppSpacing.s18 : AppSpacing.s20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -254,6 +275,7 @@ class _Plans extends StatelessWidget {
                   name: AppStrings.paywallMonthly,
                   price: PricingConstants.format(PricingConstants.monthlyPrice),
                   unit: AppStrings.paywallPerMonth,
+                  compact: compact,
                 ),
               ),
               const SizedBox(width: AppSpacing.s12),
@@ -263,6 +285,7 @@ class _Plans extends StatelessWidget {
                   price: PricingConstants.format(PricingConstants.yearlyPrice),
                   unit: AppStrings.paywallPerYear,
                   highlighted: true,
+                  compact: compact,
                   badge: AppStrings.paywallSave(
                     PricingConstants.yearlySavingsPercent,
                   ),
@@ -270,8 +293,8 @@ class _Plans extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.s14),
-          const _OneTimeCard(),
+          SizedBox(height: compact ? AppSpacing.s10 : AppSpacing.s14),
+          _OneTimeCard(compact: compact),
         ],
       ),
     );
@@ -279,7 +302,9 @@ class _Plans extends StatelessWidget {
 }
 
 class _OneTimeCard extends StatelessWidget {
-  const _OneTimeCard();
+  const _OneTimeCard({required this.compact});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -295,9 +320,9 @@ class _OneTimeCard extends StatelessWidget {
           '${PricingConstants.format(PricingConstants.singleCvPrice)}',
       child: ExcludeSemantics(
         child: Container(
-          padding: const EdgeInsets.symmetric(
+          padding: EdgeInsets.symmetric(
             horizontal: AppSpacing.s16,
-            vertical: AppSpacing.s14,
+            vertical: compact ? AppSpacing.s10 : AppSpacing.s14,
           ),
           decoration: BoxDecoration(
             color: AppColors.accentSoft.withValues(alpha: 0.35),
@@ -333,21 +358,17 @@ class _OneTimeCard extends StatelessWidget {
   }
 }
 
-class _Footer extends StatelessWidget {
-  const _Footer();
+/// What the screen is honest about, directly under the prices: nothing can be
+/// bought yet, and the footer line. Scrolls with the content.
+class _Notes extends StatelessWidget {
+  const _Notes();
 
   @override
   Widget build(BuildContext context) {
     final small = AppTextStyles.bodySm.copyWith(color: AppColors.muted);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screen,
-        AppSpacing.s8,
-        AppSpacing.screen,
-        AppSpacing.s16,
-      ),
+      padding: const EdgeInsets.only(top: AppSpacing.s14),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             AppStrings.paywallNotAvailable,
@@ -355,10 +376,6 @@ class _Footer extends StatelessWidget {
             style: small.copyWith(color: AppColors.accentInk),
           ),
           const SizedBox(height: AppSpacing.s10),
-          // Deliberately disabled: no purchase is possible yet, and we will not
-          // pretend otherwise.
-          const PrimaryButton(label: AppStrings.paywallCta, onPressed: null),
-          const SizedBox(height: AppSpacing.s12),
           Wrap(
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.center,
@@ -382,6 +399,26 @@ class _Footer extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The only pinned element: the call to action.
+class _CtaBar extends StatelessWidget {
+  const _CtaBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.screen,
+        AppSpacing.s8,
+        AppSpacing.screen,
+        AppSpacing.s12,
+      ),
+      // Deliberately disabled: no purchase is possible yet, and we will not
+      // pretend otherwise.
+      child: PrimaryButton(label: AppStrings.paywallCta, onPressed: null),
     );
   }
 }

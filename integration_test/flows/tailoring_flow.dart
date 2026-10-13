@@ -145,11 +145,18 @@ void registerTailoringFlow() {
       await waitFor(tester, find.text(AppStrings.tailorStepPill(2)));
       await tapOn(tester, find.byTooltip(AppStrings.tailorMoreOptions));
       await tapText(tester, AppStrings.tailorStartOver);
-      final asked = find
-          .text(AppStrings.tailorStartOverTitle)
-          .evaluate()
-          .isNotEmpty;
-      debugPrint('QA-NOTE start over on match page asks first: $asked');
+      await waitFor(tester, find.text(AppStrings.tailorStartOverTitle));
+      await shot(tester, 'tailoring', 'match-page-start-over');
+      // Cancel keeps the match; confirming clears it.
+      await tapText(tester, AppStrings.tailorCancel);
+      expect(find.text(AppStrings.tailorStepPill(2)), findsOneWidget);
+      await tapOn(tester, find.byTooltip(AppStrings.tailorMoreOptions));
+      await tapText(tester, AppStrings.tailorStartOver);
+      await tapOn(
+        tester,
+        find.widgetWithText(FilledButton, AppStrings.tailorStartOver),
+      );
+      await waitFor(tester, find.text(AppStrings.tailorStepPill(1)));
       await shot(tester, 'tailoring', 'match-page-start-over');
     },
   );

@@ -37,6 +37,10 @@ const String qaRun = String.fromEnvironment('QA_RUN', defaultValue: 'main');
 final double qaTextScale =
     double.tryParse(const String.fromEnvironment('QA_TEXT_SCALE')) ?? 1.0;
 
+/// When true (the 1.5x / 2x runs), the run ends with a test that fails if any
+/// layout overflow was recorded anywhere.
+const bool qaStrictOverflow = bool.fromEnvironment('QA_STRICT_OVERFLOW');
+
 /// Host folder for files a flow wants to hand back (e.g. exported PDFs). The
 /// iOS simulator shares the Mac's file system, so the app can write there.
 const String qaHostOut = String.fromEnvironment('QA_HOST_OUT');
@@ -61,6 +65,16 @@ void registerQaSuite(void Function() registerFlows) {
         qaBinding.reportData = {...?qaBinding.reportData, 'qaIssues': qaIssues},
   );
   registerFlows();
+  if (qaStrictOverflow) {
+    testWidgets('no layout overflow anywhere in the run', (tester) async {
+      final overflows = [
+        for (final issue in qaIssues)
+          if (issue['kind'] == 'overflow')
+            '${issue['test']}: ${issue['message']}',
+      ];
+      expect(overflows, isEmpty, reason: overflows.join('\n'));
+    });
+  }
 }
 
 /// Boots Hive + Firebase (pointed at the Auth emulator) once per process.
@@ -316,12 +330,22 @@ Future<void> scrollIntoReach(WidgetTester tester, Finder finder) async {
     for (final element in lists.evaluate()) {
       final widget = element.widget as Scrollable;
       if (widget.axisDirection == AxisDirection.down) {
-        await tester.scrollUntilVisible(
-          finder,
-          300,
-          scrollable: find.byWidget(widget),
-          maxScrolls: 60,
-        );
+        try {
+          await tester.scrollUntilVisible(
+            finder,
+            300,
+            scrollable: find.byWidget(widget),
+            maxScrolls: 40,
+          );
+        } catch (_) {
+          // It may be above the viewport: look upwards too.
+          await tester.scrollUntilVisible(
+            finder,
+            -300,
+            scrollable: find.byWidget(widget),
+            maxScrolls: 80,
+          );
+        }
         break;
       }
     }

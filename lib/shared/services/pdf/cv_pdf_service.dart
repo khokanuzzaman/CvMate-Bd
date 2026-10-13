@@ -75,6 +75,8 @@ class CvPdfService {
         .replaceAll(RegExp(r'^_+|_+$'), '');
 
     final safeName = baseName.isEmpty ? 'cv_export' : baseName;
-    return '${safeName}_cv.pdf';
+    // "Staff Nurse CV" is already a CV: don't append a second "_cv".
+    final alreadyNamedCv = RegExp(r'(^|_)cv(_|$)').hasMatch(safeName);
+    return alreadyNamedCv ? '$safeName.pdf' : '${safeName}_cv.pdf';
   }
 }

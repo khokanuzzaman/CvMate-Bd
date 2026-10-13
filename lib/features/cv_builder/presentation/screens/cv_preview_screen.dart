@@ -4,6 +4,7 @@ import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
+import 'package:careermatebd/core/widgets/adaptive_button_row.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/app_top_bar.dart';
 import 'package:careermatebd/core/widgets/custom_empty_state.dart';
@@ -131,29 +132,22 @@ class CvPreviewScreen extends ConsumerWidget {
                 AppSpacing.screen,
                 AppSpacing.s16,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 40,
-                    child: SecondaryButton(
-                      label: AppStrings.previewTemplate,
-                      leadingIcon: Icons.grid_view_rounded,
-                      outlineColor: AppColors.lineStrong,
-                      onPressed: () => context.push(RouteNames.cvTemplatePath),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    flex: 60,
-                    child: PrimaryButton(
-                      label: AppStrings.previewExport,
-                      leadingIcon: Icons.file_download_outlined,
-                      onPressed: draft.hasContent
-                          ? () => _export(context, ref, _ExportKind.share)
-                          : null,
-                    ),
-                  ),
-                ],
+              child: AdaptiveButtonRow(
+                secondaryFlex: 40,
+                primaryFlex: 60,
+                secondary: SecondaryButton(
+                  label: AppStrings.previewTemplate,
+                  leadingIcon: Icons.grid_view_rounded,
+                  outlineColor: AppColors.lineStrong,
+                  onPressed: () => context.push(RouteNames.cvTemplatePath),
+                ),
+                primary: PrimaryButton(
+                  label: AppStrings.previewExport,
+                  leadingIcon: Icons.file_download_outlined,
+                  onPressed: draft.hasContent
+                      ? () => _export(context, ref, _ExportKind.share)
+                      : null,
+                ),
               ),
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
+import 'package:careermatebd/core/widgets/text_scale_clamp.dart';
 import 'package:flutter/material.dart';
 
 /// One choice in a [SegmentedToggle].
@@ -14,6 +15,9 @@ class SegmentedOption<T> {
 
 /// Pill-shaped segmented control: a white track with a `primary` selected
 /// segment, equal-width segments, 48dp tall. (DESIGN_TOKENS.md → segmented)
+///
+/// At large system text the segments no longer fit side by side, so they stack
+/// vertically (one per row, full width) instead of squeezing or overflowing.
 class SegmentedToggle<T> extends StatelessWidget {
   const SegmentedToggle({
     super.key,
@@ -26,6 +30,12 @@ class SegmentedToggle<T> extends StatelessWidget {
   final T value;
   final ValueChanged<T> onChanged;
 
+  Widget _segment(SegmentedOption<T> option) => _Segment(
+    label: option.label,
+    selected: option.value == value,
+    onTap: () => onChanged(option.value),
+  );
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -35,18 +45,16 @@ class SegmentedToggle<T> extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadii.input + 4),
         border: Border.all(color: AppColors.line),
       ),
-      child: Row(
-        children: [
-          for (final option in options)
-            Expanded(
-              child: _Segment(
-                label: option.label,
-                selected: option.value == value,
-                onTap: () => onChanged(option.value),
-              ),
+      child: isLargeText(context)
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [for (final option in options) _segment(option)],
+            )
+          : Row(
+              children: [
+                for (final option in options) Expanded(child: _segment(option)),
+              ],
             ),
-        ],
-      ),
     );
   }
 }

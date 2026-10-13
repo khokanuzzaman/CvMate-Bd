@@ -58,11 +58,16 @@ class AppChip extends StatelessWidget {
           Icon(Icons.add, size: 16, color: _foreground),
           const SizedBox(width: AppSpacing.s6),
         ],
-        Text(
-          label,
-          style: AppTextStyles.bodySm.copyWith(
-            color: _foreground,
-            fontWeight: FontWeight.w600,
+        // Flexible so a label wider than the space it is given (a long keyword
+        // such as "Compassionate Registered Nurse") wraps instead of
+        // overflowing the row.
+        Flexible(
+          child: Text(
+            label,
+            style: AppTextStyles.bodySm.copyWith(
+              color: _foreground,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         if (variant == AppChipVariant.removable) ...[

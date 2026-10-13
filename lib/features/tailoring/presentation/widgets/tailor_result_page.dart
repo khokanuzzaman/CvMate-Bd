@@ -4,6 +4,7 @@ import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
+import 'package:careermatebd/core/widgets/adaptive_button_row.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/overflow_menu_button.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_controller.dart';
@@ -87,35 +88,28 @@ class TailorResultPage extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: SecondaryButton(
-                    label: AppStrings.tailorCoverLetter,
-                    leadingIcon: Icons.mail_outline_rounded,
-                    onPressed: state.isBusy
-                        ? null
-                        : () async {
-                            await ref
-                                .read(tailoringFlowProvider.notifier)
-                                .prepareCoverLetter();
-                            if (context.mounted) {
-                              context.push(RouteNames.coverLetterPath);
-                            }
-                          },
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s12),
-                Expanded(
-                  child: PrimaryButton(
-                    label: AppStrings.tailorSaveExport,
-                    leadingIcon: Icons.download_rounded,
-                    onPressed: state.isBusy
-                        ? null
-                        : () => saveAndExportTailored(ref, context),
-                  ),
-                ),
-              ],
+            AdaptiveButtonRow(
+              secondary: SecondaryButton(
+                label: AppStrings.tailorCoverLetter,
+                leadingIcon: Icons.mail_outline_rounded,
+                onPressed: state.isBusy
+                    ? null
+                    : () async {
+                        await ref
+                            .read(tailoringFlowProvider.notifier)
+                            .prepareCoverLetter();
+                        if (context.mounted) {
+                          context.push(RouteNames.coverLetterPath);
+                        }
+                      },
+              ),
+              primary: PrimaryButton(
+                label: AppStrings.tailorSaveExport,
+                leadingIcon: Icons.download_rounded,
+                onPressed: state.isBusy
+                    ? null
+                    : () => saveAndExportTailored(ref, context),
+              ),
             ),
             const SizedBox(height: AppSpacing.s10),
             Text(

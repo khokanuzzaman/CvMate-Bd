@@ -67,4 +67,27 @@ void main() {
     expect(sizes[0].width, sizes[1].width);
     expect(sizes[1].width, sizes[2].width);
   });
+
+  testWidgets('stacks the segments at large text instead of squeezing them', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+    int? picked;
+    await pump(tester, value: 1, onChanged: (v) => picked = v);
+
+    final one = tester.getRect(find.text('One'));
+    final two = tester.getRect(find.text('Two'));
+    final three = tester.getRect(find.text('Three'));
+    expect(one.bottom, lessThanOrEqualTo(two.top));
+    expect(two.bottom, lessThanOrEqualTo(three.top));
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('Three'));
+    expect(picked, 3);
+  });
 }

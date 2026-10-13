@@ -15,6 +15,7 @@ class PaywallPlanCard extends StatelessWidget {
     required this.unit,
     this.highlighted = false,
     this.badge,
+    this.compact = false,
   });
 
   final String name;
@@ -22,6 +23,9 @@ class PaywallPlanCard extends StatelessWidget {
   final String unit;
   final bool highlighted;
   final String? badge;
+
+  /// Tighter padding for short screens.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -34,11 +38,11 @@ class PaywallPlanCard extends StatelessWidget {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSpacing.s16,
-                AppSpacing.s18,
+                compact ? AppSpacing.s14 : AppSpacing.s18,
                 AppSpacing.s16,
-                AppSpacing.s18,
+                compact ? AppSpacing.s14 : AppSpacing.s18,
               ),
               decoration: BoxDecoration(
                 color: AppColors.surface,

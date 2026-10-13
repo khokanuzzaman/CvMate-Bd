@@ -1,6 +1,7 @@
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/widgets/adaptive_button_row.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:flutter/material.dart';
 
@@ -26,26 +27,19 @@ class BuilderFooter extends StatelessWidget {
         AppSpacing.screen,
         AppSpacing.s16,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 32,
-            child: SecondaryButton(
-              label: AppStrings.builderBack,
-              outlineColor: AppColors.lineStrong,
-              onPressed: onBack,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.s12),
-          Expanded(
-            flex: 68,
-            child: PrimaryButton(
-              label: primaryLabel,
-              trailingIcon: Icons.arrow_forward_rounded,
-              onPressed: onPrimary,
-            ),
-          ),
-        ],
+      child: AdaptiveButtonRow(
+        secondaryFlex: 32,
+        primaryFlex: 68,
+        secondary: SecondaryButton(
+          label: AppStrings.builderBack,
+          outlineColor: AppColors.lineStrong,
+          onPressed: onBack,
+        ),
+        primary: PrimaryButton(
+          label: primaryLabel,
+          trailingIcon: Icons.arrow_forward_rounded,
+          onPressed: onPrimary,
+        ),
       ),
     );
   }

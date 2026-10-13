@@ -2,6 +2,7 @@ import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
 import 'package:careermatebd/features/subscription/presentation/screens/paywall_screen.dart';
+import 'package:careermatebd/features/subscription/presentation/widgets/paywall_plan_card.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -160,6 +161,13 @@ void registerCvBuilderFlow() {
       if (doc is List<int>) {
         await saveHostFile('cv-builder/export-1.pdf', doc);
       }
+      final sharedName = (shares.first.arguments as Map)['name'] as String;
+      expect(sharedName, endsWith('.pdf'));
+      expect(
+        sharedName,
+        isNot(contains('_cv_cv')),
+        reason: 'the export file name must not double the "_cv" suffix',
+      );
       expect(find.byType(PaywallScreen), findsNothing);
       expect(await entitlements.remainingFreeExports, 0);
       await shot(tester, 'cv-builder', 'after-export-1');
@@ -172,6 +180,26 @@ void registerCvBuilderFlow() {
       await waitFor(tester, find.byType(PaywallScreen));
       expect(shares.length, 1, reason: 'export #2 must not share');
       await shot(tester, 'cv-builder', 'paywall-after-export-2');
+
+      // Prices are on the first screen, above the pinned button (even on an
+      // iPhone SE). Only checked at normal text size: at 1.5x the page scrolls.
+      if (qaTextScale <= 1.0) {
+        final cta = tester.getRect(
+          find.widgetWithText(PrimaryButton, AppStrings.paywallCta),
+        );
+        for (final element in find.byType(PaywallPlanCard).evaluate()) {
+          final rect = tester.getRect(find.byWidget(element.widget));
+          expect(
+            rect.bottom,
+            lessThanOrEqualTo(cta.top),
+            reason: 'a price card is hidden below the fold / behind the button',
+          );
+        }
+        expect(
+          tester.getRect(find.text(AppStrings.paywallOneTimeSubtitle)).bottom,
+          lessThanOrEqualTo(cta.top),
+        );
+      }
     },
   );
 

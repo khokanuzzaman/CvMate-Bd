@@ -3,6 +3,7 @@ import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
+import 'package:careermatebd/core/widgets/adaptive_button_row.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/app_card.dart';
 import 'package:careermatebd/core/widgets/app_top_bar.dart';
@@ -28,6 +29,7 @@ class CoverLetterLetterView extends StatefulWidget {
     required this.onShare,
     required this.onCopy,
     required this.onChangeDetails,
+    required this.onNewLetter,
     required this.onToneChanged,
     required this.onRegenerate,
     required this.onExport,
@@ -40,6 +42,7 @@ class CoverLetterLetterView extends StatefulWidget {
   final VoidCallback onShare;
   final VoidCallback onCopy;
   final VoidCallback onChangeDetails;
+  final VoidCallback onNewLetter;
   final ValueChanged<AiTone> onToneChanged;
   final VoidCallback onRegenerate;
   final VoidCallback onExport;
@@ -75,28 +78,19 @@ class _CoverLetterLetterViewState extends State<CoverLetterLetterView> {
                 AppSpacing.screen,
                 AppSpacing.s16,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SecondaryButton(
-                      label: AppStrings.coverLetterRegenerate,
-                      leadingIcon: Icons.refresh_rounded,
-                      onPressed: state.isGenerating
-                          ? null
-                          : widget.onRegenerate,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: PrimaryButton(
-                      label: AppStrings.coverLetterExport,
-                      leadingIcon: Icons.download_rounded,
-                      onPressed: state.isGenerating || !hasContent
-                          ? null
-                          : widget.onExport,
-                    ),
-                  ),
-                ],
+              child: AdaptiveButtonRow(
+                secondary: SecondaryButton(
+                  label: AppStrings.coverLetterRegenerate,
+                  leadingIcon: Icons.refresh_rounded,
+                  onPressed: state.isGenerating ? null : widget.onRegenerate,
+                ),
+                primary: PrimaryButton(
+                  label: AppStrings.coverLetterExport,
+                  leadingIcon: Icons.download_rounded,
+                  onPressed: state.isGenerating || !hasContent
+                      ? null
+                      : widget.onExport,
+                ),
               ),
             ),
           ],
@@ -132,6 +126,12 @@ class _CoverLetterLetterViewState extends State<CoverLetterLetterView> {
                         icon: Icons.copy_outlined,
                         enabled: hasContent && !state.isGenerating,
                         onSelected: widget.onCopy,
+                      ),
+                      OverflowMenuItem(
+                        label: AppStrings.coverLetterNewLetter,
+                        icon: Icons.add_rounded,
+                        enabled: !state.isGenerating,
+                        onSelected: widget.onNewLetter,
                       ),
                     ],
                   ),
