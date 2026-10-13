@@ -11,7 +11,7 @@ void registerProfileNavFlow() {
     (tester) async {
       await launchSignedIn(tester);
       await tapText(tester, 'Profile');
-      await waitFor(tester, find.text(AppStrings.profileLogOut));
+      await waitFor(tester, find.text(AppStrings.goProTitle));
       await shot(tester, 'profile', 'profile-top');
       expect(
         find.text(AppStrings.planFree),
@@ -25,7 +25,7 @@ void registerProfileNavFlow() {
       await waitFor(tester, find.text(AppStrings.paywallTitle));
       await shot(tester, 'profile', 'paywall-from-profile');
       await tapOn(tester, find.bySemanticsLabel(AppStrings.paywallClose));
-      await waitFor(tester, find.text(AppStrings.profileLogOut));
+      await waitGone(tester, find.text(AppStrings.paywallTitle));
 
       // Language sheet → Bangla.
       await tapText(tester, AppStrings.profileAppLanguage);
@@ -65,7 +65,7 @@ void registerProfileNavFlow() {
       await pumpFor(tester, const Duration(milliseconds: 500));
       await shot(tester, 'profile', 'settings-bottom');
       await goBack(tester);
-      await waitFor(tester, find.text(AppStrings.profileLogOut));
+      await waitGone(tester, find.text(AppStrings.settings));
 
       // Log out asks first.
       await tapText(tester, AppStrings.profileLogOut);
@@ -134,7 +134,7 @@ void registerProfileNavFlow() {
     await waitFor(tester, find.text(AppStrings.trackerEmptyTitle));
     await shot(tester, 'nav', 'tracker-tab');
     await tapText(tester, 'Profile');
-    await waitFor(tester, find.text(AppStrings.profileLogOut));
+    await waitFor(tester, find.text(AppStrings.goProTitle));
     await shot(tester, 'nav', 'profile-tab');
     await tapText(tester, 'Home');
     await waitFor(tester, find.text(AppStrings.homeTitle));

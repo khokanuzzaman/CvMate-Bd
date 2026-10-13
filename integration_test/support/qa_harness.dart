@@ -57,10 +57,8 @@ void registerQaSuite(void Function() registerFlows) {
   qaBinding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(_bootQa);
   tearDownAll(
-    () => qaBinding.reportData = {
-      ...?qaBinding.reportData,
-      'qaIssues': qaIssues,
-    },
+    () =>
+        qaBinding.reportData = {...?qaBinding.reportData, 'qaIssues': qaIssues},
   );
   registerFlows();
 }
@@ -312,6 +310,22 @@ Future<void> shotTop(WidgetTester tester, String flow, String step) async {
 /// short while the keyboard has shrunk the viewport, so fall back to dragging
 /// the nearest vertical scrollable.
 Future<void> scrollIntoReach(WidgetTester tester, Finder finder) async {
+  // Lazy lists only build what is near the viewport; scroll to build it.
+  if (finder.evaluate().isEmpty) {
+    final lists = find.byType(Scrollable).hitTestable();
+    for (final element in lists.evaluate()) {
+      final widget = element.widget as Scrollable;
+      if (widget.axisDirection == AxisDirection.down) {
+        await tester.scrollUntilVisible(
+          finder,
+          300,
+          scrollable: find.byWidget(widget),
+          maxScrolls: 60,
+        );
+        break;
+      }
+    }
+  }
   // A user closes the keyboard (tap outside / Done) before reaching a button
   // below the fold; the open keyboard shrinks the viewport to a sliver.
   if (!finder.hitTestable().evaluate().isNotEmpty) {
@@ -369,10 +383,7 @@ Finder fieldByHint(String hint) => find.widgetWithText(TextField, hint);
 /// The text currently in [field]'s editable.
 String fieldText(WidgetTester tester, Finder field) => tester
     .state<EditableTextState>(
-      find.descendant(
-        of: field.first,
-        matching: find.byType(EditableText),
-      ),
+      find.descendant(of: field.first, matching: find.byType(EditableText)),
     )
     .textEditingValue
     .text;

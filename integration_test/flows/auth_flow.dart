@@ -13,7 +13,7 @@ Finder get _logInButton =>
 
 Future<void> _logOutFromProfile(WidgetTester tester) async {
   await tapText(tester, 'Profile');
-  await waitFor(tester, find.text(AppStrings.profileLogOut));
+  await waitFor(tester, find.text(AppStrings.goProTitle));
   await tapText(tester, AppStrings.profileLogOut);
   await tapOn(
     tester,
