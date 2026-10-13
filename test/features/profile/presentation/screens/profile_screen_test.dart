@@ -81,6 +81,25 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  testWidgets('the Theme row stays readable at 2x text', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _open(tester);
+
+    // At 2x the page is taller than the surface; scroll the row into view.
+    await tester.scrollUntilVisible(
+      find.text(AppStrings.profileTheme),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    // The label used to be squeezed to one letter per line ("Th / e / m").
+    expect(
+      tester.getSize(find.text(AppStrings.profileTheme)).height,
+      lessThan(60),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   group('account', () {
     testWidgets('shows the name, email and Free plan', (tester) async {
       await _open(tester);

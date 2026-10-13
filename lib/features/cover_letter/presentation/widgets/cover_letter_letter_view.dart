@@ -62,7 +62,48 @@ class _CoverLetterLetterViewState extends State<CoverLetterLetterView> {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
+      // Regenerate / Export are the Scaffold's bottom bar so snackbars are laid
+      // out above them instead of covering them.
+      bottomNavigationBar: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                AppSpacing.s8,
+                AppSpacing.screen,
+                AppSpacing.s16,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SecondaryButton(
+                      label: AppStrings.coverLetterRegenerate,
+                      leadingIcon: Icons.refresh_rounded,
+                      onPressed: state.isGenerating
+                          ? null
+                          : widget.onRegenerate,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s12),
+                  Expanded(
+                    child: PrimaryButton(
+                      label: AppStrings.coverLetterExport,
+                      leadingIcon: Icons.download_rounded,
+                      onPressed: state.isGenerating || !hasContent
+                          ? null
+                          : widget.onExport,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             Padding(
@@ -146,37 +187,6 @@ class _CoverLetterLetterViewState extends State<CoverLetterLetterView> {
                     ),
                   ],
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screen,
-                AppSpacing.s8,
-                AppSpacing.screen,
-                AppSpacing.s16,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SecondaryButton(
-                      label: AppStrings.coverLetterRegenerate,
-                      leadingIcon: Icons.refresh_rounded,
-                      onPressed: state.isGenerating
-                          ? null
-                          : widget.onRegenerate,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: PrimaryButton(
-                      label: AppStrings.coverLetterExport,
-                      leadingIcon: Icons.download_rounded,
-                      onPressed: state.isGenerating || !hasContent
-                          ? null
-                          : widget.onExport,
-                    ),
-                  ),
-                ],
               ),
             ),
           ],

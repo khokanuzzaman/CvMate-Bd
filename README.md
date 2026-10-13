@@ -27,6 +27,30 @@ A new Flutter project.
 CI runs the same steps on every pull request and on pushes to `main`
 (`.github/workflows/flutter.yml`).
 
+## Release builds
+
+A release build **refuses to start** (`StateError` in `main()`) unless AI goes
+through the Firebase proxy, so canned mock AI output can never ship:
+
+```sh
+flutter build apk --release --dart-define=USE_FIREBASE_AI=true
+```
+
+Debug builds and `flutter test` keep using the mock by default. The check lives
+in `EnvConfig.aiConfigurationProblem` (`lib/core/config/env_config.dart`).
+
+## QA on the iOS Simulator
+
+`integration_test/` taps through the real app on a simulator against the
+**Firebase Auth emulator** (never the production project) and saves a
+screenshot of every step to `build/qa/<flow>/<step>.png`. It is test-only: it
+lives outside `lib/`, so it cannot be part of a release build. See
+[`docs/QA_REPORT.md`](docs/QA_REPORT.md) for the findings and the commands.
+
+`integration_test/qa_app_main.dart` is a test-only entrypoint that runs the real
+app wired to the same emulator (no cloud sync, no analytics) so you can explore
+by hand: `flutter run -t integration_test/qa_app_main.dart --dart-define=QA_AUTH_EMULATOR_HOST=127.0.0.1`.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

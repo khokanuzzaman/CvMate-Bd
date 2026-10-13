@@ -60,7 +60,11 @@ class _IssueRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final example = issue.exampleImprovement?.trim() ?? '';
+    // The rule engine's samples already start with "Example:"; the row adds its
+    // own label, so strip the engine's to avoid "Example: Example: …".
+    final example = (issue.exampleImprovement ?? '')
+        .trim()
+        .replaceFirst(RegExp(r'^example:\s*', caseSensitive: false), '');
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.s16),

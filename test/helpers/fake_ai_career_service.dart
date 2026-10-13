@@ -16,6 +16,12 @@ class FakeAiCareerService implements AiCareerService {
   String? lastCoverLetterSummary;
   CvProfile? lastCoverLetterProfile;
 
+  /// When set, [tailorCvForJob] fails with it.
+  Failure? tailorFailure;
+
+  /// When set, [generateCoverLetter] fails with it.
+  Failure? coverLetterFailure;
+
   static const String tailoredSummary =
       'Front-end developer focused on building accessible, performant React '
       'and TypeScript interfaces. Comfortable owning features from design '
@@ -36,6 +42,9 @@ class FakeAiCareerService implements AiCareerService {
     AiTone tone = AiTone.professional,
   }) async {
     tailorCalls++;
+    if (tailorFailure != null) {
+      return FailureResult(tailorFailure!);
+    }
     final experience = profile.experiences.first;
     return Success(
       CvTailoringSuggestion(
@@ -73,6 +82,9 @@ class FakeAiCareerService implements AiCareerService {
     AiTone tone = AiTone.formal,
   }) async {
     coverLetterCalls++;
+    if (coverLetterFailure != null) {
+      return FailureResult(coverLetterFailure!);
+    }
     lastCoverLetterTone = tone;
     lastCoverLetterCompany = companyName;
     lastCoverLetterJobTitle = jobTitle;

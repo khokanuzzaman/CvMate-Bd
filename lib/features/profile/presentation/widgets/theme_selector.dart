@@ -14,23 +14,27 @@ class ThemeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s4),
-      decoration: const BoxDecoration(
-        color: AppColors.primarySoft,
-        borderRadius: AppRadii.pillRadius,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _Segment(
-            label: AppStrings.themeLight,
-            selected: true,
-            onTap: onLight,
-          ),
-          const _Segment(label: AppStrings.themeDark),
-          const _Segment(label: AppStrings.themeAuto),
-        ],
+    // Scales down rather than overflowing the card at very large text sizes.
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.s4),
+        decoration: const BoxDecoration(
+          color: AppColors.primarySoft,
+          borderRadius: AppRadii.pillRadius,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _Segment(
+              label: AppStrings.themeLight,
+              selected: true,
+              onTap: onLight,
+            ),
+            const _Segment(label: AppStrings.themeDark),
+            const _Segment(label: AppStrings.themeAuto),
+          ],
+        ),
       ),
     );
   }

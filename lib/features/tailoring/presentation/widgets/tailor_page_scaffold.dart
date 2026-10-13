@@ -41,7 +41,13 @@ class TailorPageScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
+      // The footer is the Scaffold's bottom bar so snackbars (e.g. an AI
+      // error) are laid out above its button instead of covering it.
+      bottomNavigationBar: SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [footer]),
+      ),
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             Padding(
@@ -94,7 +100,6 @@ class TailorPageScaffold extends StatelessWidget {
               ),
             ),
             Expanded(child: body),
-            footer,
           ],
         ),
       ),

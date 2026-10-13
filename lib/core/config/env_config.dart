@@ -35,6 +35,26 @@ abstract final class EnvConfig {
   static bool get isDirectOpenAiBlockedForRelease =>
       wantsDirectOpenAi && !canUseDirectOpenAiInThisBuild;
 
+  /// Why this build must not start, or null when its AI setup is acceptable.
+  ///
+  /// With the defaults (`USE_FIREBASE_AI=false`, `USE_MOCK_AI=true`) the app
+  /// answers every AI feature with canned mock output. That is fine for
+  /// development and tests, but a **release** build that does it would ship
+  /// fake tailoring, cover letters and interview questions to users. So a
+  /// release build must be built with `--dart-define=USE_FIREBASE_AI=true`.
+  /// (Direct OpenAI calls are debug-only, see [canUseDirectOpenAiInThisBuild].)
+  static String? aiConfigurationProblem({
+    bool isRelease = kReleaseMode,
+    bool firebaseAi = useFirebaseAi,
+  }) {
+    if (isRelease && !firebaseAi) {
+      return 'This release build would use the mock AI. Build it with '
+          '--dart-define=USE_FIREBASE_AI=true so AI features go through the '
+          'Firebase proxy, or ship without AI features.';
+    }
+    return null;
+  }
+
   static bool get hasOpenAiApiKey => openAiApiKey.isNotEmpty;
   static bool get hasOpenAiProxy => openAiProxyUrl.isNotEmpty;
 

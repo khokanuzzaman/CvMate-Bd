@@ -65,12 +65,20 @@ class SettingsRow extends StatelessWidget {
         ? AppColors.danger
         : (enabled ? AppColors.ink : AppColors.muted2);
 
+    // A Wrap, not a Row: at large text sizes a wide trailing widget (the theme
+    // selector) wraps below the label instead of squeezing it to one letter
+    // per line. When both fit they sit on one line, label left, trailing right.
     final content = ConstrainedBox(
       constraints: const BoxConstraints(minHeight: AppSpacing.minTouchTarget),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
+      child: SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          runSpacing: AppSpacing.s4,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -85,9 +93,9 @@ class SettingsRow extends StatelessWidget {
                   Text(subtitle!, style: AppTextStyles.caption),
               ],
             ),
-          ),
-          ?trailing,
-        ],
+            ?trailing,
+          ],
+        ),
       ),
     );
 

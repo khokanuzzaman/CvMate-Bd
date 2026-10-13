@@ -29,6 +29,17 @@ Finder get _centerCircle => find.ancestor(
 );
 
 void main() {
+  testWidgets('labels cap their text scale: no overflow at 2x', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _pumpNavBar(tester);
+
+    // A RenderFlex overflow is reported as an exception.
+    expect(tester.takeException(), isNull);
+    // "Tracker" stays on one line ("Tracke / r" before).
+    expect(tester.getSize(find.text('Tracker')).height, lessThan(24));
+  });
+
   group('BottomNavBar (390px wide)', () {
     testWidgets('lays out without overflow and keeps the 64px bar height', (
       tester,

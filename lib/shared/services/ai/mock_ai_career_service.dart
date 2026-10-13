@@ -31,6 +31,13 @@ final mockAiCareerServiceProvider = Provider<MockAiCareerService>((ref) {
 });
 
 final aiCareerServiceProvider = Provider<AiCareerService>((ref) {
+  // Defense in depth for entry points other than `main()`: never hand a
+  // release build the mock.
+  final problem = EnvConfig.aiConfigurationProblem();
+  if (problem != null) {
+    throw StateError(problem);
+  }
+
   if (EnvConfig.useFirebaseAi) {
     return ref.watch(firebaseAiCareerServiceProvider);
   }

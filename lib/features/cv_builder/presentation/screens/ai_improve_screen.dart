@@ -344,11 +344,19 @@ class _CvSelectionCard extends StatelessWidget {
           Text('Selected CV', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
+            isExpanded: true,
             initialValue: selectedCv.id,
             decoration: const InputDecoration(labelText: 'Choose saved CV'),
             items: [
               for (final cv in state.availableCvs)
-                DropdownMenuItem(value: cv.id, child: Text(cv.displayTitle)),
+                DropdownMenuItem(
+                  value: cv.id,
+                  child: Text(
+                    cv.displayTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
             ],
             onChanged: onCvChanged,
           ),
@@ -413,11 +421,19 @@ class _ImprovementSetupCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<AiImproveType>(
+            isExpanded: true,
             initialValue: state.improvementType,
             decoration: const InputDecoration(labelText: 'Improvement type'),
             items: [
               for (final type in AiImproveType.values)
-                DropdownMenuItem(value: type, child: Text(type.label)),
+                DropdownMenuItem(
+                  value: type,
+                  child: Text(
+                    type.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
             ],
             onChanged: onTypeChanged,
           ),
@@ -510,6 +526,7 @@ class _ExperienceSelectorCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
+            isExpanded: true,
             initialValue: state.selectedExperienceId,
             decoration: const InputDecoration(labelText: 'Experience entry'),
             items: [
@@ -518,6 +535,8 @@ class _ExperienceSelectorCard extends StatelessWidget {
                   value: experience.id,
                   child: Text(
                     '${experience.jobTitle.ifEmpty('Untitled role')} • ${experience.companyName.ifEmpty('Unknown company')}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
             ],
@@ -527,6 +546,7 @@ class _ExperienceSelectorCard extends StatelessWidget {
               selectedExperience.highlights.length > 1) ...[
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
+              isExpanded: true,
               initialValue: state.selectedExperienceBulletIndex,
               decoration: const InputDecoration(labelText: 'Bullet item'),
               items: [
@@ -575,13 +595,18 @@ class _ProjectSelectorCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
+            isExpanded: true,
             initialValue: state.selectedProjectId,
             decoration: const InputDecoration(labelText: 'Project'),
             items: [
               for (final project in projects)
                 DropdownMenuItem(
                   value: project.id,
-                  child: Text(project.title.ifEmpty('Untitled project')),
+                  child: Text(
+                    project.title.ifEmpty('Untitled project'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
             ],
             onChanged: onProjectChanged,

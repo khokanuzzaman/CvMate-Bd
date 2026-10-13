@@ -45,25 +45,31 @@ class BottomNavBar extends StatelessWidget {
         top: false,
         child: Material(
           type: MaterialType.transparency,
-          child: SizedBox(
-            height: 64,
-            child: Row(
-              children: [
-                for (var i = 0; i < items.length; i++)
-                  Expanded(
-                    child: i == 2
-                        ? _CenterAction(
-                            item: items[i],
-                            selected: currentIndex == i,
-                            onTap: () => onTap(i),
-                          )
-                        : _NavButton(
-                            item: items[i],
-                            selected: currentIndex == i,
-                            onTap: () => onTap(i),
-                          ),
-                  ),
-              ],
+          // The bar has a fixed 64px height, so its labels cannot grow with the
+          // system text size (at 2x "Tracker" broke into "Tracke / r" and
+          // overflowed). Cap them at 1.3x, which still fits.
+          child: MediaQuery.withClampedTextScaling(
+            maxScaleFactor: 1.3,
+            child: SizedBox(
+              height: 64,
+              child: Row(
+                children: [
+                  for (var i = 0; i < items.length; i++)
+                    Expanded(
+                      child: i == 2
+                          ? _CenterAction(
+                              item: items[i],
+                              selected: currentIndex == i,
+                              onTap: () => onTap(i),
+                            )
+                          : _NavButton(
+                              item: items[i],
+                              selected: currentIndex == i,
+                              onTap: () => onTap(i),
+                            ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -95,6 +101,8 @@ class _NavButton extends StatelessWidget {
           const SizedBox(height: AppSpacing.s4),
           Text(
             item.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.hint.copyWith(
               color: color,
               fontWeight: FontWeight.w600,
@@ -145,6 +153,8 @@ class _CenterAction extends StatelessWidget {
               const SizedBox(height: AppSpacing.s4),
               Text(
                 item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.hint.copyWith(
                   color: selected ? AppColors.primary : AppColors.muted2,
                   fontWeight: FontWeight.w600,

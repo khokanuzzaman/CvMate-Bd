@@ -82,7 +82,30 @@ class CoverLetterSetupView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
+      // The Generate button is the Scaffold's bottom bar so snackbars are laid
+      // out above it instead of covering it.
+      bottomNavigationBar: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                AppSpacing.s8,
+                AppSpacing.screen,
+                AppSpacing.s16,
+              ),
+              child: PrimaryButton(
+                label: AppStrings.coverLetterGenerate,
+                leadingIcon: Icons.auto_awesome_outlined,
+                onPressed: state.isGenerating ? null : onGenerate,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             Padding(
@@ -148,19 +171,6 @@ class CoverLetterSetupView extends StatelessWidget {
                     ],
                   ],
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screen,
-                AppSpacing.s8,
-                AppSpacing.screen,
-                AppSpacing.s16,
-              ),
-              child: PrimaryButton(
-                label: AppStrings.coverLetterGenerate,
-                leadingIcon: Icons.auto_awesome_outlined,
-                onPressed: state.isGenerating ? null : onGenerate,
               ),
             ),
           ],
