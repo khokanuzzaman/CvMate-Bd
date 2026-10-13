@@ -143,6 +143,8 @@ class JobTrackerStatusFilterController extends Notifier<JobApplicationStatus?> {
 class JobTrackerSummary {
   const JobTrackerSummary({
     required this.total,
+    required this.submitted,
+    required this.closed,
     required this.pendingFollowUp,
     required this.interviews,
     required this.offers,
@@ -150,6 +152,12 @@ class JobTrackerSummary {
   });
 
   final int total;
+
+  /// Applications that have been sent: every one except drafts.
+  final int submitted;
+
+  /// Applications that ended without an offer: rejected or archived.
+  final int closed;
   final int pendingFollowUp;
   final int interviews;
   final int offers;
@@ -160,6 +168,16 @@ class JobTrackerSummary {
   ) {
     return JobTrackerSummary(
       total: applications.length,
+      submitted: applications
+          .where((item) => item.status != JobApplicationStatus.draft)
+          .length,
+      closed: applications
+          .where(
+            (item) =>
+                item.status == JobApplicationStatus.rejected ||
+                item.status == JobApplicationStatus.archived,
+          )
+          .length,
       pendingFollowUp: applications.where((item) => item.needsFollowUp).length,
       interviews: applications
           .where((item) => item.status == JobApplicationStatus.interview)

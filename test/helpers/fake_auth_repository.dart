@@ -8,13 +8,16 @@ import 'package:careermatebd/features/auth/domain/repositories/auth_repository.d
 /// In-memory [AuthRepository] for widget tests. Records calls and can be told to
 /// fail sign-in / sign-up with a message via [failWith].
 class FakeAuthRepository implements AuthRepository {
-  FakeAuthRepository({this.failWith});
+  FakeAuthRepository({this.failWith, this.displayName});
 
   final StreamController<AuthUser?> _controller =
       StreamController<AuthUser?>.broadcast();
 
   /// When non-null, sign-in and sign-up return a failure with this message.
   String? failWith;
+
+  /// Display name given to the users this fake signs in.
+  final String? displayName;
 
   final List<String> signInEmails = [];
   final List<String> createdEmails = [];
@@ -84,7 +87,12 @@ class FakeAuthRepository implements AuthRepository {
       return FailureResult<AuthUser>(Failure(message));
     }
 
-    final user = AuthUser(uid: uid, email: email, isAnonymous: isAnonymous);
+    final user = AuthUser(
+      uid: uid,
+      email: email,
+      displayName: displayName,
+      isAnonymous: isAnonymous,
+    );
     _currentUser = user;
     _controller.add(user);
     return Success(user);

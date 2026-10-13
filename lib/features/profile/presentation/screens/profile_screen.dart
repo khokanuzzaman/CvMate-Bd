@@ -1,317 +1,216 @@
-import 'package:careermatebd/app/constants/app_constants.dart';
+import 'package:careermatebd/app/constants/app_strings.dart';
+import 'package:careermatebd/app/router/main_tabs.dart';
 import 'package:careermatebd/app/router/route_names.dart';
-import 'package:careermatebd/core/widgets/custom_app_bar.dart';
-import 'package:careermatebd/core/widgets/custom_button.dart';
-import 'package:careermatebd/core/widgets/custom_card.dart';
-import 'package:careermatebd/core/widgets/custom_empty_state.dart';
-import 'package:careermatebd/core/widgets/custom_loading_view.dart';
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
+import 'package:careermatebd/core/widgets/bottom_nav_bar.dart';
+import 'package:careermatebd/core/widgets/section_label.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
-import 'package:careermatebd/features/auth/presentation/controllers/forgot_password_controller.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/logout_controller.dart';
-import 'package:careermatebd/features/settings/presentation/controllers/settings_overview_controller.dart';
+import 'package:careermatebd/features/cv_builder/data/cv_cloud_sync.dart';
+import 'package:careermatebd/features/profile/presentation/controllers/profile_providers.dart';
+import 'package:careermatebd/features/profile/presentation/widgets/go_pro_banner.dart';
+import 'package:careermatebd/features/profile/presentation/widgets/language_sheet.dart';
+import 'package:careermatebd/features/profile/presentation/widgets/profile_account_card.dart';
+import 'package:careermatebd/features/profile/presentation/widgets/profile_dialogs.dart';
+import 'package:careermatebd/features/profile/presentation/widgets/settings_group.dart';
+import 'package:careermatebd/features/profile/presentation/widgets/theme_selector.dart';
+import 'package:careermatebd/features/settings/domain/entities/app_preferences.dart';
+import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+/// The Profile tab: account and plan, Go Pro, preferences, backup status and
+/// log out. Everything else from the old Settings screen stays reachable
+/// through "More settings".
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
+  Future<void> _pickLanguage(BuildContext context, WidgetRef ref) async {
+    final current =
+        ref.read(appPreferencesControllerProvider).asData?.value ??
+        const AppPreferences.defaults();
+    final picked = await showLanguageSheet(
+      context,
+      selected: current.languagePreference,
+    );
+    if (picked == null || !context.mounted) {
+      return;
+    }
+    final message = await ref
+        .read(appPreferencesControllerProvider.notifier)
+        .updateLanguagePreference(picked);
+    if (!context.mounted || message == null) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(authSessionProvider);
     final user = ref.watch(currentAuthUserProvider);
-    final logoutState = ref.watch(logoutControllerProvider);
-    final forgotPasswordState = ref.watch(forgotPasswordControllerProvider);
-    final overview = ref.watch(settingsOverviewControllerProvider);
-    final theme = Theme.of(context);
-    final avatarLabel = user != null && user.email.trim().isNotEmpty
-        ? user.email.trim().substring(0, 1).toUpperCase()
-        : 'G';
+    final isPro = ref.watch(profileIsProProvider).asData?.value;
+    final preferences =
+        ref.watch(appPreferencesControllerProvider).asData?.value ??
+        const AppPreferences.defaults();
+    final backup = ref.watch(cloudBackupStatusProvider);
+    final version = ref.watch(appVersionLabelProvider).asData?.value;
+    final loggingOut = ref.watch(logoutControllerProvider).isLoading;
 
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Profile'),
+      backgroundColor: AppColors.bg,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: AppConstants.contentMaxWidth,
-              ),
-              child: session.isLoading && user == null
-                  ? const CustomLoadingView(
-                      message: 'Loading account details...',
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CustomCard(
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 30,
-                                child: Text(avatarLabel),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      user?.displayLabel ??
-                                          'Guest / local mode',
-                                      style: theme.textTheme.titleLarge,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      user?.email ??
-                                          'Using CareerMate BD without a signed-in account.',
-                                      style: theme.textTheme.bodyMedium,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        if (user == null)
-                          const CustomEmptyState(
-                            title: 'No account signed in',
-                            message:
-                                'You can keep using local-first career tools as a guest, or sign in for Firebase Auth account access.',
-                            icon: Icons.person_outline_rounded,
-                          )
-                        else
-                          CustomCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Account details',
-                                  style: theme.textTheme.titleMedium,
-                                ),
-                                const SizedBox(height: 12),
-                                Text('Firebase UID: ${user.uid}'),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Local CVs, cover letters, job applications, and interview prep sessions remain on this device until cloud sync is added later.',
-                                ),
-                              ],
-                            ),
-                          ),
-                        const SizedBox(height: 20),
-                        overview.when(
-                          loading: () => const CustomCard(
-                            child: LinearProgressIndicator(minHeight: 8),
-                          ),
-                          error: (error, stackTrace) => const SizedBox.shrink(),
-                          data: (data) => CustomCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Local data on this device',
-                                  style: theme.textTheme.titleMedium,
-                                ),
-                                const SizedBox(height: 12),
-                                Wrap(
-                                  spacing: 10,
-                                  runSpacing: 10,
-                                  children: [
-                                    Chip(label: Text('CVs: ${data.cvCount}')),
-                                    Chip(
-                                      label: Text(
-                                        'Cover letters: ${data.coverLetterCount}',
-                                      ),
-                                    ),
-                                    Chip(
-                                      label: Text(
-                                        'Applications: ${data.jobApplicationCount}',
-                                      ),
-                                    ),
-                                    Chip(
-                                      label: Text(
-                                        'Interview sessions: ${data.interviewPrepSessionCount}',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        if (logoutState.errorMessage != null) ...[
-                          _InlineMessage(
-                            message: logoutState.errorMessage!,
-                            isError: true,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        if (forgotPasswordState.errorMessage != null) ...[
-                          _InlineMessage(
-                            message: forgotPasswordState.errorMessage!,
-                            isError: true,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            if (user == null) ...[
-                              CustomButton(
-                                label: 'Login',
-                                onPressed: () =>
-                                    context.push(RouteNames.loginPath),
-                                icon: Icons.login_rounded,
-                                isExpanded: false,
-                              ),
-                              CustomButton.secondary(
-                                label: 'Create account',
-                                onPressed: () =>
-                                    context.push(RouteNames.registerPath),
-                                icon: Icons.app_registration_rounded,
-                                isExpanded: false,
-                              ),
-                            ] else ...[
-                              CustomButton.secondary(
-                                label: forgotPasswordState.isLoading
-                                    ? 'Sending reset...'
-                                    : 'Reset password',
-                                onPressed: forgotPasswordState.isLoading
-                                    ? null
-                                    : () => _handleResetPassword(
-                                        context,
-                                        ref,
-                                        user.email,
-                                      ),
-                                icon: Icons.lock_reset_rounded,
-                                isExpanded: false,
-                              ),
-                              CustomButton.secondary(
-                                label: logoutState.isLoading
-                                    ? 'Logging out...'
-                                    : 'Logout',
-                                onPressed: logoutState.isLoading
-                                    ? null
-                                    : () => _confirmLogout(context, ref),
-                                icon: Icons.logout_rounded,
-                                isExpanded: false,
-                              ),
-                            ],
-                            CustomButton.secondary(
-                              label: 'Open settings',
-                              onPressed: () =>
-                                  context.push(RouteNames.settingsPath),
-                              icon: Icons.settings_outlined,
-                              isExpanded: false,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-            ),
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            AppSpacing.s16,
+            AppSpacing.screen,
+            AppSpacing.s22,
           ),
+          children: [
+            Text(AppStrings.profileTitle, style: AppTextStyles.h1),
+            const SizedBox(height: AppSpacing.s16),
+            ProfileAccountCard(user: user, isPro: isPro),
+            if (isPro == false) ...[
+              const SizedBox(height: AppSpacing.s14),
+              GoProBanner(
+                onSeePlans: () =>
+                    context.push('${RouteNames.paywallPath}?source=profile'),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.s20),
+            const SectionLabel(AppStrings.profilePreferences),
+            const SizedBox(height: AppSpacing.s8),
+            SettingsGroup(
+              children: [
+                SettingsRow(
+                  label: AppStrings.profileAppLanguage,
+                  trailing: SettingsRow.value(
+                    preferences.languagePreference.label,
+                  ),
+                  onTap: () => _pickLanguage(context, ref),
+                ),
+                SettingsRow(
+                  label: AppStrings.profileTheme,
+                  trailing: ThemeSelector(
+                    onLight: () => ref
+                        .read(appPreferencesControllerProvider.notifier)
+                        .updateThemeMode(ThemeMode.light),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.s6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
+              child: Text(
+                AppStrings.themeComingSoon,
+                style: AppTextStyles.hint,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s16),
+            const SectionLabel(AppStrings.profileAccount),
+            const SizedBox(height: AppSpacing.s8),
+            SettingsGroup(
+              children: [
+                SettingsRow(
+                  label: AppStrings.profileCloudBackup,
+                  subtitle: backup == CloudBackupStatus.on
+                      ? AppStrings.profileCloudOnNote
+                      : AppStrings.profileCloudOffNote,
+                  trailing: _BackupPill(on: backup == CloudBackupStatus.on),
+                ),
+                const SettingsRow(
+                  label: AppStrings.paywallRestore,
+                  enabled: false,
+                  trailing: Text(
+                    AppStrings.profileComingSoon,
+                    style: TextStyle(color: AppColors.muted2, fontSize: 12.5),
+                  ),
+                ),
+                SettingsRow(
+                  label: AppStrings.profilePrivacyTerms,
+                  trailing: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.muted2,
+                  ),
+                  onTap: () => showPrivacyTermsDialog(context),
+                ),
+                SettingsRow(
+                  label: AppStrings.profileMoreSettings,
+                  trailing: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.muted2,
+                  ),
+                  onTap: () => context.push(RouteNames.settingsPath),
+                ),
+                if (user == null) ...[
+                  SettingsRow(
+                    label: AppStrings.profileLogIn,
+                    onTap: () => context.push(RouteNames.loginPath),
+                  ),
+                  SettingsRow(
+                    label: AppStrings.profileCreateAccount,
+                    onTap: () => context.push(RouteNames.registerPath),
+                  ),
+                ] else
+                  SettingsRow(
+                    label: AppStrings.profileLogOut,
+                    destructive: true,
+                    enabled: !loggingOut,
+                    onTap: () => confirmAndLogOut(context, ref),
+                  ),
+              ],
+            ),
+            if (version != null) ...[
+              const SizedBox(height: AppSpacing.s20),
+              Center(
+                child: Text(
+                  AppStrings.profileVersion(version),
+                  style: AppTextStyles.bodySm.copyWith(color: AppColors.muted2),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: MainTabs.profile,
+        onTap: (index) =>
+            MainTabs.open(context, index, current: MainTabs.profile),
+      ),
     );
-  }
-
-  Future<void> _handleResetPassword(
-    BuildContext context,
-    WidgetRef ref,
-    String email,
-  ) async {
-    final success = await ref
-        .read(forgotPasswordControllerProvider.notifier)
-        .sendResetLink(email: email);
-    if (!context.mounted) {
-      return;
-    }
-
-    final state = ref.read(forgotPasswordControllerProvider);
-    final message = success
-        ? (state.successMessage ?? 'Password reset email sent.')
-        : (state.errorMessage ?? 'Could not send a reset email right now.');
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text(
-            'Log out now? Your local CVs and drafts will remain on this device.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Logout'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (shouldLogout != true) {
-      return;
-    }
-
-    final success = await ref.read(logoutControllerProvider.notifier).signOut();
-    if (!context.mounted) {
-      return;
-    }
-
-    final state = ref.read(logoutControllerProvider);
-    final message = success
-        ? (state.successMessage ?? 'Logged out successfully.')
-        : (state.errorMessage ?? 'Could not log out right now.');
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-
-    if (success) {
-      context.go(RouteNames.onboardingPath);
-    }
   }
 }
 
-class _InlineMessage extends StatelessWidget {
-  const _InlineMessage({required this.message, required this.isError});
+class _BackupPill extends StatelessWidget {
+  const _BackupPill({required this.on});
 
-  final String message;
-  final bool isError;
+  final bool on;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final foreground = isError ? colorScheme.error : const Color(0xFF0D6B44);
-    final background = isError
-        ? colorScheme.error.withValues(alpha: 0.08)
-        : const Color(0xFFDFF7EA);
-
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s14,
+        vertical: AppSpacing.s6,
+      ),
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(16),
+        color: on ? AppColors.successSoft : AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(999),
+        border: on ? null : Border.all(color: AppColors.lineStrong),
       ),
       child: Text(
-        message,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: foreground),
+        on ? AppStrings.profileCloudOn : AppStrings.profileCloudOff,
+        style: AppTextStyles.bodySm.copyWith(
+          color: on ? AppColors.successText : AppColors.muted,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

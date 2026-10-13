@@ -1,4 +1,5 @@
 import 'package:careermatebd/app/constants/app_strings.dart';
+import 'package:careermatebd/app/router/main_tabs.dart';
 import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
@@ -116,8 +117,8 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
       bottomNavigationBar: BottomNavBar(
-        currentIndex: 0,
-        onTap: (index) => _onNavTap(context, index),
+        currentIndex: MainTabs.home,
+        onTap: (index) => MainTabs.open(context, index, current: MainTabs.home),
       ),
     );
   }
@@ -125,25 +126,6 @@ class HomeScreen extends ConsumerWidget {
   static String? _initialFor(String? email) {
     final value = email?.trim() ?? '';
     return value.isEmpty ? null : value.substring(0, 1).toUpperCase();
-  }
-
-  void _onNavTap(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        break; // Already on Home.
-      case 1:
-        context.push(RouteNames.cvListPath);
-        break;
-      case 2:
-        context.push(RouteNames.tailoringPath);
-        break;
-      case 3:
-        context.push(RouteNames.jobTrackerPath);
-        break;
-      case 4:
-        context.push(RouteNames.profilePath);
-        break;
-    }
   }
 
   /// Starts a fresh draft via the CV builder controller, then opens the builder.

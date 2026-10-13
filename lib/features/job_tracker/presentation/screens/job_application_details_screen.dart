@@ -1,18 +1,22 @@
-import 'package:careermatebd/app/constants/app_constants.dart';
 import 'package:careermatebd/app/router/route_names.dart';
+import 'package:careermatebd/core/theme/app_colors.dart';
+import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/utils/date_formatter.dart';
-import 'package:careermatebd/core/widgets/custom_app_bar.dart';
-import 'package:careermatebd/core/widgets/custom_button.dart';
-import 'package:careermatebd/core/widgets/custom_card.dart';
-import 'package:careermatebd/core/widgets/custom_empty_state.dart';
+import 'package:careermatebd/core/widgets/app_buttons.dart';
+import 'package:careermatebd/core/widgets/app_card.dart';
+import 'package:careermatebd/core/widgets/app_chip.dart';
+import 'package:careermatebd/core/widgets/app_top_bar.dart';
 import 'package:careermatebd/core/widgets/custom_error_view.dart';
 import 'package:careermatebd/core/widgets/custom_loading_view.dart';
+import 'package:careermatebd/core/widgets/section_label.dart';
 import 'package:careermatebd/features/job_tracker/domain/entities/job_application.dart';
 import 'package:careermatebd/features/job_tracker/domain/entities/job_application_message_templates.dart';
 import 'package:careermatebd/features/job_tracker/domain/entities/job_application_status.dart';
 import 'package:careermatebd/features/job_tracker/domain/entities/job_source.dart';
 import 'package:careermatebd/features/job_tracker/presentation/controllers/job_application_details_provider.dart';
 import 'package:careermatebd/features/job_tracker/presentation/controllers/job_tracker_controller.dart';
+import 'package:careermatebd/features/job_tracker/presentation/widgets/job_filter_chips.dart';
 import 'package:careermatebd/features/job_tracker/presentation/widgets/job_status_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,13 +31,12 @@ class JobApplicationDetailsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (applicationId == null || applicationId!.trim().isEmpty) {
-      return const Scaffold(
-        appBar: CustomAppBar(title: 'Application Details'),
-        body: SafeArea(
-          child: CustomErrorView(
-            title: 'Application not found',
-            message: 'A valid application ID was not provided.',
-          ),
+      return _Frame(
+        title: 'Application details',
+        onBack: () => context.pop(),
+        child: const CustomErrorView(
+          title: 'Application not found',
+          message: 'A valid application ID was not provided.',
         ),
       );
     }
@@ -42,107 +45,103 @@ class JobApplicationDetailsScreen extends ConsumerWidget {
       jobApplicationDetailsProvider(applicationId!),
     );
 
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Application Details',
-        actions: [
-          IconButton(
-            onPressed: () => _openEditForm(context, ref),
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit application',
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: detailsState.when(
-          loading: () => const CustomLoadingView(
-            message: 'Loading application details...',
-          ),
-          error: (error, stackTrace) => CustomErrorView(
-            title: 'Could not load application',
-            message: 'Something went wrong. Please try again.',
-            onRetry: () =>
-                ref.invalidate(jobApplicationDetailsProvider(applicationId!)),
-          ),
-          data: (data) {
-            if (data == null) {
-              return const CustomErrorView(
-                title: 'Application not found',
-                message: 'This saved application could not be found.',
-              );
-            }
+    return _Frame(
+      title: 'Application details',
+      onBack: () => context.pop(),
+      onEdit: () => _openEditForm(context, ref),
+      child: detailsState.when(
+        loading: () =>
+            const CustomLoadingView(message: 'Loading application details...'),
+        error: (error, stackTrace) => CustomErrorView(
+          title: 'Could not load application',
+          message: 'Something went wrong. Please try again.',
+          onRetry: () =>
+              ref.invalidate(jobApplicationDetailsProvider(applicationId!)),
+        ),
+        data: (data) {
+          if (data == null) {
+            return const CustomErrorView(
+              title: 'Application not found',
+              message: 'This saved application could not be found.',
+            );
+          }
 
-            final application = data.application;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: AppConstants.contentMaxWidth,
+          final application = data.application;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen,
+              AppSpacing.s8,
+              AppSpacing.screen,
+              AppSpacing.s22,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _HeaderCard(application: application),
+                const SizedBox(height: AppSpacing.s16),
+                _StatusUpdateCard(
+                  application: application,
+                  onStatusChanged: (status) =>
+                      _updateStatus(context, ref, status),
+                ),
+                const SizedBox(height: AppSpacing.s16),
+                _KeyInfoCard(application: application),
+                const SizedBox(height: AppSpacing.s16),
+                _LinkedAssetsCard(
+                  application: application,
+                  linkedCvTitle: data.cv?.displayTitle,
+                  linkedCoverLetterTitle: data.coverLetter?.displayTitle,
+                ),
+                const SizedBox(height: AppSpacing.s16),
+                _NotesCard(application: application),
+                const SizedBox(height: AppSpacing.s16),
+                _QuickTemplatesCard(
+                  application: application,
+                  onCopyTemplate: (type) =>
+                      _copyTemplate(context, application, type),
+                ),
+                const SizedBox(height: AppSpacing.s20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SecondaryButton(
+                        label: 'Edit',
+                        leadingIcon: Icons.edit_outlined,
+                        onPressed: () => _openEditForm(context, ref),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s10),
+                    Expanded(
+                      child: SecondaryButton(
+                        label:
+                            application.status == JobApplicationStatus.archived
+                            ? 'Mark applied'
+                            : 'Archive',
+                        leadingIcon: Icons.archive_outlined,
+                        onPressed: () =>
+                            _archiveOrRestore(context, ref, application),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.s10),
+                TextButton.icon(
+                  onPressed: () => _delete(context, ref, application),
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.danger,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _HeaderCard(application: application),
-                      const SizedBox(height: 20),
-                      _StatusUpdateCard(
-                        application: application,
-                        onStatusChanged: (status) =>
-                            _updateStatus(context, ref, status),
-                      ),
-                      const SizedBox(height: 20),
-                      _KeyInfoCard(application: application),
-                      const SizedBox(height: 20),
-                      _LinkedAssetsCard(
-                        application: application,
-                        linkedCvTitle: data.cv?.displayTitle,
-                        linkedCoverLetterTitle: data.coverLetter?.displayTitle,
-                      ),
-                      const SizedBox(height: 20),
-                      _NotesCard(application: application),
-                      const SizedBox(height: 20),
-                      _QuickTemplatesCard(
-                        application: application,
-                        onCopyTemplate: (type) =>
-                            _copyTemplate(context, application, type),
-                      ),
-                      const SizedBox(height: 20),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          CustomButton.secondary(
-                            label: 'Edit application',
-                            onPressed: () => _openEditForm(context, ref),
-                            icon: Icons.edit_outlined,
-                            isExpanded: false,
-                          ),
-                          CustomButton.secondary(
-                            label:
-                                application.status ==
-                                    JobApplicationStatus.archived
-                                ? 'Mark as Applied'
-                                : 'Archive',
-                            onPressed: () =>
-                                _archiveOrRestore(context, ref, application),
-                            icon: Icons.archive_outlined,
-                            isExpanded: false,
-                          ),
-                          CustomButton.secondary(
-                            label: 'Delete',
-                            onPressed: () => _delete(context, ref, application),
-                            icon: Icons.delete_outline_rounded,
-                            isExpanded: false,
-                          ),
-                        ],
-                      ),
-                    ],
+                  label: Text(
+                    'Delete application',
+                    style: AppTextStyles.button.copyWith(
+                      color: AppColors.danger,
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -250,6 +249,49 @@ class JobApplicationDetailsScreen extends ConsumerWidget {
   }
 }
 
+class _Frame extends StatelessWidget {
+  const _Frame({
+    required this.title,
+    required this.onBack,
+    required this.child,
+    this.onEdit,
+  });
+
+  final String title;
+  final VoidCallback onBack;
+  final VoidCallback? onEdit;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                AppSpacing.s12,
+                AppSpacing.screen,
+                AppSpacing.s8,
+              ),
+              child: AppTopBar(
+                title: title,
+                onBack: onBack,
+                trailingIcon: onEdit == null ? null : Icons.edit_outlined,
+                trailingTooltip: 'Edit application',
+                onTrailingTap: onEdit,
+              ),
+            ),
+            Expanded(child: child),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _HeaderCard extends StatelessWidget {
   const _HeaderCard({required this.application});
 
@@ -257,9 +299,7 @@ class _HeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return CustomCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -270,31 +310,36 @@ class _HeaderCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(application.jobTitle, style: AppTextStyles.title),
+                    const SizedBox(height: AppSpacing.s4),
                     Text(
-                      application.jobTitle,
-                      style: theme.textTheme.titleLarge,
+                      application.companyName,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.muted,
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(application.companyName),
                   ],
                 ),
               ),
+              const SizedBox(width: AppSpacing.s8),
               JobStatusChip(status: application.status),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.s14),
           Wrap(
-            spacing: 10,
-            runSpacing: 10,
+            spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s8,
             children: [
-              Chip(label: Text(application.jobSource.label)),
-              Chip(
-                label: Text(
-                  'Created ${DateFormatter.shortDate(application.createdAt)}',
-                ),
+              AppChip(label: application.jobSource.label),
+              AppChip(
+                label:
+                    'Created ${DateFormatter.shortDate(application.createdAt)}',
               ),
               if (application.needsFollowUp)
-                const Chip(label: Text('Follow-up due')),
+                const AppChip(
+                  label: 'Follow-up due',
+                  variant: AppChipVariant.missing,
+                ),
             ],
           ),
         ],
@@ -314,25 +359,24 @@ class _StatusUpdateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return CustomCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Update status', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<JobApplicationStatus>(
-            initialValue: application.status,
-            decoration: const InputDecoration(labelText: 'Current status'),
-            onChanged: (value) {
-              if (value != null) {
-                onStatusChanged(value);
-              }
-            },
-            items: [
-              for (final status in JobApplicationStatus.values)
-                DropdownMenuItem(value: status, child: Text(status.label)),
+          const SectionLabel('Update status'),
+          const SizedBox(height: AppSpacing.s12),
+          Wrap(
+            spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s8,
+            children: [
+              for (final status in JobFilterChips.order)
+                AppChip(
+                  label: status.label,
+                  variant: status == application.status
+                      ? AppChipVariant.selected
+                      : AppChipVariant.neutral,
+                  onTap: () => onStatusChanged(status),
+                ),
             ],
           ),
         ],
@@ -348,31 +392,24 @@ class _KeyInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomCard(
+    String date(DateTime? value) =>
+        value == null ? 'Not added' : DateFormatter.shortDate(value);
+
+    return AppCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _InfoRow(
             label: 'Applied date',
             value: DateFormatter.shortDate(application.appliedDate),
           ),
-          _InfoRow(
-            label: 'Deadline',
-            value: application.deadlineDate == null
-                ? 'Not added'
-                : DateFormatter.shortDate(application.deadlineDate!),
-          ),
+          _InfoRow(label: 'Deadline', value: date(application.deadlineDate)),
           _InfoRow(
             label: 'Interview date',
-            value: application.interviewDate == null
-                ? 'Not added'
-                : DateFormatter.shortDate(application.interviewDate!),
+            value: date(application.interviewDate),
           ),
           _InfoRow(
             label: 'Follow-up reminder',
-            value: application.followUpDate == null
-                ? 'Not added'
-                : DateFormatter.shortDate(application.followUpDate!),
+            value: date(application.followUpDate),
           ),
           _InfoRow(
             label: 'Job post link',
@@ -389,6 +426,7 @@ class _KeyInfoCard extends StatelessWidget {
           _InfoRow(
             label: 'Contact email',
             value: application.contactEmail ?? 'Not added',
+            last: true,
           ),
         ],
       ),
@@ -409,9 +447,8 @@ class _LinkedAssetsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomCard(
+    return AppCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _InfoRow(
             label: 'Linked CV',
@@ -428,6 +465,7 @@ class _LinkedAssetsCard extends StatelessWidget {
                 (application.hasLinkedCoverLetter
                     ? 'Saved cover letter not found'
                     : 'No linked cover letter'),
+            last: true,
           ),
         ],
       ),
@@ -442,24 +480,24 @@ class _NotesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (application.notes.trim().isEmpty) {
-      return const CustomCard(
-        child: CustomEmptyState(
-          title: 'No notes yet',
-          message:
-              'Add recruiter messages, interview instructions, salary notes, or follow-up reminders in the application form.',
-          icon: Icons.note_alt_outlined,
-        ),
-      );
-    }
+    final hasNotes = application.notes.trim().isNotEmpty;
 
-    return CustomCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Notes', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 10),
-          Text(application.notes),
+          const SectionLabel('Notes'),
+          const SizedBox(height: AppSpacing.s10),
+          Text(
+            hasNotes
+                ? application.notes
+                : 'No notes yet. Add recruiter messages, interview '
+                      'instructions or follow-up reminders in the application '
+                      'form.',
+            style: AppTextStyles.body.copyWith(
+              color: hasNotes ? AppColors.ink : AppColors.muted,
+            ),
+          ),
         ],
       ),
     );
@@ -477,31 +515,26 @@ class _QuickTemplatesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return CustomCard(
+    return AppCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Quick copy templates', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SectionLabel('Quick copy templates'),
+          const SizedBox(height: AppSpacing.s6),
           Text(
-            'Use these local templates for follow-up, interview confirmation, and polite status checks.',
+            'Local templates for follow-up, interview confirmation and '
+            'polite status checks.',
+            style: AppTextStyles.bodySm.copyWith(color: AppColors.muted),
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              for (final type in JobApplicationMessageTemplateType.values)
-                CustomButton.secondary(
-                  label: type.label,
-                  onPressed: () => onCopyTemplate(type),
-                  icon: Icons.copy_outlined,
-                  isExpanded: false,
-                ),
-            ],
-          ),
+          const SizedBox(height: AppSpacing.s12),
+          for (final type in JobApplicationMessageTemplateType.values) ...[
+            SecondaryButton(
+              label: type.label,
+              leadingIcon: Icons.copy_outlined,
+              onPressed: () => onCopyTemplate(type),
+            ),
+            const SizedBox(height: AppSpacing.s8),
+          ],
         ],
       ),
     );
@@ -509,26 +542,33 @@ class _QuickTemplatesCard extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
+  const _InfoRow({required this.label, required this.value, this.last = false});
 
   final String label;
   final String value;
+  final bool last;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: last ? 0 : AppSpacing.s12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 138,
-            child: Text(label, style: theme.textTheme.labelLarge),
+            width: 132,
+            child: Text(
+              label,
+              style: AppTextStyles.bodySm.copyWith(color: AppColors.muted),
+            ),
           ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(value)),
+          const SizedBox(width: AppSpacing.s12),
+          Expanded(
+            child: Text(
+              value,
+              style: AppTextStyles.bodySm.copyWith(color: AppColors.ink),
+            ),
+          ),
         ],
       ),
     );
