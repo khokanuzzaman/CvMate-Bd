@@ -59,8 +59,12 @@ CvProfile nurseCv({String id = 'qa-nurse', String title = 'Staff Nurse CV'}) {
         SkillInfo.empty(id: 's$i').copyWith(name: name),
     ],
     languages: [
-      LanguageInfo.empty(id: 'l1').copyWith(name: 'Bangla', proficiency: 'Native'),
-      LanguageInfo.empty(id: 'l2').copyWith(name: 'English', proficiency: 'Fluent'),
+      LanguageInfo.empty(
+        id: 'l1',
+      ).copyWith(name: 'Bangla', proficiency: 'Native'),
+      LanguageInfo.empty(
+        id: 'l2',
+      ).copyWith(name: 'English', proficiency: 'Fluent'),
     ],
   );
 }
@@ -115,7 +119,8 @@ CvProfile stressCv({String id = 'qa-stress'}) {
           'Mohammad Abdullah Al Mamun Chowdhury Bin Abdur Rahman Siddique-Khan',
       desiredRole:
           'Senior Clinical Nurse Coordinator, Intensive Care and High Dependency',
-      email: 'mohammad.abdullah.al.mamun.chowdhury@very-long-domain-name-example.com',
+      email:
+          'mohammad.abdullah.al.mamun.chowdhury@very-long-domain-name-example.com',
       phone: '+8801712345678',
       address:
           'House 12, Road 7, Block C, Bashundhara Residential Area, Dhaka 1229, Bangladesh',
@@ -156,8 +161,12 @@ CvProfile stressCv({String id = 'qa-stress'}) {
         ),
     ],
     languages: [
-      LanguageInfo.empty(id: 'l1').copyWith(name: 'বাংলা', proficiency: 'Native'),
-      LanguageInfo.empty(id: 'l2').copyWith(name: 'English', proficiency: 'Fluent'),
+      LanguageInfo.empty(
+        id: 'l1',
+      ).copyWith(name: 'বাংলা', proficiency: 'Native'),
+      LanguageInfo.empty(
+        id: 'l2',
+      ).copyWith(name: 'English', proficiency: 'Fluent'),
     ],
   );
 }

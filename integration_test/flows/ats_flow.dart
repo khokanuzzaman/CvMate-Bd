@@ -10,14 +10,19 @@ import '../support/qa_harness.dart';
 import '../support/qa_seed.dart';
 
 void registerAtsFlow() {
-  qaTest('ats: report → every Fix opens the right builder step', (tester) async {
+  qaTest('ats: report → every Fix opens the right builder step', (
+    tester,
+  ) async {
     await launchSignedIn(tester);
     await seedCv(tester, nurseCv());
     await seedCv(tester, weakCv());
 
     await tapText(tester, AppStrings.actionAtsCheck);
-    await waitFor(tester, find.text(AppStrings.atsWhatToFix.toUpperCase()),
-        timeout: const Duration(seconds: 30));
+    await waitFor(
+      tester,
+      find.text(AppStrings.atsWhatToFix.toUpperCase()),
+      timeout: const Duration(seconds: 30),
+    );
     await shot(tester, 'ats', 'report-first-cv');
 
     // The newest CV (the thin one) is checked first. Switch to the nurse CV
@@ -32,8 +37,10 @@ void registerAtsFlow() {
     await waitFor(tester, find.text('Fresher Draft'));
     await shot(tester, 'ats', 'report-weak-cv');
     final state = appContainer(tester).read(atsCheckerControllerProvider);
-    debugPrint('QA-NOTE ats selected CV: ${state.selectedCvId} '
-        'issues: ${state.report?.issues.length}');
+    debugPrint(
+      'QA-NOTE ats selected CV: ${state.selectedCvId} '
+      'issues: ${state.report?.issues.length}',
+    );
     final issues = state.report!.issues;
     expect(issues, isNotEmpty);
 
@@ -50,7 +57,8 @@ void registerAtsFlow() {
       await waitFor(
         tester,
         find.text(expectedLabel),
-        reason: 'Fix for "${issue.problem}" (${issue.category.name}) '
+        reason:
+            'Fix for "${issue.problem}" (${issue.category.name}) '
             'should open "$expectedLabel"',
       );
       if (i == 0) {
@@ -68,8 +76,11 @@ void registerAtsFlow() {
     await seedCv(tester, nurseCv());
 
     await tapText(tester, AppStrings.actionAtsCheck);
-    await waitFor(tester, find.text(AppStrings.atsWhatToFix.toUpperCase()),
-        timeout: const Duration(seconds: 30));
+    await waitFor(
+      tester,
+      find.text(AppStrings.atsWhatToFix.toUpperCase()),
+      timeout: const Duration(seconds: 30),
+    );
     await shot(tester, 'ats', 'nurse-report');
 
     // ⋮ before any job post.
@@ -101,11 +112,18 @@ void registerAtsFlow() {
     await tapText(tester, AppStrings.atsMenuImproveWithAi);
     await waitFor(tester, find.text(AppStrings.atsAiSheetTitle));
     await shot(tester, 'ats', 'ai-sheet');
-    await tapText(tester, AppStrings.atsAiGenerate,
-        settle: const Duration(seconds: 3));
+    await tapText(
+      tester,
+      AppStrings.atsAiGenerate,
+      settle: const Duration(seconds: 3),
+    );
     await waitFor(tester, find.text(AppStrings.atsAiSuggestionLabel));
     await shot(tester, 'ats', 'ai-sheet-suggestion');
-    await tapText(tester, AppStrings.atsAiApply, settle: const Duration(seconds: 1));
+    await tapText(
+      tester,
+      AppStrings.atsAiApply,
+      settle: const Duration(seconds: 1),
+    );
     await shot(tester, 'ats', 'ai-applied');
   });
 }

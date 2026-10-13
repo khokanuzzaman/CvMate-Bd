@@ -25,7 +25,10 @@ Future<void> _reportAiOutcome(
       .map((e) => (e.widget as Text).data)
       .whereType<String>()
       .join(' | ');
-  final simulated = find.textContaining('Simulated AI outage').evaluate().length;
+  final simulated = find
+      .textContaining('Simulated AI outage')
+      .evaluate()
+      .length;
   await shot(tester, flow, surface);
   await pumpFor(tester, const Duration(seconds: 6));
   final spinners = find.byType(CircularProgressIndicator).evaluate().length;
@@ -50,13 +53,20 @@ void registerStressFlow() {
     await goBack(tester);
 
     // Preview of the extreme CV + exported PDF.
-    await tapOn(tester, find.textContaining('Senior Registered Nurse and').first);
+    await tapOn(
+      tester,
+      find.textContaining('Senior Registered Nurse and').first,
+    );
     await waitFor(tester, find.text(AppStrings.previewExport));
     await shot(tester, 'stress-long', 'preview-extreme');
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -1500));
     await pumpFor(tester, const Duration(milliseconds: 500));
     await shot(tester, 'stress-long', 'preview-extreme-scrolled');
-    await tapText(tester, AppStrings.previewExport, settle: const Duration(seconds: 4));
+    await tapText(
+      tester,
+      AppStrings.previewExport,
+      settle: const Duration(seconds: 4),
+    );
     final doc = shares.isEmpty ? null : shares.first.arguments['doc'];
     if (doc is List<int>) {
       await saveHostFile('stress-long/extreme.pdf', doc);
@@ -75,15 +85,29 @@ void registerStressFlow() {
     await waitFor(tester, find.text(AppStrings.tailorStepPill(1)));
     await shot(tester, 'stress-long', 'tailor-step1-long-cv-title');
     await typeInto(tester, find.byType(TextField).first, longJobPost());
-    await typeInto(tester, find.byType(TextField).at(1),
-        'Senior Clinical Nurse Coordinator, Intensive Care and High Dependency Unit');
-    await typeInto(tester, find.byType(TextField).at(2),
-        'Bangabandhu Sheikh Mujib Medical University Teaching Hospital Limited');
+    await typeInto(
+      tester,
+      find.byType(TextField).at(1),
+      'Senior Clinical Nurse Coordinator, Intensive Care and High Dependency Unit',
+    );
+    await typeInto(
+      tester,
+      find.byType(TextField).at(2),
+      'Bangabandhu Sheikh Mujib Medical University Teaching Hospital Limited',
+    );
     await shot(tester, 'stress-long', 'tailor-step1-long-job');
-    await tapText(tester, AppStrings.tailorAnalyze, settle: const Duration(seconds: 3));
+    await tapText(
+      tester,
+      AppStrings.tailorAnalyze,
+      settle: const Duration(seconds: 3),
+    );
     await waitFor(tester, find.text(AppStrings.tailorStepPill(2)));
     await shot(tester, 'stress-long', 'tailor-step2-long');
-    await tapText(tester, AppStrings.tailorTailorMyCv, settle: const Duration(seconds: 3));
+    await tapText(
+      tester,
+      AppStrings.tailorTailorMyCv,
+      settle: const Duration(seconds: 3),
+    );
     await waitFor(tester, find.text(AppStrings.tailorStepPill(3)));
     await shot(tester, 'stress-long', 'tailor-step3-long');
     await goBack(tester);
@@ -96,11 +120,21 @@ void registerStressFlow() {
     await waitFor(tester, find.text(AppStrings.trackerEmptyTitle));
     await tapText(tester, AppStrings.trackerAdd);
     await waitFor(tester, find.text('Save application'));
-    await typeInto(tester, fieldByHint('Bdjobs, BRAC Bank, Unilever Bangladesh'),
-        'Bangabandhu Sheikh Mujib Medical University Teaching Hospital Limited');
-    await typeInto(tester, fieldByHint('Management Trainee, Flutter Developer'),
-        'Senior Clinical Nurse Coordinator, Intensive Care and High Dependency Unit');
-    await tapText(tester, 'Save application', settle: const Duration(seconds: 1));
+    await typeInto(
+      tester,
+      fieldByHint('Bdjobs, BRAC Bank, Unilever Bangladesh'),
+      'Bangabandhu Sheikh Mujib Medical University Teaching Hospital Limited',
+    );
+    await typeInto(
+      tester,
+      fieldByHint('Management Trainee, Flutter Developer'),
+      'Senior Clinical Nurse Coordinator, Intensive Care and High Dependency Unit',
+    );
+    await tapText(
+      tester,
+      'Save application',
+      settle: const Duration(seconds: 1),
+    );
     await waitFor(tester, find.textContaining('Bangabandhu'));
     await shot(tester, 'stress-long', 'tracker-long-card');
     await tapOn(tester, find.textContaining('Senior Clinical Nurse').first);
@@ -113,7 +147,9 @@ void registerStressFlow() {
     await launchSignedIn(
       tester,
       overrides: [
-        aiCareerServiceProvider.overrideWithValue(const FailingAiCareerService()),
+        aiCareerServiceProvider.overrideWithValue(
+          const FailingAiCareerService(),
+        ),
       ],
     );
     await seedCv(tester, nurseCv());
@@ -122,10 +158,18 @@ void registerStressFlow() {
     await tapText(tester, 'Tailor');
     await waitFor(tester, find.text(AppStrings.tailorStepPill(1)));
     await typeInto(tester, find.byType(TextField).first, nurseJobPost);
-    await tapText(tester, AppStrings.tailorAnalyze, settle: const Duration(seconds: 2));
+    await tapText(
+      tester,
+      AppStrings.tailorAnalyze,
+      settle: const Duration(seconds: 2),
+    );
     // The match step is offline (rule engine); the AI call is "Tailor my CV".
     await waitFor(tester, find.text(AppStrings.tailorStepPill(2)));
-    await tapText(tester, AppStrings.tailorTailorMyCv, settle: const Duration(seconds: 1));
+    await tapText(
+      tester,
+      AppStrings.tailorTailorMyCv,
+      settle: const Duration(seconds: 1),
+    );
     await _reportAiOutcome(tester, 'stress-ai-error', 'tailor-my-cv');
     await goBack(tester);
     await goBack(tester);
@@ -138,35 +182,57 @@ void registerStressFlow() {
     await typeInto(tester, fields.at(0), 'Square Hospital');
     await typeInto(tester, fields.at(1), 'Registered Nurse');
     await typeInto(tester, fields.at(2), nurseJobPost);
-    await tapText(tester, AppStrings.coverLetterGenerate, settle: const Duration(seconds: 1));
+    await tapText(
+      tester,
+      AppStrings.coverLetterGenerate,
+      settle: const Duration(seconds: 1),
+    );
     await _reportAiOutcome(tester, 'stress-ai-error', 'cover-letter');
     await goBack(tester);
     await waitFor(tester, find.text(AppStrings.homeTitle));
 
     // Interview
     await tapText(tester, AppStrings.actionInterview);
-    await waitFor(tester, find.text(AppStrings.interviewGenerate),
-        timeout: const Duration(seconds: 30));
-    await tapText(tester, AppStrings.interviewGenerate, settle: const Duration(seconds: 1));
+    await waitFor(
+      tester,
+      find.text(AppStrings.interviewGenerate),
+      timeout: const Duration(seconds: 30),
+    );
+    await tapText(
+      tester,
+      AppStrings.interviewGenerate,
+      settle: const Duration(seconds: 1),
+    );
     await _reportAiOutcome(tester, 'stress-ai-error', 'interview');
     await goBack(tester);
     await waitFor(tester, find.text(AppStrings.homeTitle));
 
     // ATS "Improve with AI"
     await tapText(tester, AppStrings.actionAtsCheck);
-    await waitFor(tester, find.text(AppStrings.atsWhatToFix.toUpperCase()),
-        timeout: const Duration(seconds: 30));
+    await waitFor(
+      tester,
+      find.text(AppStrings.atsWhatToFix.toUpperCase()),
+      timeout: const Duration(seconds: 30),
+    );
     await tapOn(tester, find.byTooltip(AppStrings.tailorMoreOptions));
     await tapText(tester, AppStrings.atsMenuImproveWithAi);
     await waitFor(tester, find.text(AppStrings.atsAiSheetTitle));
-    await tapText(tester, AppStrings.atsAiGenerate, settle: const Duration(seconds: 1));
+    await tapText(
+      tester,
+      AppStrings.atsAiGenerate,
+      settle: const Duration(seconds: 1),
+    );
     await _reportAiOutcome(tester, 'stress-ai-error', 'ats-ai-sheet');
     await goBack(tester);
     await goBack(tester);
     await waitFor(tester, find.text(AppStrings.homeTitle));
 
     // Improve CV screen
-    await tapText(tester, AppStrings.actionImproveCv, settle: const Duration(seconds: 1));
+    await tapText(
+      tester,
+      AppStrings.actionImproveCv,
+      settle: const Duration(seconds: 1),
+    );
     await pumpFor(tester, const Duration(seconds: 1));
     await shot(tester, 'stress-ai-error', 'improve-cv-screen');
   });

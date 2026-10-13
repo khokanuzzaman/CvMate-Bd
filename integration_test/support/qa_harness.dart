@@ -6,8 +6,6 @@ import 'package:careermatebd/features/cv_builder/data/datasources/cv_remote_data
 import 'package:careermatebd/features/cv_builder/data/dtos/cv_profile_dto.dart';
 import 'package:careermatebd/firebase_options.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -58,6 +56,12 @@ String _currentTest = '';
 void registerQaSuite(void Function() registerFlows) {
   qaBinding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(_bootQa);
+  tearDownAll(
+    () => qaBinding.reportData = {
+      ...?qaBinding.reportData,
+      'qaIssues': qaIssues,
+    },
+  );
   registerFlows();
 }
 
@@ -86,8 +90,7 @@ Future<void> _bootQa() async {
 }
 
 Future<void> _assertEmulatorReachable() async {
-  final client = HttpClient()
-    ..connectionTimeout = const Duration(seconds: 3);
+  final client = HttpClient()..connectionTimeout = const Duration(seconds: 3);
   try {
     final request = await client.getUrl(
       Uri.parse('http://$qaAuthEmulatorHost:$qaAuthEmulatorPort/'),
@@ -191,10 +194,14 @@ void qaTest(
     } catch (_) {
       // Keep a picture of where the flow broke, plus any snackbar text.
       try {
-        for (final text in find
-            .descendant(of: find.byType(SnackBar), matching: find.byType(Text))
-            .evaluate()
-            .map((e) => (e.widget as Text).data)) {
+        for (final text
+            in find
+                .descendant(
+                  of: find.byType(SnackBar),
+                  matching: find.byType(Text),
+                )
+                .evaluate()
+                .map((e) => (e.widget as Text).data)) {
           debugPrint('QA-FAILSTATE snackbar: $text');
         }
         await shot(tester, 'FAILED', description.split(':').first);
@@ -266,12 +273,39 @@ Future<void> waitGone(
 }
 
 /// Saves `build/qa/<[qaRun] prefix>/<flow>/<NN-step>.png`.
+///
+/// Screenshots capture only the Flutter surface, not the iOS keyboard, so the
+/// keyboard is dismissed first: a half-height layout with no keyboard drawn
+/// would be misleading.
 Future<void> shot(WidgetTester tester, String flow, String step) async {
+  if (FocusManager.instance.primaryFocus?.hasFocus ?? false) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await pumpFor(tester, const Duration(milliseconds: 500));
+  }
   await tester.pump(const Duration(milliseconds: 250));
   _shotCounter++;
   final prefix = qaRun == 'main' ? '' : '$qaRun/';
   final name = '$prefix$flow/${_shotCounter.toString().padLeft(2, '0')}-$step';
   await qaBinding.takeScreenshot(name);
+}
+
+/// [shot] after scrolling the main scroll view back to the top, so the whole
+/// first screen of a form can be compared with its design.
+Future<void> shotTop(WidgetTester tester, String flow, String step) async {
+  FocusManager.instance.primaryFocus?.unfocus();
+  await pumpFor(tester, const Duration(milliseconds: 500));
+  final scrollables = find.byType(Scrollable);
+  if (scrollables.evaluate().isNotEmpty) {
+    for (final element in scrollables.evaluate()) {
+      final widget = element.widget as Scrollable;
+      if (widget.axisDirection == AxisDirection.down) {
+        await tester.drag(find.byWidget(widget), const Offset(0, 4000));
+        break;
+      }
+    }
+    await pumpFor(tester, const Duration(milliseconds: 400));
+  }
+  await shot(tester, flow, step);
 }
 
 /// Scrolls [finder] into a tappable position. `ensureVisible` alone can stop
@@ -332,15 +366,34 @@ Future<void> tapText(
 /// The text field whose placeholder (while empty) or label is [hintOrLabel].
 Finder fieldByHint(String hint) => find.widgetWithText(TextField, hint);
 
-Future<void> typeInto(
-  WidgetTester tester,
-  Finder field,
-  String text,
-) async {
-  await tester.ensureVisible(field.first);
-  await tester.pump(const Duration(milliseconds: 50));
-  await tester.enterText(field.first, text);
-  await tester.pump(const Duration(milliseconds: 100));
+/// The text currently in [field]'s editable.
+String fieldText(WidgetTester tester, Finder field) => tester
+    .state<EditableTextState>(
+      find.descendant(
+        of: field.first,
+        matching: find.byType(EditableText),
+      ),
+    )
+    .textEditingValue
+    .text;
+
+/// Types like a user: bring the field into reach, tap it to focus (the
+/// keyboard may have been dismissed by a screenshot or a scroll), enter the
+/// text, and check it arrived. On some devices a second entry into a field
+/// that already has text is dropped, so retry a few times before giving up.
+Future<void> typeInto(WidgetTester tester, Finder field, String text) async {
+  for (var attempt = 0; attempt < 4; attempt++) {
+    await scrollIntoReach(tester, field);
+    await tester.tap(field.first);
+    await pumpFor(tester, const Duration(milliseconds: 250));
+    await tester.enterText(field.first, text);
+    await pumpFor(tester, const Duration(milliseconds: 150));
+    if (fieldText(tester, field) == text) {
+      return;
+    }
+    debugPrint('QA-NOTE typeInto retry ${attempt + 1} for "$text"');
+  }
+  fail('Could not enter "$text" into $field');
 }
 
 /// Unique e-mail per run so repeated runs never collide in the emulator.

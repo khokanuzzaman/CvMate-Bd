@@ -263,7 +263,6 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
     }
 
     final hasQuestions = state.hasGeneratedQuestions;
-    final controller = ref.read(interviewPrepControllerProvider.notifier);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(

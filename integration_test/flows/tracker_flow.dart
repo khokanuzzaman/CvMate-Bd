@@ -16,8 +16,16 @@ Future<void> _addApplication(
   required String status,
   String notes = '',
 }) async {
-  await typeInto(tester, fieldByHint('Bdjobs, BRAC Bank, Unilever Bangladesh'), company);
-  await typeInto(tester, fieldByHint('Management Trainee, Flutter Developer'), title);
+  await typeInto(
+    tester,
+    fieldByHint('Bdjobs, BRAC Bank, Unilever Bangladesh'),
+    company,
+  );
+  await typeInto(
+    tester,
+    fieldByHint('Management Trainee, Flutter Developer'),
+    title,
+  );
   await tapOn(tester, _chip(source));
   await tapOn(tester, _chip(status));
   if (notes.isNotEmpty) {
@@ -53,7 +61,11 @@ void registerTrackerFlow() {
       notes: 'Call HR on Monday.',
     );
     await shot(tester, 'tracker', 'form-filled');
-    await tapText(tester, 'Save application', settle: const Duration(seconds: 1));
+    await tapText(
+      tester,
+      'Save application',
+      settle: const Duration(seconds: 1),
+    );
     await waitFor(tester, find.text('Square Hospital · via LinkedIn'));
     await shot(tester, 'tracker', 'one-application');
 
@@ -71,8 +83,11 @@ void registerTrackerFlow() {
         source: source,
         status: status,
       );
-      await tapText(tester, 'Save application',
-          settle: const Duration(seconds: 1));
+      await tapText(
+        tester,
+        'Save application',
+        settle: const Duration(seconds: 1),
+      );
       await waitFor(tester, find.text('$company · via $source'));
     }
     await shot(tester, 'tracker', 'three-applications');
@@ -88,9 +103,16 @@ void registerTrackerFlow() {
     await tapText(tester, 'Edit');
     await waitFor(tester, find.text('Edit application'));
     await shot(tester, 'tracker', 'form-edit');
-    await typeInto(tester, fieldByHint('Management Trainee, Flutter Developer'),
-        'Senior Registered Nurse');
-    await tapText(tester, 'Save application', settle: const Duration(seconds: 1));
+    await typeInto(
+      tester,
+      fieldByHint('Management Trainee, Flutter Developer'),
+      'Senior Registered Nurse',
+    );
+    await tapText(
+      tester,
+      'Save application',
+      settle: const Duration(seconds: 1),
+    );
     await shot(tester, 'tracker', 'after-save-tap-edit');
     await waitFor(tester, find.text('Application details'));
     await tester.drag(find.byType(Scrollable).first, const Offset(0, 3000));
@@ -109,12 +131,20 @@ void registerTrackerFlow() {
     await tapOn(tester, _chip(AppStrings.trackerFilterAll));
 
     await tapOn(tester, find.byTooltip(AppStrings.trackerSearch));
-    await typeInto(tester, find.byKey(const ValueKey('tracker-search')), 'ever');
+    await typeInto(
+      tester,
+      find.byKey(const ValueKey('tracker-search')),
+      'ever',
+    );
     await pumpFor(tester, const Duration(milliseconds: 500));
     expect(find.text('Evercare Hospital · via Bdjobs'), findsOneWidget);
     expect(find.text('Labaid Hospital · via Email'), findsNothing);
     await shot(tester, 'tracker', 'search-ever');
-    await typeInto(tester, find.byKey(const ValueKey('tracker-search')), 'zzzz');
+    await typeInto(
+      tester,
+      find.byKey(const ValueKey('tracker-search')),
+      'zzzz',
+    );
     await pumpFor(tester, const Duration(milliseconds: 500));
     await waitFor(tester, find.text(AppStrings.trackerNoMatchTitle));
     await shot(tester, 'tracker', 'search-no-match');

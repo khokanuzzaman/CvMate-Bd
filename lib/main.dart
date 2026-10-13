@@ -1,4 +1,5 @@
 import 'package:careermatebd/app/app.dart';
+import 'package:careermatebd/core/config/env_config.dart';
 import 'package:careermatebd/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
@@ -8,6 +9,12 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Fail loudly rather than ship canned mock AI output in a release build.
+  final aiProblem = EnvConfig.aiConfigurationProblem();
+  if (aiProblem != null) {
+    throw StateError(aiProblem);
+  }
 
   // Development-only dotenv loading for temporary direct OpenAI access.
   // Remove this client-side key path before Play Store release and use the
