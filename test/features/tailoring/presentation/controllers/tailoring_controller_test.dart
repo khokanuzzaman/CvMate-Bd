@@ -106,29 +106,26 @@ void main() {
     );
   });
 
-  test(
-    'generateCoverLetter() fills the cover letter with the mock AI',
-    () async {
-      final repository = _FakeCvRepository([_sampleCv()]);
-      final container = ProviderContainer(
-        overrides: [cvRepositoryProvider.overrideWithValue(repository)],
-      );
-      addTearDown(container.dispose);
+  test('generateCoverLetter() fills the cover letter with the mock AI', () async {
+    final repository = _FakeCvRepository([_sampleCv()]);
+    final container = ProviderContainer(
+      overrides: [cvRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
 
-      final controller = container.read(tailoringControllerProvider.notifier);
-      await controller.initialize();
-      controller.updateJobPost(
-        jobPostText: _jobPost,
-        jobTitle: 'Flutter Developer',
-        company: 'Acme Ltd',
-      );
+    final controller = container.read(tailoringControllerProvider.notifier);
+    await controller.initialize();
+    controller.updateJobPost(
+      jobPostText: _jobPost,
+      jobTitle: 'Flutter Developer',
+      company: 'Acme Ltd',
+    );
 
-      await controller.generateCoverLetter();
-      final state = container.read(tailoringControllerProvider);
-      expect(state.stage, TailoringStage.ready);
-      expect(state.result?.coverLetter.trim(), isNotEmpty);
-    },
-  );
+    await controller.generateCoverLetter();
+    final state = container.read(tailoringControllerProvider);
+    expect(state.stage, TailoringStage.ready);
+    expect(state.result?.coverLetter.trim(), isNotEmpty);
+  });
 
   test('tailor() surfaces a Failure when the AI service fails', () async {
     final repository = _FakeCvRepository([_sampleCv()]);
@@ -239,5 +236,6 @@ class _FailingAiService implements AiCareerService {
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) =>
+      super.noSuchMethod(invocation);
 }
