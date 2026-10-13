@@ -8,17 +8,17 @@ Branch `claude/qa-pass` (off `origin/main` @ `fbadd2c`). Flutter 3.44.0 / Dart 3
 | | |
 |---|---|
 | Integration suite | **21 tests, 21 passing** on iPhone 17e (390×844 pt), iPhone SE 3rd gen (375×667 pt) and iPhone 17e at 1.3× text |
-| 2× text scale | see [Large text](#large-text-stress-matrix) — remaining failures are layout findings, listed below |
+| 2× text scale | 17e 20/21, SE 19/21 — the misses are harness limits plus real layout findings, see [Large text](#large-text-stress-matrix) |
 | `flutter analyze` | clean |
-| `flutter test` | green (see PR description for the count) |
+| `flutter test` | **432 passed**, 0 failed |
 
 ### Issues by severity
 
 | Severity | Found | Fixed in this PR | Left for you |
 |---|---|---|---|
 | Blocker | 2 | 2 | 0 |
-| Major | 11 | 8 | 3 |
-| Minor | 12 | 1 | 11 |
+| Major | 12 | 9 | 3 |
+| Minor | 13 | 1 | 12 |
 
 Every fix has a regression test (the test was run red without the fix, green with it).
 
@@ -75,6 +75,7 @@ Not exercised by the tests, so checked by hand: the native iOS share sheet (see 
 | Q-08 | Major | AI Improve | At 1.3× text (and with any long CV title) the "Improvement type"/CV dropdowns overflow (6.3 px at 1.3×, 137 px at 2×) and "Open CV Builder" wraps to 3 lines. `build/qa/stress-17e-1.3/nav/07-quick-improve-cv.png` | Home → Improve CV at text size 1.3 | `isExpanded` + ellipsis on the dropdowns. `ai_improve_screen_test` (1.0/1.3/2.0, long title). |
 | Q-09 | Major | Bottom nav (every tab screen) | At 2× text the fixed 64 px bar overflows by 26 px and breaks "Tracker" into "Tracke / r". | Set text size 2×, open Home | Labels capped at 1.3× and single-line. `bottom_nav_bar_test`. |
 | Q-10 | Major | Profile | At 2× the "Theme" label is squeezed to one letter per line ("Th / e / m") beside the selector. | Text size 2×, Profile | `SettingsRow` wraps the trailing widget under the label; the Theme selector scales down instead of overflowing. `profile_screen_test`. |
+| Q-25 | Major | Every empty state (Tracker, ATS, Preview, CV list…) | At large text on a small phone the shared `CustomEmptyState` was taller than its box: on iPhone SE at 2× the Tracker empty state **overflowed 115 px and its "Add application" button was cut off and untappable**. `build/qa/stress-se-2.0/FAILED/` (first run) | Shared widget is now centered when it fits and scrollable when it does not. `custom_empty_state_test` (SE-sized box, 2× text: no overflow, button reachable; and still centered when there is room). |
 | Q-11 | Minor | ATS check | Every issue's example reads "Example: Example: 017XXXXXXXX…" (engine strings already start with "Example:"). `build/qa/ats/…` | Open ATS check | Duplicate prefix stripped in the row. `ats_checker_screen_test`. |
 
 (Q-02 is also the P0 you asked for.)
@@ -110,8 +111,9 @@ Not exercised by the tests, so checked by hand: the native iOS share sheet (see 
 | Q-20 | Preview (iPhone SE) | Footer button reads "Templa…"; Tailor 2/3 title "Match res…" at 1.3×. |
 | Q-21 | Tracker | Company/source line truncates early when the status pill is wide ("Evercare Hospital · via …"). |
 | Q-22 | CV list, AI Improve, Settings | Still in the old visual style (large titles, plain chips); there is no design mock for them. |
-| Q-23 | Login | ~12 px more space between the Email and Password blocks than the design. |
-| Q-24 | Auth emulator | `wrong-password` (emulator) shows "Incorrect password…" while the app also handles `invalid-credential` ("Email or password is incorrect"). Either is fine; production Firebase returns the second. |
+| Q-23 | Login | A little more space between the Email and Password blocks than the design (the "Forgot?" row is taller). |
+| Q-24 | Login | The auth emulator answers a wrong password with `wrong-password` ("Incorrect password. Please try again."); the app also maps `invalid-credential` ("Email or password is incorrect."). Both read fine; which one real Firebase returns depends on the project's email-enumeration-protection setting. |
+| Q-26 | CV export | Exported file is named `staff_nurse_cv_cv` — the title "Staff Nurse CV" plus a `_cv` suffix. Seen in the real iOS share sheet. |
 
 ## Verified OK (no issue)
 
@@ -149,8 +151,24 @@ Real differences:
 
 ## Large text stress matrix
 
-(Filled in at the end of the run.)
+Same 21 tests on every row (`QA_TEXT_SCALE` sets the system text size). Screenshots: `build/qa/<run>/…`.
+
+| Device | Text | Result | Notes |
+|---|---|---|---|
+| iPhone 17e (390×844) | 1.0× (baseline) | **21/21** | no overflows recorded |
+| iPhone SE 3rd gen (375×667) | 1.0× | **21/21** | no overflows recorded; paywall prices below the fold (decision 2), "Templa…" |
+| iPhone 17e | 1.3× | **21/21** | no overflows; AI Improve (Q-08) fixed; titles start to truncate ("Match res…") |
+| iPhone 17e | 2.0× | 20/21 | Cover-letter **Tone** control overflows 137 px; titles/pinned labels truncate ("Interview pr…", "Generate more qu…", "Save …"); Profile "Theme" and the nav bar fixed (Q-09, Q-10). The one miss is the Interview flow: at 2× the harness could not find the *Practice answer* button in the long scrolled list (not an app crash). |
+| iPhone SE | 2.0× | 19/21 | Tone control overflows 152 px; Tracker title breaks mid-word ("Applicat/ions"), stat labels truncate ("App…", "Inte…"); the Tracker empty state is now scrollable (Q-25). Misses: the Interview step above, and Tracker's "No matching applications" wait (the empty state sits behind the bottom nav until scrolled). |
+
+Forced-AI-outage results (all four AI surfaces, every device): an error is shown on each, no spinner is left running after 8 s, and since Q-04/05/06 the message is visible above the primary button.
 
 ## Manual checks
 
-(Filled in at the end of the run.)
+Done on the iPhone 17e with `integration_test/qa_app_main.dart` (`QA_SEED=true`), driven through the Simulator:
+
+- **Preview → Export PDF** opens the real iOS share sheet: "staff_nurse_cv_cv · PDF Document · 5 KB" with Preview, Copy, Markup, Print and Save to Files. First export is free, as in the tests (the paywall after export #2 is covered by the integration test).
+- **Cover letter → generate → Export** opens the text share sheet titled "Application for Registered Nurse" (Reminders, Copy, Save to Files).
+- Typing in the real app with the keyboard (hardware keyboard attached to the Simulator): fields focus and keep their text; the snackbar for "Job title is required." now sits **above** the Generate button (Q-06 fix, seen live).
+
+Not checked: the iOS **software** keyboard overlay (the Simulator was using the hardware keyboard), a physical device, and the cloud-sync path (Firestore stubbed).
