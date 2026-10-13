@@ -109,7 +109,30 @@ class _CvBuilderScreenState extends ConsumerState<CvBuilderScreen>
         Navigator.of(context).pop(result);
       },
       child: Scaffold(
-        body: SafeArea(child: _buildBody(state, page, refreshEpoch)),
+        body: SafeArea(
+          // The footer lives in `bottomNavigationBar`, so validation snackbars
+          // are laid out above Back / Continue instead of covering them.
+          bottom: false,
+          child: _buildBody(state, page, refreshEpoch),
+        ),
+        bottomNavigationBar: state.hasActiveDraft
+            ? SafeArea(
+                // A min-size Column: the slot's loose constraints would
+                // otherwise stretch the buttons to the full screen height.
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    BuilderFooter(
+                      primaryLabel: CvBuilderFlow.isLast(page)
+                          ? AppStrings.builderPreviewCv
+                          : AppStrings.builderContinue,
+                      onBack: () => _back(page),
+                      onPrimary: () => _continue(page),
+                    ),
+                  ],
+                ),
+              )
+            : null,
       ),
     );
   }
@@ -132,8 +155,6 @@ class _CvBuilderScreenState extends ConsumerState<CvBuilderScreen>
             .ensureDraftReady,
       );
     }
-
-    final isLast = CvBuilderFlow.isLast(page);
 
     return Column(
       children: [
@@ -167,13 +188,6 @@ class _CvBuilderScreenState extends ConsumerState<CvBuilderScreen>
             ),
             child: _pageWidget(page),
           ),
-        ),
-        BuilderFooter(
-          primaryLabel: isLast
-              ? AppStrings.builderPreviewCv
-              : AppStrings.builderContinue,
-          onBack: () => _back(page),
-          onPrimary: () => _continue(page),
         ),
       ],
     );

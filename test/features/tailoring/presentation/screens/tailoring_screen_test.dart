@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
+import 'package:careermatebd/core/errors/failure.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/app_chip.dart';
 import 'package:careermatebd/core/widgets/score_ring.dart';
@@ -74,6 +75,32 @@ AppChipVariant _chipVariant(WidgetTester tester, String label) =>
     tester.widget<AppChip>(find.widgetWithText(AppChip, label)).variant;
 
 void main() {
+  testWidgets('an AI error snackbar does not cover "Tailor my CV"', (
+    tester,
+  ) async {
+    final app = await _open(tester);
+    app.ai.tailorFailure = const Failure('The AI is unavailable.');
+    await _toMatch(tester);
+
+    await tester.tap(find.text(AppStrings.tailorTailorMyCv));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('The AI is unavailable.'), findsOneWidget);
+    expect(
+      tester
+          .getRect(find.byType(SnackBar))
+          .overlaps(
+            tester.getRect(
+              find.widgetWithText(PrimaryButton, AppStrings.tailorTailorMyCv),
+            ),
+          ),
+      isFalse,
+      reason: 'the retry button must stay reachable while the error shows',
+    );
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+  });
+
   group('Step 1/3 — paste', () {
     testWidgets('shows the CV card, hint and optional fields', (tester) async {
       await _open(tester);

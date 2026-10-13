@@ -1,14 +1,18 @@
 import 'dart:io';
 
 import 'package:careermatebd/app/app.dart';
+import 'package:careermatebd/app/router/app_router.dart';
 import 'package:careermatebd/features/cv_builder/data/datasources/cv_remote_data_source.dart';
 import 'package:careermatebd/features/cv_builder/data/dtos/cv_profile_dto.dart';
 import 'package:careermatebd/firebase_options.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -34,6 +38,10 @@ const String qaRun = String.fromEnvironment('QA_RUN', defaultValue: 'main');
 /// Text scale applied to the whole app (stress runs use 1.3 and 2.0).
 final double qaTextScale =
     double.tryParse(const String.fromEnvironment('QA_TEXT_SCALE')) ?? 1.0;
+
+/// Host folder for files a flow wants to hand back (e.g. exported PDFs). The
+/// iOS simulator shares the Mac's file system, so the app can write there.
+const String qaHostOut = String.fromEnvironment('QA_HOST_OUT');
 
 late final IntegrationTestWidgetsFlutterBinding qaBinding;
 bool _booted = false;
@@ -177,8 +185,35 @@ void qaTest(
       tester.platformDispatcher.textScaleFactorTestValue = scale;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     }
-    await body(tester);
+    try {
+      await body(tester);
+      await _leaveApp(tester);
+    } catch (_) {
+      // Keep a picture of where the flow broke, plus any snackbar text.
+      try {
+        for (final text in find
+            .descendant(of: find.byType(SnackBar), matching: find.byType(Text))
+            .evaluate()
+            .map((e) => (e.widget as Text).data)) {
+          debugPrint('QA-FAILSTATE snackbar: $text');
+        }
+        await shot(tester, 'FAILED', description.split(':').first);
+      } catch (_) {}
+      rethrow;
+    }
   }, timeout: timeout);
+}
+
+/// Navigates the app back to the splash route so screens (e.g. the CV
+/// builder, which flushes an autosave in `dispose`) are torn down while their
+/// providers are still alive, as in real use, not by the harness dropping the
+/// whole ProviderScope under them.
+Future<void> _leaveApp(WidgetTester tester) async {
+  if (find.byType(CareerMateApp).evaluate().isEmpty) {
+    return;
+  }
+  appContainer(tester).read(appRouterProvider).go('/');
+  await pumpFor(tester, const Duration(milliseconds: 600));
 }
 
 /// Pumps frames for [duration] without waiting for animations to finish
@@ -239,14 +274,51 @@ Future<void> shot(WidgetTester tester, String flow, String step) async {
   await qaBinding.takeScreenshot(name);
 }
 
+/// Scrolls [finder] into a tappable position. `ensureVisible` alone can stop
+/// short while the keyboard has shrunk the viewport, so fall back to dragging
+/// the nearest vertical scrollable.
+Future<void> scrollIntoReach(WidgetTester tester, Finder finder) async {
+  // A user closes the keyboard (tap outside / Done) before reaching a button
+  // below the fold; the open keyboard shrinks the viewport to a sliver.
+  if (!finder.hitTestable().evaluate().isNotEmpty) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await pumpFor(tester, const Duration(milliseconds: 600));
+  }
+  await tester.ensureVisible(finder.first);
+  await tester.pump(const Duration(milliseconds: 100));
+  if (finder.hitTestable().evaluate().isNotEmpty) {
+    return;
+  }
+  Finder? scrollable;
+  finder.first.evaluate().first.visitAncestorElements((element) {
+    final widget = element.widget;
+    if (widget is Scrollable &&
+        (widget.axisDirection == AxisDirection.down ||
+            widget.axisDirection == AxisDirection.up)) {
+      scrollable = find.byWidget(widget);
+      return false;
+    }
+    return true;
+  });
+  if (scrollable == null) {
+    return;
+  }
+  await tester.dragUntilVisible(
+    finder.first,
+    scrollable!,
+    const Offset(0, -150),
+    maxIteration: 40,
+  );
+  await tester.pump(const Duration(milliseconds: 100));
+}
+
 /// Taps [finder] after scrolling it into view and lets the UI react.
 Future<void> tapOn(
   WidgetTester tester,
   Finder finder, {
   Duration settle = const Duration(milliseconds: 500),
 }) async {
-  await tester.ensureVisible(finder.first);
-  await tester.pump(const Duration(milliseconds: 100));
+  await scrollIntoReach(tester, finder);
   await tester.tap(finder.first);
   await pumpFor(tester, settle);
 }
@@ -258,7 +330,7 @@ Future<void> tapText(
 }) => tapOn(tester, find.text(text), settle: settle);
 
 /// The text field whose placeholder (while empty) or label is [hintOrLabel].
-Finder fieldByHint(String hint) => find.widgetWithText(TextFormField, hint);
+Finder fieldByHint(String hint) => find.widgetWithText(TextField, hint);
 
 Future<void> typeInto(
   WidgetTester tester,
@@ -274,3 +346,71 @@ Future<void> typeInto(
 /// Unique e-mail per run so repeated runs never collide in the emulator.
 String uniqueEmail(String tag) =>
     'qa-$tag-${DateTime.now().millisecondsSinceEpoch}@example.com';
+
+/// The app's Riverpod container (to read state or seed data through the real
+/// repositories, never to bypass the UI under test).
+ProviderContainer appContainer(WidgetTester tester) =>
+    ProviderScope.containerOf(tester.element(find.byType(CareerMateApp)));
+
+/// Goes back like a user would: the screen's own chevron when it has one,
+/// otherwise the system back (pop) gesture.
+Future<void> goBack(WidgetTester tester) async {
+  FocusManager.instance.primaryFocus?.unfocus();
+  await pumpFor(tester, const Duration(milliseconds: 300));
+  final chevron = find.byIcon(Icons.chevron_left_rounded).hitTestable();
+  if (chevron.evaluate().isNotEmpty) {
+    await tester.tap(chevron.last);
+  } else {
+    final navigator = tester.state<NavigatorState>(
+      find.byType(Navigator).first,
+    );
+    await navigator.maybePop();
+  }
+  await pumpFor(tester, const Duration(milliseconds: 600));
+}
+
+/// Signs in as a fresh guest-free test user and lands on Home, the way a
+/// returning user would (account created in the emulator only).
+Future<void> launchSignedIn(
+  WidgetTester tester, {
+  List<Override> overrides = const [],
+}) async {
+  await resetAppState();
+  await FirebaseAuth.instance.createUserWithEmailAndPassword(
+    email: uniqueEmail('user'),
+    password: 'QaPass123',
+  );
+  await launchApp(tester, freshInstall: false, overrides: overrides);
+  await waitFor(tester, find.text('Ready to apply?'));
+}
+
+/// Writes [bytes] to `<QA_HOST_OUT>/<relativePath>` on the host (no-op when
+/// QA_HOST_OUT is not set).
+Future<void> saveHostFile(String relativePath, List<int> bytes) async {
+  if (qaHostOut.isEmpty) {
+    return;
+  }
+  final file = File('$qaHostOut/$relativePath');
+  await file.parent.create(recursive: true);
+  await file.writeAsBytes(bytes);
+}
+
+/// Replaces share_plus' native side (the iOS share sheet can't be dismissed
+/// from Dart). Returns the calls it received. The real sheet is checked by hand.
+List<MethodCall> mockSharePlus(WidgetTester tester) {
+  const channel = MethodChannel('dev.fluttercommunity.plus/share');
+  final calls = <MethodCall>[];
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+    call,
+  ) async {
+    calls.add(call);
+    return 'dev.fluttercommunity.plus/share/unavailable';
+  });
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      channel,
+      null,
+    ),
+  );
+  return calls;
+}

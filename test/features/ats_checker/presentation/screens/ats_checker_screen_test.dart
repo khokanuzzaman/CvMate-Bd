@@ -67,6 +67,25 @@ void main() {
     expect(find.text(AppStrings.atsCheckedNow), findsOneWidget);
   });
 
+  testWidgets('an issue example is labelled once, not "Example: Example:"', (
+    tester,
+  ) async {
+    await _open(tester);
+
+    final withExample = report.issues
+        .where((issue) => (issue.exampleImprovement ?? '').isNotEmpty)
+        .toList();
+    expect(withExample, isNotEmpty);
+    expect(find.textContaining('Example: Example'), findsNothing);
+    for (final issue in withExample) {
+      final sample = issue.exampleImprovement!.replaceFirst(
+        RegExp(r'^example:\s*', caseSensitive: false),
+        '',
+      );
+      expect(find.text(AppStrings.atsExample(sample)), findsWidgets);
+    }
+  });
+
   testWidgets('lists the most severe issue first', (tester) async {
     await _open(tester);
 

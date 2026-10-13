@@ -1,6 +1,7 @@
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
+import 'package:careermatebd/core/errors/failure.dart';
 import 'package:careermatebd/core/widgets/app_chip.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
 import 'package:careermatebd/features/interview_prep/data/repositories/interview_prep_session_repository_impl.dart';
@@ -194,6 +195,41 @@ void main() {
       await _tap(tester, find.text('Designer'));
 
       expect(app.state.activeSessionId, 's1');
+    });
+  });
+
+  group('a failed first generation', () {
+    testWidgets('is announced in a snackbar that leaves Generate reachable', (
+      tester,
+    ) async {
+      // On a phone the inline message sits below the fold of the setup form,
+      // so without a snackbar the tap on Generate seems to do nothing.
+      final app = await _open(tester);
+      app.ai.interviewFailure = const Failure('The AI is unavailable.');
+      final generate = find.widgetWithText(
+        PrimaryButton,
+        AppStrings.interviewGenerate,
+      );
+
+      await tester.tap(generate);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(
+        find.descendant(
+          of: find.byType(SnackBar),
+          matching: find.text('The AI is unavailable.'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .getRect(find.byType(SnackBar))
+            .overlaps(tester.getRect(generate)),
+        isFalse,
+        reason: 'the snackbar must not cover the Generate button',
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 5));
     });
   });
 

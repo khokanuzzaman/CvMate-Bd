@@ -7,6 +7,12 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 abstract final class CvPdfTemplateBuilders {
+  /// The built-in Helvetica has no glyph for typographic bullets, so a pasted
+  /// or typed "•" would print as an empty box. Draw them as the "-" the
+  /// experience bullets already use.
+  static String pdfSafeText(String value) =>
+      value.replaceAll(RegExp(r'[•‣▪●◦]'), '-');
+
   static pw.MultiPage buildClassic({
     required CvProfile profile,
     required PdfPageFormat pageFormat,
@@ -697,7 +703,7 @@ abstract final class CvPdfTemplateBuilders {
           if (description.trim().isNotEmpty) ...[
             pw.SizedBox(height: 5),
             pw.Text(
-              description.trim(),
+              pdfSafeText(description.trim()),
               style: const pw.TextStyle(fontSize: 10.4, lineSpacing: 2.5),
             ),
           ],

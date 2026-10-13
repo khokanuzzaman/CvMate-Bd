@@ -153,12 +153,15 @@ class _CoverLetterScreenState extends ConsumerState<CoverLetterScreen> {
         setState(() => _showSetup = false);
       },
       onDeleteDraft: (draft) => _confirmDelete(context, draft),
-      onGenerate: () {
+      onGenerate: () async {
         setState(() {
           _showSetup = false;
           _focusCompany = false;
         });
-        _controller.generateContent();
+        await _controller.generateContent();
+        // A failure leaves the setup form up, where the inline error card sits
+        // below the fold; say so where it can be seen.
+        _snack(ref.read(coverLetterControllerProvider).errorMessage);
       },
     );
   }

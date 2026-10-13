@@ -6,6 +6,7 @@ import 'package:careermatebd/features/cv_builder/domain/entities/personal_info.d
 import 'package:careermatebd/features/cv_builder/domain/entities/project_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/skill_info.dart';
 import 'package:careermatebd/shared/services/pdf/cv_pdf_service.dart';
+import 'package:careermatebd/shared/services/pdf/cv_pdf_template_builders.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 CvProfile _experiencedProfile(CvTemplate template) {
@@ -124,4 +125,29 @@ void main() {
       expect(_looksLikePdf(bytes), isTrue);
     }
   });
+
+  test('typographic bullets are drawn as "-" (Helvetica has no glyph)', () {
+    expect(
+      CvPdfTemplateBuilders.pdfSafeText('• Built apps\n• Shipped features'),
+      '- Built apps\n- Shipped features',
+    );
+    expect(CvPdfTemplateBuilders.pdfSafeText('Plain text'), 'Plain text');
+  });
+
+  test(
+    'a project description typed with bullets still produces a PDF',
+    () async {
+      final profile = _experiencedProfile(CvTemplate.modern).copyWith(
+        projects: const [
+          ProjectInfo(
+            id: 'project-2',
+            title: 'Expense Tracker',
+            description: '• Charts and budgets\n• Firebase backend',
+          ),
+        ],
+      );
+      final bytes = await service.generateCvPdf(profile: profile);
+      expect(_looksLikePdf(bytes), isTrue);
+    },
+  );
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:careermatebd/app/constants/app_strings.dart';
+import 'package:careermatebd/core/errors/failure.dart';
 import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/features/cover_letter/domain/entities/cover_letter_draft.dart';
@@ -93,8 +94,46 @@ void main() {
       await _tap(tester, find.text(AppStrings.coverLetterGenerate));
 
       expect(app.ai.coverLetterCalls, 0);
-      expect(find.text('Target company name is required.'), findsOneWidget);
+      // Inline on the form and in the snackbar.
+      expect(find.text('Target company name is required.'), findsWidgets);
       expect(find.text(AppStrings.coverLetterGenerate), findsOneWidget);
+    });
+
+    testWidgets('a failed Generate is announced and Generate stays reachable', (
+      tester,
+    ) async {
+      // The inline error card sits at the end of a long form, below the fold.
+      final app = await _open(tester);
+      app.ai.coverLetterFailure = const Failure('The AI is unavailable.');
+      final fields = find.byType(TextField);
+      await tester.enterText(fields.at(0), 'Acme');
+      await tester.enterText(fields.at(1), 'Frontend Developer');
+      await tester.enterText(fields.at(2), _jobPost);
+      await tester.pumpAndSettle();
+      final generate = find.widgetWithText(
+        PrimaryButton,
+        AppStrings.coverLetterGenerate,
+      );
+
+      await tester.tap(generate);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(
+        find.descendant(
+          of: find.byType(SnackBar),
+          matching: find.text('The AI is unavailable.'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .getRect(find.byType(SnackBar))
+            .overlaps(tester.getRect(generate)),
+        isFalse,
+        reason: 'the snackbar must not cover the Generate button',
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 5));
     });
 
     testWidgets('lists recent drafts, opens one, and deletes one', (

@@ -156,6 +156,25 @@ void main() {
       expect(find.text('Full name is required.'), findsWidgets);
     });
 
+    testWidgets('the validation snackbar never covers Back / Continue', (
+      tester,
+    ) async {
+      await pumpBuilderApp(tester, repository: repository);
+
+      await tester.tap(_continue);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final snackBar = tester.getRect(find.byType(SnackBar));
+      expect(
+        snackBar.overlaps(tester.getRect(_continue)),
+        isFalse,
+        reason: 'the footer buttons must stay reachable while the toast shows',
+      );
+      expect(snackBar.overlaps(tester.getRect(_back)), isFalse);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+    });
+
     testWidgets('chips jump to a page and Back returns one page', (
       tester,
     ) async {

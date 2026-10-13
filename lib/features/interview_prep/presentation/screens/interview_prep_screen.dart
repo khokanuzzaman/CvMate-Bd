@@ -118,6 +118,15 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
     return confirmed == true && mounted;
   }
 
+  /// Generates the first set. A failure is also shown as a snackbar: the
+  /// inline message sits at the bottom of the setup form, below the fold.
+  Future<void> _generate() async {
+    await ref
+        .read(interviewPrepControllerProvider.notifier)
+        .generateQuestions();
+    _snack(ref.read(interviewPrepControllerProvider).errorMessage);
+  }
+
   Future<void> _generateMore() async {
     final controller = ref.read(interviewPrepControllerProvider.notifier);
     final added = await controller.generateMoreQuestions();
@@ -138,7 +147,16 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
+      // The footer sits in `bottomNavigationBar` so snackbars (errors, "Added
+      // N questions") are laid out above the button instead of covering it.
+      bottomNavigationBar: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [_buildFooter(state)],
+        ),
+      ),
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             Padding(
@@ -189,7 +207,6 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
               ),
             ),
             Expanded(child: _buildBody(state)),
-            _buildFooter(state),
           ],
         ),
       ),
@@ -266,7 +283,7 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
             ? null
             : hasQuestions
             ? _generateMore
-            : controller.generateQuestions,
+            : _generate,
       ),
     );
   }
