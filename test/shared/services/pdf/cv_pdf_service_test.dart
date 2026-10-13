@@ -150,4 +150,34 @@ void main() {
       expect(_looksLikePdf(bytes), isTrue);
     },
   );
+
+  group('buildFileName', () {
+    String nameFor(String title) =>
+        service.buildFileName(CvProfile.empty().copyWith(title: title));
+
+    test('does not double the "_cv" when the title already says CV', () {
+      expect(nameFor('Staff Nurse CV'), 'staff_nurse_cv.pdf');
+      expect(nameFor('Frontend Developer CV'), 'frontend_developer_cv.pdf');
+      expect(nameFor('CV'), 'cv.pdf');
+      expect(nameFor('CV for Acme'), 'cv_for_acme.pdf');
+    });
+
+    test('adds "_cv" to titles that do not mention it', () {
+      expect(nameFor('Ayesha Karim'), 'ayesha_karim_cv.pdf');
+      expect(
+        nameFor('Tailored — Registered Nurse'),
+        'tailored_registered_nurse_cv.pdf',
+      );
+    });
+
+    test('does not mistake words that merely contain "cv"', () {
+      expect(nameFor('Recv Engineer'), 'recv_engineer_cv.pdf');
+    });
+
+    test('falls back to a plain name for an empty title', () {
+      final name = service.buildFileName(CvProfile.empty());
+      expect(name, isNot(contains('_cv_cv')));
+      expect(name, endsWith('.pdf'));
+    });
+  });
 }

@@ -119,6 +119,7 @@ class _CoverLetterScreenState extends ConsumerState<CoverLetterScreen> {
           _showSetup = true;
           _focusCompany = false;
         }),
+        onNewLetter: _newLetter,
         onToneChanged: _controller.selectTone,
         onRegenerate: _controller.generateContent,
         onExport: _export,
@@ -164,6 +165,41 @@ class _CoverLetterScreenState extends ConsumerState<CoverLetterScreen> {
         _snack(ref.read(coverLetterControllerProvider).errorMessage);
       },
     );
+  }
+
+  /// "New letter": start from a blank form. The last letter stays on screen
+  /// when the screen is reopened (so work is never lost by leaving), which is
+  /// why starting afresh is an explicit action. Asks first when the letter was
+  /// never saved as a draft.
+  Future<void> _newLetter() async {
+    final state = ref.read(coverLetterControllerProvider);
+    if (state.hasGeneratedContent && !state.isEditingSavedDraft) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text(AppStrings.coverLetterNewLetterTitle),
+          content: const Text(AppStrings.coverLetterNewLetterBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(AppStrings.coverLetterCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text(AppStrings.coverLetterNewLetter),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) {
+        return;
+      }
+    }
+    _controller.startNewDraft();
+    setState(() {
+      _showSetup = true;
+      _focusCompany = false;
+    });
   }
 
   /// Export saves the letter as a draft (so it shows under Recent drafts) and

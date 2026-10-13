@@ -68,6 +68,15 @@ class TailoringState {
   bool get hasSavedCvs => availableCvs.isNotEmpty;
   bool get hasMatchReport => matchReport != null;
   bool get hasResult => result != null;
+
+  /// Whether "Start over" would throw something away: a pasted job post or its
+  /// title/company, a match, or a tailored CV. Asked about on every page.
+  bool get hasWorkToLose =>
+      hasResult ||
+      hasMatchReport ||
+      jobPostText.trim().isNotEmpty ||
+      jobTitle.trim().isNotEmpty ||
+      company.trim().isNotEmpty;
   bool get isBusy => stage.isBusy;
   bool get hasJobPost => jobPostText.trim().length >= kMinJobPostLength;
   bool get canAnalyze => selectedCv != null && hasJobPost && !isBusy;

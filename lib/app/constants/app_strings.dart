@@ -359,6 +359,10 @@ abstract final class AppStrings {
       'Loading CVs and cover letter drafts...';
   static const String coverLetterNewDraft = 'New draft';
   static const String coverLetterViewLetter = 'View letter';
+  static const String coverLetterNewLetter = 'New letter';
+  static const String coverLetterNewLetterTitle = 'Start a new letter?';
+  static const String coverLetterNewLetterBody =
+      'This letter is not saved yet. Export it first to keep it as a draft.';
   static const String coverLetterSetupTitle = 'Cover letter generator';
   static const String coverLetterSetupBody =
       'Generate editable cover letters, job application emails, and LinkedIn '

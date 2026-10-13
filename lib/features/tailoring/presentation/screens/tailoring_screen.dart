@@ -42,7 +42,7 @@ class _TailoringScreenState extends ConsumerState<TailoringScreen> {
 
   /// Asks first when there is a tailored CV that would be lost.
   Future<void> _startOver() async {
-    if (ref.read(tailoringControllerProvider).hasResult) {
+    if (ref.read(tailoringControllerProvider).hasWorkToLose) {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(

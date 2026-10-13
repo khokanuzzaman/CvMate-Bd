@@ -284,6 +284,67 @@ void main() {
       expect(find.text('Dear Hiring Manager,'), findsOneWidget);
     });
 
+    testWidgets('reopening shows the last letter, not an empty form', (
+      tester,
+    ) async {
+      final app = await _open(tester);
+      await _generate(tester);
+      expect(find.text('Dear Hiring Manager,'), findsOneWidget);
+
+      app.router.pop();
+      await tester.pumpAndSettle();
+      unawaited(app.router.push(RouteNames.coverLetterPath));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dear Hiring Manager,'), findsOneWidget);
+      expect(find.text(AppStrings.coverLetterSetupTitle), findsNothing);
+    });
+
+    testWidgets('New letter asks first when the letter was never saved', (
+      tester,
+    ) async {
+      await _open(tester);
+      await _generate(tester);
+
+      await _tap(tester, find.byTooltip(AppStrings.coverLetterMoreOptions));
+      await _tap(tester, find.text(AppStrings.coverLetterNewLetter));
+      expect(find.text(AppStrings.coverLetterNewLetterTitle), findsOneWidget);
+
+      // Cancel keeps the letter.
+      await _tap(tester, find.text(AppStrings.coverLetterCancel));
+      expect(find.text('Dear Hiring Manager,'), findsOneWidget);
+
+      await _tap(tester, find.byTooltip(AppStrings.coverLetterMoreOptions));
+      await _tap(tester, find.text(AppStrings.coverLetterNewLetter));
+      await _tap(
+        tester,
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(AppStrings.coverLetterNewLetter),
+        ),
+      );
+
+      // A blank form: the setup view with the job details cleared.
+      expect(find.text(AppStrings.coverLetterSetupTitle), findsOneWidget);
+      expect(find.text('Acme'), findsNothing);
+      expect(find.text(_jobPost), findsNothing);
+    });
+
+    testWidgets('New letter does not ask once the letter is saved', (
+      tester,
+    ) async {
+      final app = await _open(tester);
+      await _generate(tester);
+      await _tap(tester, find.text(AppStrings.coverLetterExport));
+      expect(app.letters.saveCount, 1, reason: 'Export saved the draft');
+
+      await _tap(tester, find.byTooltip(AppStrings.coverLetterMoreOptions));
+      await _tap(tester, find.text(AppStrings.coverLetterNewLetter));
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text(AppStrings.coverLetterSetupTitle), findsOneWidget);
+    });
+
     testWidgets('Back leaves the screen', (tester) async {
       await _open(tester);
       await _generate(tester);

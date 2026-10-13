@@ -22,6 +22,20 @@ Branch `claude/qa-pass` (off `origin/main` @ `fbadd2c`). Flutter 3.44.0 / Dart 3
 
 Every fix has a regression test (the test was run red without the fix, green with it).
 
+## Follow-up (this PR, stacked on #16)
+
+All four items from the "Needs your decision" list were decided and are fixed here, each with a regression test:
+
+| Item | Change | Tests |
+|---|---|---|
+| Text scale | App-wide clamp at **1.5×** (`TextScaleClamp` in the `MaterialApp` builder). Above 1.3× side-by-side button pairs stack vertically (`AdaptiveButtonRow`: builder Back/Continue, Tailor Cover letter/Save & export, Cover letter Regenerate/Export, Preview Template/Export PDF) and `SegmentedToggle` (the cover-letter **Tone** control) stacks its options. Also: long keyword chips wrap instead of overflowing (43 px on SE, 28 px on 17e at 1.5×). | `text_scale_clamp_test`, `adaptive_button_row_test`, `segmented_toggle_test`, `app_chip_test`; integration: a strict *no layout overflow anywhere in the run* test at 1.5× and 2× on both devices |
+| Paywall | Only the call-to-action is pinned; the "not available" note and footer line scroll with the page. On short screens (< 700 pt) the header and cards tighten so Monthly, Yearly and the one-time option are all on the first screen of an iPhone SE. | `paywall_small_phone_test` (375×667, real fonts); integration assertion on the device |
+| Cover letter | Reopening still shows the last letter; the ⋮ menu has **New letter** (asks first only when the letter was never saved as a draft). | `cover_letter_screen_test` ×3; integration flow |
+| Tailor | **Start over** asks first on every page whenever there is something to lose (pasted post, title/company, match or tailored CV); on a still-empty paste page there is nothing to lose, so it does not ask. | `tailoring_screen_test`; integration flow |
+| Export name | `staff_nurse_cv.pdf`, not `staff_nurse_cv_cv.pdf` (no suffix when the title already has a `cv` word). Closes Q-26. | `cv_pdf_service_test` |
+
+Result: the integration suite (now 24 tests with the strict overflow check) passes at **1.0× and 1.5× on iPhone 17e and iPhone SE**, and at 2.0× on both (the app sees 1.5×; an integration test asserts that).
+
 ## How to run it
 
 The suite uses the **Firebase Auth emulator** only — it refuses to start without `QA_AUTH_EMULATOR_HOST`, so it cannot create users in the production project. Cloud sync (Firestore) and analytics are stubbed in the test app, because the Firestore emulator needs Java 21 (only 17 is installed here) and the Auth emulator was what was asked for.
@@ -94,10 +108,10 @@ Not exercised by the tests, so checked by hand: the native iOS share sheet (see 
 
 ## Needs your decision
 
-1. **Large text (≥ 1.5×) degrades screens we redesigned.** At 2×: screen titles truncate ("Mat…", "You…", "Cover le…"), pinned action labels truncate ("Save …" for "Save & export", "Cove…", "Rege…"), the cover-letter **Tone** control crams into "ProfessionalFriendlyConfident" and overflows (137 px on iPhone 17e, 152 px on SE), the tracker "add" form overflows 115 px on SE, section labels break mid-word ("PROFESSI/ONAL"). Nothing crashes and Q-09/Q-10/Q-08 are fixed, but this is a pattern. Options: (a) cap the app-wide text scale at ~1.5×, (b) stack the two-button footers and the tone control when text is large. I did not do either — it changes every screen. At 1.3× nothing overflows (21/21).
-2. **Paywall on small phones.** On iPhone SE the pinned footer (note + button + footer text) leaves ~15 px of the Monthly/Yearly cards visible until you scroll; the one-time card is also clipped at 390×844. The design fits in one screen. `build/qa/stress-se-1.0/cv-builder/21-paywall-after-export-2.png`.
-3. **Cover letter / Interview "reopen".** Opening Cover letter from Home shows the *last letter* (state survives), not the form; the form and Recent drafts are one tap away via the "Aligned to" chip. Fine if intended.
-4. **Start over on the Tailor Match page** discards the pasted job post without asking (it only asks once there is a tailored CV, per PR #11). Intended?
+1. **(Resolved in the follow-up PR.)** **Large text (≥ 1.5×) degrades screens we redesigned.** At 2×: screen titles truncate ("Mat…", "You…", "Cover le…"), pinned action labels truncate ("Save …" for "Save & export", "Cove…", "Rege…"), the cover-letter **Tone** control crams into "ProfessionalFriendlyConfident" and overflows (137 px on iPhone 17e, 152 px on SE), the tracker "add" form overflows 115 px on SE, section labels break mid-word ("PROFESSI/ONAL"). Nothing crashes and Q-09/Q-10/Q-08 are fixed, but this is a pattern. Options: (a) cap the app-wide text scale at ~1.5×, (b) stack the two-button footers and the tone control when text is large. I did not do either — it changes every screen. At 1.3× nothing overflows (21/21).
+2. **(Resolved in the follow-up PR.)** **Paywall on small phones.** On iPhone SE the pinned footer (note + button + footer text) leaves ~15 px of the Monthly/Yearly cards visible until you scroll; the one-time card is also clipped at 390×844. The design fits in one screen. `build/qa/stress-se-1.0/cv-builder/21-paywall-after-export-2.png`.
+3. **(Reopen kept, New letter added in the follow-up PR.)** **Cover letter / Interview "reopen".** Opening Cover letter from Home shows the *last letter* (state survives), not the form; the form and Recent drafts are one tap away via the "Aligned to" chip. Fine if intended.
+4. **(Resolved in the follow-up PR.)** **Start over on the Tailor Match page** discards the pasted job post without asking (it only asks once there is a tailored CV, per PR #11). Intended?
 
 ## Other minor findings (not fixed)
 
@@ -113,7 +127,7 @@ Not exercised by the tests, so checked by hand: the native iOS share sheet (see 
 | Q-22 | CV list, AI Improve, Settings | Still in the old visual style (large titles, plain chips); there is no design mock for them. |
 | Q-23 | Login | A little more space between the Email and Password blocks than the design (the "Forgot?" row is taller). |
 | Q-24 | Login | The auth emulator answers a wrong password with `wrong-password` ("Incorrect password. Please try again."); the app also maps `invalid-credential` ("Email or password is incorrect."). Both read fine; which one real Firebase returns depends on the project's email-enumeration-protection setting. |
-| Q-26 | CV export | Exported file is named `staff_nurse_cv_cv` — the title "Staff Nurse CV" plus a `_cv` suffix. Seen in the real iOS share sheet. |
+| Q-26 | CV export | *(fixed in the follow-up PR)* Exported file is named `staff_nurse_cv_cv` — the title "Staff Nurse CV" plus a `_cv` suffix. Seen in the real iOS share sheet. |
 
 ## Verified OK (no issue)
 

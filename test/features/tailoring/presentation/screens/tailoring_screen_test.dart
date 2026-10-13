@@ -567,14 +567,33 @@ void main() {
       expect(find.text(AppStrings.tailorPrint), findsOneWidget);
     });
 
-    testWidgets('from the match page resets the controller and the fields', (
+    Future<void> confirmStartOver(WidgetTester tester) => _tap(
       tester,
-    ) async {
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text(AppStrings.tailorStartOver),
+      ),
+    );
+
+    testWidgets('from the match page asks first, then resets', (tester) async {
       final app = await _open(tester);
       await _toMatch(tester);
 
       await openMenu(tester);
       await _tap(tester, find.text(AppStrings.tailorStartOver));
+      expect(find.text(AppStrings.tailorStartOverTitle), findsOneWidget);
+
+      // Cancel keeps the pasted post and the match.
+      await _tap(tester, find.text(AppStrings.tailorCancel));
+      expect(
+        app.container.read(tailoringControllerProvider).jobPostText,
+        _jobPost,
+      );
+      expect(find.text(AppStrings.tailorStepPill(2)), findsOneWidget);
+
+      await openMenu(tester);
+      await _tap(tester, find.text(AppStrings.tailorStartOver));
+      await confirmStartOver(tester);
 
       final state = app.container.read(tailoringControllerProvider);
       expect(state.jobPostText, isEmpty);
@@ -583,6 +602,35 @@ void main() {
       expect(find.text(AppStrings.tailorStepPill(1)), findsOneWidget);
       expect(find.text(_jobPost), findsNothing, reason: 'the field is empty');
       expect(_onPressed(tester, AppStrings.tailorAnalyze), isNull);
+    });
+
+    testWidgets('on the paste page asks once something is typed', (
+      tester,
+    ) async {
+      final app = await _open(tester);
+
+      // Nothing typed yet: nothing to lose, so no question.
+      await openMenu(tester);
+      await _tap(tester, find.text(AppStrings.tailorStartOver));
+      expect(find.byType(AlertDialog), findsNothing);
+
+      await _paste(tester);
+      await openMenu(tester);
+      await _tap(tester, find.text(AppStrings.tailorStartOver));
+      expect(find.text(AppStrings.tailorStartOverTitle), findsOneWidget);
+      await _tap(tester, find.text(AppStrings.tailorCancel));
+      expect(
+        app.container.read(tailoringControllerProvider).jobPostText,
+        _jobPost,
+      );
+
+      await openMenu(tester);
+      await _tap(tester, find.text(AppStrings.tailorStartOver));
+      await confirmStartOver(tester);
+      expect(
+        app.container.read(tailoringControllerProvider).jobPostText,
+        isEmpty,
+      );
     });
 
     testWidgets('after tailoring it asks first, and Cancel keeps the work', (

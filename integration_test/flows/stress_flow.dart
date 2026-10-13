@@ -39,6 +39,16 @@ Future<void> _reportAiOutcome(
 }
 
 void registerStressFlow() {
+  qaTest('text scale is clamped at 1.5x app-wide', (tester) async {
+    await launchApp(tester);
+    await waitFor(tester, find.text(AppStrings.onboardingGetStarted));
+    final context = tester.element(find.byType(Scaffold).first);
+    final scaledTen = MediaQuery.textScalerOf(context).scale(10);
+    final expected = 10 * (qaTextScale > 1.5 ? 1.5 : qaTextScale);
+    debugPrint('QA-NOTE text scale $qaTextScale → app sees ${scaledTen / 10}');
+    expect(scaledTen, closeTo(expected, 0.01));
+  });
+
   qaTest('stress: very long values and Bangla across the app', (tester) async {
     mockClipboard(tester);
     final shares = mockSharePlugin(tester);

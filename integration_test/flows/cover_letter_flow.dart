@@ -121,4 +121,53 @@ void registerCoverLetterFlow() {
     await waitGone(tester, find.byTooltip(AppStrings.coverLetterDeleteDraft));
     await shot(tester, 'cover-letter', 'after-delete');
   });
+
+  qaTest('cover letter: New letter (asks when unsaved, not when saved)', (
+    tester,
+  ) async {
+    mockSharePlus(tester);
+    await launchSignedIn(tester);
+    await seedCv(tester, nurseCv());
+    await tapText(tester, AppStrings.actionCoverLetter);
+    await waitFor(tester, find.text(AppStrings.coverLetterSetupTitle));
+    final fields = find.byType(TextField);
+    await typeInto(tester, fields.at(0), 'Square Hospital');
+    await typeInto(tester, fields.at(1), 'Registered Nurse');
+    await typeInto(tester, fields.at(2), nurseJobPost);
+    await tapText(
+      tester,
+      AppStrings.coverLetterGenerate,
+      settle: const Duration(seconds: 3),
+    );
+    await waitFor(tester, find.textContaining('Aligned to'));
+
+    // Unsaved: New letter asks first; Cancel keeps the letter.
+    await tapOn(tester, find.byTooltip(AppStrings.coverLetterMoreOptions));
+    await shot(tester, 'cover-letter-new', 'menu-with-new-letter');
+    await tapText(tester, AppStrings.coverLetterNewLetter);
+    await waitFor(tester, find.text(AppStrings.coverLetterNewLetterTitle));
+    await shot(tester, 'cover-letter-new', 'new-letter-asks');
+    await tapText(tester, AppStrings.coverLetterCancel);
+    expect(find.textContaining('Aligned to'), findsOneWidget);
+
+    // Leave and come back: the last letter is still there.
+    await goBack(tester);
+    await waitFor(tester, find.text(AppStrings.homeTitle));
+    await tapText(tester, AppStrings.actionCoverLetter);
+    await waitFor(tester, find.textContaining('Aligned to'));
+    await shot(tester, 'cover-letter-new', 'reopened-last-letter');
+
+    // Export saves a draft, then New letter goes straight to a blank form.
+    await tapText(
+      tester,
+      AppStrings.coverLetterExport,
+      settle: const Duration(seconds: 2),
+    );
+    await tapOn(tester, find.byTooltip(AppStrings.coverLetterMoreOptions));
+    await tapText(tester, AppStrings.coverLetterNewLetter);
+    await waitFor(tester, find.text(AppStrings.coverLetterSetupTitle));
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('Square Hospital'), findsNothing);
+    await shot(tester, 'cover-letter-new', 'blank-form');
+  });
 }
