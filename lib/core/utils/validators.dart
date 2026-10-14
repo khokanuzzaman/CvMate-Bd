@@ -72,17 +72,21 @@ class Validators {
     return null;
   }
 
-  static String? bangladeshPhone(String? value) {
+  /// A phone number from any country (E.164-style): an optional leading `+`,
+  /// then 7 to 15 digits. Spaces, dashes, dots and brackets may separate them,
+  /// so `+880 1712-345678`, `01712345678` and `+971 50 123 4567` all pass.
+  static String? phone(String? value) {
     final requiredMessage = requiredText(value, fieldName: 'Phone number');
     if (requiredMessage != null) {
       return requiredMessage;
     }
 
-    final normalized = value!.replaceAll(RegExp(r'\s+'), '');
-    final pattern = RegExp(r'^(?:\+?88)?01[3-9]\d{8}$');
+    final trimmed = value!.trim();
+    final digits = trimmed.replaceAll(RegExp(r'\D'), '');
+    final onlyPhoneCharacters = RegExp(r'^\+?[\d\s\-.()]+$').hasMatch(trimmed);
 
-    if (!pattern.hasMatch(normalized)) {
-      return 'Use a valid Bangladesh phone number.';
+    if (!onlyPhoneCharacters || digits.length < 7 || digits.length > 15) {
+      return 'Enter a valid phone number, e.g. +880 1712 345678.';
     }
 
     return null;

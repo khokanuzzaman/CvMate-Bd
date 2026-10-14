@@ -89,7 +89,7 @@ class PersonalInfoStep extends ConsumerWidget {
                 textInputAction: TextInputAction.next,
                 fillColor: AppColors.surface,
                 autovalidateMode: autovalidate,
-                validator: Validators.bangladeshPhone,
+                validator: Validators.phone,
                 onChanged: (value) => update((i) => i.copyWith(phone: value)),
               ),
             ),
