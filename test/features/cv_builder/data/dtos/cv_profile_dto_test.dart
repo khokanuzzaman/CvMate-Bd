@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:careermatebd/features/cv_builder/data/dtos/cv_profile_dto.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_style.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -44,6 +45,18 @@ void main() {
       expect(firestore.template, CvTemplate.fresher);
       expect(firestore.sectionLayout, isNull);
       expect(_kinds(firestore), CvSectionLayout.fresherOrder);
+
+      // Market style (schema 3): an old CV is international, A4, with every new
+      // personal field hidden and no photo or signature.
+      for (final cv in [hive, firestore]) {
+        expect(cv.style, CvStyle.international);
+        expect(cv.paperSize, PaperSize.a4);
+        expect(cv.shownFields, isEmpty);
+        expect(cv.details.isEmpty, isTrue);
+        expect(cv.photo, isNull);
+        expect(cv.signature, isNull);
+        expect(cv.showDeclaration, isFalse);
+      }
     },
   );
 

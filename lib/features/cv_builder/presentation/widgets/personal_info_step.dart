@@ -1,17 +1,22 @@
 import 'package:careermatebd/app/constants/app_strings.dart';
+import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/utils/validators.dart';
 import 'package:careermatebd/core/widgets/app_text_field.dart';
-import 'package:careermatebd/core/widgets/dashed_border.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_style.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/personal_info.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
+import 'package:careermatebd/features/cv_builder/presentation/utils/style_labels.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/personal_details_card.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/photo_block.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-/// Personal page: photo placeholder, name, headline, phone / location and
+/// Personal page: photo, name, headline, phone / location and
 /// links, plus the CV title and email the app requires.
 class PersonalInfoStep extends ConsumerWidget {
   const PersonalInfoStep({super.key, required this.showValidationErrors});
@@ -35,7 +40,12 @@ class PersonalInfoStep extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _PhotoBlock(),
+        Align(
+          alignment: Alignment.centerRight,
+          child: _StylePill(style: draft.style),
+        ),
+        const SizedBox(height: AppSpacing.s8),
+        const PhotoBlock(),
         const SizedBox(height: AppSpacing.s22),
         AppTextField(
           initialValue: info.fullName,
@@ -139,7 +149,9 @@ class PersonalInfoStep extends ConsumerWidget {
           validator: Validators.optionalUrl,
           onChanged: (value) => update((i) => i.copyWith(portfolioUrl: value)),
         ),
-        const SizedBox(height: AppSpacing.s16),
+        const SizedBox(height: AppSpacing.s22),
+        const PersonalDetailsCard(),
+        const SizedBox(height: AppSpacing.s22),
         AppTextField(
           initialValue: draft.title,
           label: AppStrings.builderCvTitle,
@@ -159,76 +171,53 @@ class PersonalInfoStep extends ConsumerWidget {
   }
 }
 
-/// Profile photo placeholder. Photo upload is not implemented (the CV model has
-/// no photo field), so the button is shown disabled instead of faking it.
-class _PhotoBlock extends StatelessWidget {
-  const _PhotoBlock();
+/// The CV's market style; tapping opens the CV style screen.
+class _StylePill extends StatelessWidget {
+  const _StylePill({required this.style});
 
-  static const double _size = 80;
+  final CvStyle style;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        DashedBorder(
-          circle: true,
-          color: AppColors.placeholder.withValues(alpha: 0.6),
-          child: Container(
-            width: _size,
-            height: _size,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: AppColors.primarySoft,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.person_outline_rounded,
-              size: 34,
-              color: AppColors.primary,
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s18),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppStrings.builderPhotoTitle,
-                style: AppTextStyles.itemTitle,
-              ),
-              const SizedBox(height: AppSpacing.s4),
-              Text(AppStrings.builderPhotoHint, style: AppTextStyles.caption),
-              const SizedBox(height: AppSpacing.s8),
-              // TODO(photo-upload): enable once the CV model can store a photo.
-              Tooltip(
-                message: AppStrings.builderPhotoComingSoon,
-                child: Opacity(
-                  opacity: 0.55,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s16,
-                      vertical: AppSpacing.s8,
-                    ),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primarySoft,
-                      borderRadius: AppRadii.pillRadius,
-                    ),
-                    child: Text(
-                      AppStrings.builderPhotoUpload,
-                      style: AppTextStyles.bodySm.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
+    return Semantics(
+      button: true,
+      label: '${AppStrings.styleTooltip}: ${styleShortName(style)}',
+      child: Material(
+        color: AppColors.accentSoft,
+        borderRadius: AppRadii.pillRadius,
+        child: InkWell(
+          onTap: () => context.push(RouteNames.cvStylePath),
+          borderRadius: AppRadii.pillRadius,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 40),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s14),
+              child: ExcludeSemantics(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '${styleShortName(style)} style',
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodySm.copyWith(
+                          color: AppColors.accentInk,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
+                      color: AppColors.accentInk,
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

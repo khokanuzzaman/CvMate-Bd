@@ -4,6 +4,7 @@ import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_bui
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_builder_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_preview_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_sections_screen.dart';
+import 'package:careermatebd/features/cv_builder/presentation/screens/cv_style_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_template_screen.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_record.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_service.dart';
@@ -80,6 +81,10 @@ Future<ProviderContainer> pumpBuilderApp(
       GoRoute(
         path: RouteNames.cvPreviewPath,
         builder: (context, state) => const CvPreviewScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.cvStylePath,
+        builder: (context, state) => const CvStyleScreen(),
       ),
       GoRoute(
         path: RouteNames.cvSectionsPath,

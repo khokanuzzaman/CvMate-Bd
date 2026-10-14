@@ -11,7 +11,6 @@ import 'package:careermatebd/shared/services/pdf/cv_pdf_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 
 class CvPdfPreviewScreen extends ConsumerWidget {
@@ -71,7 +70,9 @@ class CvPdfPreviewScreen extends ConsumerWidget {
                         profile: draft,
                         pageFormat: format,
                       ),
-                      initialPageFormat: PdfPageFormat.a4,
+                      initialPageFormat: CvPdfService.pageFormatFor(
+                        draft.paperSize,
+                      ),
                       pdfFileName: fileName,
                       allowPrinting: false,
                       allowSharing: false,

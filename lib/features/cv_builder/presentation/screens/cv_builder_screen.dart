@@ -174,6 +174,11 @@ class _CvBuilderScreenState extends ConsumerState<CvBuilderScreen>
             onBack: () => Navigator.of(context).maybePop(),
             extraActions: [
               AppTopBarAction(
+                icon: Icons.public_rounded,
+                tooltip: AppStrings.styleTooltip,
+                onTap: () => context.push(RouteNames.cvStylePath),
+              ),
+              AppTopBarAction(
                 icon: Icons.view_list_outlined,
                 tooltip: AppStrings.sectionsTooltip,
                 onTap: _openSections,

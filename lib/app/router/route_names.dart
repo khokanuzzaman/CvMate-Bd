@@ -13,6 +13,8 @@ abstract final class RouteNames {
   static const String cvPdfPreview = 'cv-pdf-preview';
   static const String cvTemplate = 'cv-template';
   static const String cvSections = 'cv-sections';
+  static const String cvStyle = 'cv-style';
+  static const String cvDeclaration = 'cv-declaration';
   static const String aiImprove = 'ai-improve';
   static const String coverLetter = 'cover-letter';
   static const String jobTracker = 'job-tracker';
@@ -38,6 +40,8 @@ abstract final class RouteNames {
   static const String cvPdfPreviewPath = '/cvs/pdf-preview';
   static const String cvTemplatePath = '/cvs/template';
   static const String cvSectionsPath = '/cvs/sections';
+  static const String cvStylePath = '/cvs/style';
+  static const String cvDeclarationPath = '/cvs/declaration';
   static const String aiImprovePath = '/cvs/ai-improve';
   static const String coverLetterPath = '/cover-letter';
   static const String jobTrackerPath = '/job-tracker';

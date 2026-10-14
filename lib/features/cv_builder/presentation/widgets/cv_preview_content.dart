@@ -1,3 +1,4 @@
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
 import 'package:careermatebd/core/theme/app_shadows.dart';
@@ -5,7 +6,10 @@ import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_style.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/personal_info.dart';
 import 'package:careermatebd/features/cv_builder/presentation/utils/cv_field_codec.dart';
+import 'package:careermatebd/features/cv_builder/presentation/utils/personal_labels.dart';
 import 'package:careermatebd/features/cv_builder/presentation/utils/section_titles.dart';
 import 'package:flutter/material.dart';
 
@@ -16,8 +20,9 @@ class CvPreviewContent extends StatelessWidget {
 
   final CvProfile profile;
 
-  /// A4 height / width, used so a short CV still reads as a full page.
-  static const double _paperAspect = 1.414;
+  /// Paper height / width, used so a short CV still reads as a full page.
+  static double _paperAspect(PaperSize size) =>
+      size == PaperSize.letter ? 11 / 8.5 : 1.414;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +40,7 @@ class CvPreviewContent extends StatelessWidget {
         return Container(
           width: double.infinity,
           constraints: BoxConstraints(
-            minHeight: constraints.maxWidth * _paperAspect,
+            minHeight: constraints.maxWidth * _paperAspect(profile.paperSize),
           ),
           padding: const EdgeInsets.all(AppSpacing.s22),
           decoration: BoxDecoration(
@@ -46,33 +51,151 @@ class CvPreviewContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(profile.displayName, style: AppTextStyles.h2),
-              if (info.desiredRole.trim().isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.s4),
-                Text(
-                  info.desiredRole.trim(),
-                  style: AppTextStyles.body.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-              if (contact.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.s8),
-                Text(contact, style: AppTextStyles.caption),
-              ],
+              _header(info, contact),
               const SizedBox(height: AppSpacing.s14),
               const SizedBox(
                 height: 2,
                 width: double.infinity,
                 child: ColoredBox(color: AppColors.primary),
               ),
+              ..._detailsWidgets(),
               ..._sectionWidgets(),
+              ..._declarationWidgets(),
             ],
           ),
         );
       },
     );
+  }
+
+  /// Name, headline and contact line, with the photo beside them when shown.
+  Widget _header(PersonalInfo info, String contact) {
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(profile.displayName, style: AppTextStyles.h2),
+        if (info.desiredRole.trim().isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.s4),
+          Text(
+            info.desiredRole.trim(),
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+        if (contact.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.s8),
+          Text(contact, style: AppTextStyles.caption),
+        ],
+      ],
+    );
+    final photo = profile.photoToShow;
+    if (photo == null) {
+      return text;
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: text),
+        const SizedBox(width: AppSpacing.s12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Image.memory(
+            photo,
+            width: 56,
+            height: 72,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _detailsWidgets() {
+    final entries = profile.details.entries(
+      profile.shownFields,
+      personalFieldLabel,
+    );
+    if (entries.isEmpty) {
+      return const [];
+    }
+    return [
+      _Section(
+        title: AppStrings.personalDetailsPreview,
+        children: [
+          for (final entry in entries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.s4),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '${entry.label}: ',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    TextSpan(text: entry.value),
+                  ],
+                ),
+                style: AppTextStyles.bodySm,
+              ),
+            ),
+        ],
+      ),
+    ];
+  }
+
+  /// The declaration, with place and date, and the signature image.
+  List<Widget> _declarationWidgets() {
+    final signature = profile.signatureToShow;
+    if (!profile.showDeclaration && signature == null) {
+      return const [];
+    }
+    final declaration = profile.declaration;
+    final place = declaration.place.trim();
+    final date = declaration.date.trim().isEmpty
+        ? AppStrings.declarationDateOnExport
+        : declaration.date.trim();
+    return [
+      const SizedBox(height: AppSpacing.s22),
+      if (profile.showDeclaration)
+        Text(declaration.effectiveText, style: AppTextStyles.bodySm),
+      const SizedBox(height: AppSpacing.s12),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: profile.showDeclaration
+                ? Text(
+                    [
+                      if (place.isNotEmpty)
+                        '${AppStrings.declarationPlace}: $place',
+                      '${AppStrings.declarationDate}: $date',
+                    ].join('\n'),
+                    style: AppTextStyles.caption,
+                  )
+                : const SizedBox.shrink(),
+          ),
+          if (signature != null)
+            Column(
+              children: [
+                Image.memory(
+                  signature,
+                  width: 96,
+                  height: 36,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(
+                  width: 96,
+                  height: 1,
+                  child: ColoredBox(color: AppColors.muted),
+                ),
+              ],
+            ),
+        ],
+      ),
+    ];
   }
 
   /// The sections in the CV's layout order (the user's, or the template's

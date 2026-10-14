@@ -1,4 +1,9 @@
+import 'dart:typed_data';
+
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_declaration.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_style.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/personal_details.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/education_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
@@ -26,6 +31,13 @@ class CvProfile {
     required this.updatedAt,
     this.sectionLayout,
     this.customSections = const [],
+    this.style = CvStyle.international,
+    this.paperSize = PaperSize.a4,
+    this.shownFields = const {},
+    this.details = const PersonalDetails(),
+    this.declaration = const CvDeclaration(),
+    this.photo,
+    this.signature,
   });
 
   final String id;
@@ -51,6 +63,34 @@ class CvProfile {
   /// Sections the user added. Their position and visibility live in
   /// [sectionLayout].
   final List<CustomSection> customSections;
+
+  /// The market this CV is written for. A new or old CV is international: no
+  /// photo and no personal details.
+  final CvStyle style;
+  final PaperSize paperSize;
+
+  /// The optional personal fields (and declaration / signature) that are
+  /// printed. The data behind a hidden field is kept.
+  final Set<PersonalField> shownFields;
+
+  /// Optional personal details. Never sent to the AI or read by the ATS check.
+  final PersonalDetails details;
+  final CvDeclaration declaration;
+
+  /// Passport-ratio (35x45) JPEG, and the signature PNG.
+  final Uint8List? photo;
+  final Uint8List? signature;
+
+  bool isFieldShown(PersonalField field) => shownFields.contains(field);
+
+  /// The photo, only when it is both added and switched on.
+  Uint8List? get photoToShow =>
+      isFieldShown(PersonalField.photo) ? photo : null;
+
+  Uint8List? get signatureToShow =>
+      isFieldShown(PersonalField.signature) ? signature : null;
+
+  bool get showDeclaration => isFieldShown(PersonalField.declaration);
 
   factory CvProfile.empty() => CvProfile(
     id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -87,6 +127,15 @@ class CvProfile {
     List<SectionConfig>? sectionLayout,
     bool clearSectionLayout = false,
     List<CustomSection>? customSections,
+    CvStyle? style,
+    PaperSize? paperSize,
+    Set<PersonalField>? shownFields,
+    PersonalDetails? details,
+    CvDeclaration? declaration,
+    Uint8List? photo,
+    bool clearPhoto = false,
+    Uint8List? signature,
+    bool clearSignature = false,
   }) {
     return CvProfile(
       id: id ?? this.id,
@@ -107,6 +156,13 @@ class CvProfile {
           ? null
           : sectionLayout ?? this.sectionLayout,
       customSections: customSections ?? this.customSections,
+      style: style ?? this.style,
+      paperSize: paperSize ?? this.paperSize,
+      shownFields: shownFields ?? this.shownFields,
+      details: details ?? this.details,
+      declaration: declaration ?? this.declaration,
+      photo: clearPhoto ? null : photo ?? this.photo,
+      signature: clearSignature ? null : signature ?? this.signature,
     );
   }
 

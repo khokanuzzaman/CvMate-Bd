@@ -145,7 +145,7 @@ class HomeScreen extends ConsumerWidget {
       return;
     }
 
-    context.push(RouteNames.cvBuilderPath);
+    context.push('${RouteNames.cvStylePath}?from=new');
   }
 
   /// Loads the selected CV into the builder controller, then opens its preview.
@@ -292,7 +292,9 @@ class _HeroTailorCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s12),
                   Text(
                     AppStrings.homeHeroCardTitle,
-                    style: AppTextStyles.h2.copyWith(color: AppColors.onPrimary),
+                    style: AppTextStyles.h2.copyWith(
+                      color: AppColors.onPrimary,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.s12),
                   Text(
@@ -495,12 +497,10 @@ class _CvsMessageCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (title != null)
-                  Text(title!, style: AppTextStyles.itemTitle),
+                if (title != null) Text(title!, style: AppTextStyles.itemTitle),
                 if (title != null && body != null)
                   const SizedBox(height: AppSpacing.s4),
-                if (body != null)
-                  Text(body!, style: AppTextStyles.caption),
+                if (body != null) Text(body!, style: AppTextStyles.caption),
               ],
             ),
           ),

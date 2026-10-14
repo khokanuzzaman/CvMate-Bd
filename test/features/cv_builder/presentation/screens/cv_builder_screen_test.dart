@@ -114,8 +114,8 @@ void main() {
     ) async {
       await pumpBuilderApp(tester, repository: repository);
 
-      expect(find.text(AppStrings.builderPhotoTitle), findsOneWidget);
-      expect(find.text(AppStrings.builderPhotoHint), findsOneWidget);
+      expect(find.text(AppStrings.photoPassportTitle), findsOneWidget);
+      expect(find.text(AppStrings.photoPassportHint), findsOneWidget);
       for (final label in [
         AppStrings.builderFullName,
         AppStrings.builderHeadline,
@@ -131,17 +131,16 @@ void main() {
       }
     });
 
-    testWidgets('photo upload is shown but not wired (no photo field yet)', (
+    testWidgets('the photo block offers Take photo and Gallery', (
       tester,
     ) async {
       await pumpBuilderApp(tester, repository: repository);
 
-      expect(find.text(AppStrings.builderPhotoUpload), findsOneWidget);
-      expect(find.byTooltip(AppStrings.builderPhotoComingSoon), findsOneWidget);
+      expect(find.text(AppStrings.photoTake), findsOneWidget);
+      expect(find.text(AppStrings.photoGallery), findsOneWidget);
+      expect(find.text(AppStrings.photoRemove), findsNothing);
     });
-  });
 
-  group('navigation + validation', () {
     testWidgets('Continue is blocked by the existing validation message', (
       tester,
     ) async {

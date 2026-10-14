@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_declaration.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_style.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/education_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/language_info.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/personal_details.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/personal_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/project_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/skill_info.dart';
@@ -623,6 +627,63 @@ class CvBuilderController extends Notifier<CvBuilderState> {
       return;
     }
     updateCustomSection(section.copyWith(layout: layout));
+  }
+
+  // --- Market style, personal details, declaration ---------------------------
+
+  /// Picks a market style and the paper size together. Only the *shown* fields
+  /// change (to the style's defaults); the data behind hidden fields is kept.
+  void applyStyle(CvStyle style, {PaperSize? paperSize}) {
+    _updateDraft(
+      state.draft.copyWith(
+        style: style,
+        paperSize: paperSize,
+        shownFields: style.defaultFields,
+      ),
+    );
+  }
+
+  /// Switches one field on or off without touching the others.
+  void setFieldShown(PersonalField field, bool shown) {
+    final fields = {...state.draft.shownFields};
+    shown ? fields.add(field) : fields.remove(field);
+    _updateDraft(state.draft.copyWith(shownFields: fields));
+  }
+
+  void updateDetails(PersonalDetails details) {
+    _updateDraft(state.draft.copyWith(details: details));
+  }
+
+  void updateDeclaration(CvDeclaration declaration) {
+    _updateDraft(state.draft.copyWith(declaration: declaration));
+  }
+
+  /// Sets (or, with null, removes) the photo. Adding one switches it on.
+  void setPhoto(Uint8List? bytes) {
+    _updateDraft(
+      bytes == null
+          ? state.draft.copyWith(clearPhoto: true)
+          : state.draft.copyWith(
+              photo: bytes,
+              shownFields: {...state.draft.shownFields, PersonalField.photo},
+            ),
+    );
+  }
+
+  /// Sets (or, with null, removes) the signature image. Adding one switches it
+  /// on.
+  void setSignature(Uint8List? bytes) {
+    _updateDraft(
+      bytes == null
+          ? state.draft.copyWith(clearSignature: true)
+          : state.draft.copyWith(
+              signature: bytes,
+              shownFields: {
+                ...state.draft.shownFields,
+                PersonalField.signature,
+              },
+            ),
+    );
   }
 
   void _updateDraft(CvProfile draft) {

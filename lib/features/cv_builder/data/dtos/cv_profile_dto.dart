@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:careermatebd/features/cv_builder/data/dtos/cv_market_dto.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
@@ -19,12 +20,15 @@ class CvProfileDto {
   /// - missing / 1: before section layouts. Read as the template's default
   ///   order, everything visible, no custom sections.
   /// - 2: adds `sectionLayout` and `customSections`.
+  /// - 3: adds the market style: `style`, `paperSize`, `shownFields`,
+  ///   `personalDetails`, `declaration`, `photo`, `signature` (see
+  ///   [CvMarketDto]). Older CVs read as international with nothing shown.
   ///
   /// Changes are additive: every field older versions read is still written
   /// unchanged, and unknown keys are ignored on read, so an older app reading a
   /// newer document still sees a complete CV (it just won't show the custom
   /// sections or the custom order).
-  static const int schemaVersion = 2;
+  static const int schemaVersion = 3;
 
   final CvProfile profile;
 
@@ -45,6 +49,10 @@ class CvProfileDto {
   Map<String, dynamic> toMap() => _toMap(profile);
 
   static CvProfile _fromMap(Map<String, dynamic> map) {
+    return CvMarketDto.apply(_baseFromMap(map), map);
+  }
+
+  static CvProfile _baseFromMap(Map<String, dynamic> map) {
     return CvProfile(
       id: map['id'] as String? ?? '',
       title: map['title'] as String? ?? 'Untitled CV',
@@ -112,6 +120,7 @@ class CvProfileDto {
       'customSections': profile.customSections
           .map(_customSectionToMap)
           .toList(),
+      ...CvMarketDto.toMap(profile),
     };
   }
 
