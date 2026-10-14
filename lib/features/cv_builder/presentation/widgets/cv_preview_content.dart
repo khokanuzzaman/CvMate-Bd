@@ -5,6 +5,7 @@ import 'package:careermatebd/core/theme/app_shadows.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
 import 'package:careermatebd/features/cv_builder/presentation/utils/cv_field_codec.dart';
 import 'package:flutter/material.dart';
 
@@ -66,120 +67,189 @@ class CvPreviewContent extends StatelessWidget {
                 width: double.infinity,
                 child: ColoredBox(color: AppColors.primary),
               ),
-              _textSection(
-                AppStrings.previewSummary,
-                profile.professionalSummary,
-              ),
-              _textSection(
-                AppStrings.previewObjective,
-                profile.careerObjective,
-              ),
-              if (profile.experiences.isNotEmpty)
-                _Section(
-                  title: AppStrings.previewExperience,
-                  children: [
-                    for (final item in profile.experiences)
-                      _Entry(
-                        title: _joined(' — ', [
-                          item.jobTitle,
-                          item.companyName,
-                        ]),
-                        meta: DateRangeCodec.format(
-                          start: item.startDate,
-                          end: item.endDate,
-                          ongoing: item.isCurrentRole,
-                        ),
-                        bullets: item.highlights,
-                      ),
-                  ],
-                ),
-              if (profile.skills.isNotEmpty)
-                _Section(
-                  title: AppStrings.previewSkills,
-                  children: [
-                    Wrap(
-                      spacing: AppSpacing.s8,
-                      runSpacing: AppSpacing.s8,
-                      children: [
-                        for (final skill in profile.skills)
-                          _Pill(label: skill.name),
-                      ],
-                    ),
-                  ],
-                ),
-              if (profile.education.isNotEmpty)
-                _Section(
-                  title: AppStrings.previewEducation,
-                  children: [
-                    for (final item in profile.education)
-                      _Entry(
-                        title: _joined(' — ', [item.degree, item.fieldOfStudy]),
-                        meta: DateRangeCodec.format(
-                          start: item.startYear,
-                          end: item.endYear,
-                          ongoing: item.isOngoing,
-                        ),
-                        subtitle: _joined(' · ', [
-                          item.institution,
-                          item.location,
-                          item.result,
-                        ]),
-                      ),
-                  ],
-                ),
-              if (profile.projects.isNotEmpty)
-                _Section(
-                  title: AppStrings.previewProjects,
-                  children: [
-                    for (final item in profile.projects)
-                      _Entry(
-                        title: _joined(' — ', [item.title, item.role]),
-                        meta: item.link.trim(),
-                        subtitle: item.technologies.isEmpty
-                            ? ''
-                            : CommaListCodec.format(item.technologies),
-                        body: item.description.trim(),
-                      ),
-                  ],
-                ),
-              if (profile.trainings.isNotEmpty)
-                _Section(
-                  title: AppStrings.previewTraining,
-                  children: [
-                    for (final item in profile.trainings)
-                      _Entry(
-                        title: item.title,
-                        meta: item.completionYear.trim(),
-                        subtitle: item.organization,
-                        body: item.details.trim(),
-                      ),
-                  ],
-                ),
-              if (profile.languages.isNotEmpty)
-                _Section(
-                  title: AppStrings.previewLanguages,
-                  children: [
-                    Wrap(
-                      spacing: AppSpacing.s8,
-                      runSpacing: AppSpacing.s8,
-                      children: [
-                        for (final language in profile.languages)
-                          _Pill(
-                            label: _joined(' · ', [
-                              language.name,
-                              language.proficiency,
-                            ]),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
+              ..._sectionWidgets(),
             ],
           ),
         );
       },
     );
   }
+
+  /// The sections in the CV's layout order (the user's, or the template's
+  /// default — the same order the exported PDF uses), skipping hidden ones and
+  /// ones with nothing in them.
+  List<Widget> _sectionWidgets() {
+    final widgets = <Widget>[];
+    for (final section in profile.visibleSections) {
+      final title = section.titleOr(_defaultTitle(section.kind));
+      switch (section.kind) {
+        case CvSectionKind.summary:
+          widgets.add(_textSection(title, profile.professionalSummary));
+        case CvSectionKind.objective:
+          widgets.add(_textSection(title, profile.careerObjective));
+        case CvSectionKind.experience:
+          if (profile.experiences.isNotEmpty) {
+            widgets.add(
+              _Section(
+                title: title,
+                children: [
+                  for (final item in profile.experiences)
+                    _Entry(
+                      title: _joined(' — ', [item.jobTitle, item.companyName]),
+                      meta: DateRangeCodec.format(
+                        start: item.startDate,
+                        end: item.endDate,
+                        ongoing: item.isCurrentRole,
+                      ),
+                      bullets: item.highlights,
+                    ),
+                ],
+              ),
+            );
+          }
+        case CvSectionKind.skills:
+          if (profile.skills.isNotEmpty) {
+            widgets.add(
+              _Section(
+                title: title,
+                children: [
+                  Wrap(
+                    spacing: AppSpacing.s8,
+                    runSpacing: AppSpacing.s8,
+                    children: [
+                      for (final skill in profile.skills)
+                        _Pill(label: skill.name),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }
+        case CvSectionKind.education:
+          if (profile.education.isNotEmpty) {
+            widgets.add(
+              _Section(
+                title: title,
+                children: [
+                  for (final item in profile.education)
+                    _Entry(
+                      title: _joined(' — ', [item.degree, item.fieldOfStudy]),
+                      meta: DateRangeCodec.format(
+                        start: item.startYear,
+                        end: item.endYear,
+                        ongoing: item.isOngoing,
+                      ),
+                      subtitle: _joined(' · ', [
+                        item.institution,
+                        item.location,
+                        item.result,
+                      ]),
+                    ),
+                ],
+              ),
+            );
+          }
+        case CvSectionKind.projects:
+          if (profile.projects.isNotEmpty) {
+            widgets.add(
+              _Section(
+                title: title,
+                children: [
+                  for (final item in profile.projects)
+                    _Entry(
+                      title: _joined(' — ', [item.title, item.role]),
+                      meta: item.link.trim(),
+                      subtitle: item.technologies.isEmpty
+                          ? ''
+                          : CommaListCodec.format(item.technologies),
+                      body: item.description.trim(),
+                    ),
+                ],
+              ),
+            );
+          }
+        case CvSectionKind.training:
+          if (profile.trainings.isNotEmpty) {
+            widgets.add(
+              _Section(
+                title: title,
+                children: [
+                  for (final item in profile.trainings)
+                    _Entry(
+                      title: item.title,
+                      meta: item.completionYear.trim(),
+                      subtitle: item.organization,
+                      body: item.details.trim(),
+                    ),
+                ],
+              ),
+            );
+          }
+        case CvSectionKind.languages:
+          if (profile.languages.isNotEmpty) {
+            widgets.add(
+              _Section(
+                title: title,
+                children: [
+                  Wrap(
+                    spacing: AppSpacing.s8,
+                    runSpacing: AppSpacing.s8,
+                    children: [
+                      for (final language in profile.languages)
+                        _Pill(
+                          label: _joined(' · ', [
+                            language.name,
+                            language.proficiency,
+                          ]),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }
+        case CvSectionKind.custom:
+          final custom = section.custom;
+          if (custom != null && custom.hasContent) {
+            widgets.add(
+              _Section(
+                title: title,
+                children: [
+                  for (final item in custom.filledItems)
+                    custom.layout == CustomSectionLayout.bullets
+                        ? Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.s4,
+                            ),
+                            child: Text(
+                              '${BulletsCodec.marker}${item.bulletText}',
+                              style: AppTextStyles.bodySm,
+                            ),
+                          )
+                        : _Entry(
+                            title: item.title.trim(),
+                            body: item.description.trim(),
+                          ),
+                ],
+              ),
+            );
+          }
+      }
+    }
+    return widgets;
+  }
+
+  static String _defaultTitle(CvSectionKind kind) => switch (kind) {
+    CvSectionKind.summary => AppStrings.previewSummary,
+    CvSectionKind.objective => AppStrings.previewObjective,
+    CvSectionKind.experience => AppStrings.previewExperience,
+    CvSectionKind.skills => AppStrings.previewSkills,
+    CvSectionKind.education => AppStrings.previewEducation,
+    CvSectionKind.projects => AppStrings.previewProjects,
+    CvSectionKind.training => AppStrings.previewTraining,
+    CvSectionKind.languages => AppStrings.previewLanguages,
+    CvSectionKind.custom => AppStrings.sectionsCustomDefaultTitle,
+  };
 
   static Widget _textSection(String title, String text) {
     final value = text.trim();

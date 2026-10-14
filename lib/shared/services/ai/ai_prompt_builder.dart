@@ -397,6 +397,9 @@ class AiPromptBuilder {
       'Experience count: ${profile.experiences.length}',
       'Skills: ${skills.join(', ')}',
       'Project technologies: ${projectTech.join(', ')}',
+      // The user's own sections (Volunteering, Awards …), only when shown.
+      if (profile.visibleCustomText.isNotEmpty)
+        'Additional sections: ${profile.visibleCustomText}',
       'Template: ${profile.template.name}',
     ].join(' | ');
   }

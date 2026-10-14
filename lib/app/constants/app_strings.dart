@@ -261,6 +261,75 @@ abstract final class AppStrings {
   static const String templateAtsBadge = 'ATS';
   static String templateUse(String name) => 'Use $name template';
 
+  // CV sections (reorder / hide / rename / custom)
+  static const String sectionsTitle = 'Sections';
+  static const String sectionsTooltip = 'Sections';
+  static const String sectionsIntro =
+      'Drag to reorder. Hidden sections stay in your CV data but are left out '
+      'of the preview and the PDF.';
+  static const String sectionsPersonalNote =
+      'Your name and contact details always come first.';
+  static const String sectionsDragHandle = 'Reorder';
+  static String sectionsShow(String title) => 'Show $title';
+  static const String sectionsHiddenTag = 'Hidden';
+  static const String sectionsCustomTag = 'Custom';
+  static const String sectionsEmptyTag = 'Empty';
+  static const String sectionsRename = 'Rename';
+  static const String sectionsRenameTitle = 'Rename section';
+  static const String sectionsRenameLabel = 'Section title';
+  static const String sectionsRenameHint = 'e.g. Work history';
+  static const String sectionsResetToDefault = 'Reset to default';
+  static const String sectionsSave = 'Save';
+  static const String sectionsCancel = 'Cancel';
+  static const String sectionsTitleRequired = 'Enter a title.';
+  static const String sectionsAddCustom = 'Add custom section';
+  static const String sectionsAddCustomTitle = 'New section';
+  static const String sectionsCustomTitleLabel = 'Section title';
+  static const String sectionsCustomTitleHint = 'e.g. Volunteering, Awards';
+  static const String sectionsLayoutLabel = 'Layout';
+  static const String sectionsLayoutTitledRows = 'Titled rows';
+  static const String sectionsLayoutTitledRowsHint =
+      'Each item has a bold title and a description.';
+  static const String sectionsLayoutBullets = 'Bullet list';
+  static const String sectionsLayoutBulletsHint = 'Each item is one bullet.';
+  static const String sectionsCreate = 'Add section';
+  static const String sectionsEditContent = 'Edit content';
+  static const String sectionsDelete = 'Delete section';
+  static const String sectionsDeleteTitle = 'Delete this section?';
+  static String sectionsDeleteBody(String title) =>
+      'Delete "$title" and everything in it? This cannot be undone.';
+  static const String sectionsDeleteConfirm = 'Delete';
+  static const String sectionsResetOrder = 'Reset order and titles';
+  static const String sectionsResetOrderTitle = 'Reset the layout?';
+  static const String sectionsResetOrderBody =
+      'Sections go back to the template order, all shown, with their default '
+      'titles. Your custom sections and all your content are kept.';
+  static const String sectionsResetConfirm = 'Reset';
+  static const String sectionsMoreOptions = 'More options';
+  static const String sectionsCustomDefaultTitle = 'Additional';
+  static const String sectionsNoSections = 'No sections yet.';
+
+  // CV builder — custom section page
+  static const String customSectionAddFirstRow = 'Add an item';
+  static const String customSectionAddAnotherRow = 'Add another item';
+  static String customSectionRowTitle(int n) => 'Item $n';
+  static String customSectionBulletTitle(int n) => 'Bullet $n';
+  static const String customSectionRowName = 'Title';
+  static const String customSectionRowNameHint = 'e.g. Red Crescent';
+  static const String customSectionRowDescription = 'Description (opt)';
+  static const String customSectionBulletText = 'Bullet text';
+  static const String customSectionBulletHint = 'e.g. Best Nurse Award 2024';
+  static const String customSectionBulletDetails = 'Details (opt)';
+  static const String customSectionMoveUp = 'Move up';
+  static const String customSectionMoveDown = 'Move down';
+  static const String customSectionEmptyHint =
+      'Add at least one item. Empty sections are left out of the PDF.';
+  static const String customSectionHiddenNote =
+      'This section is hidden, so it is not in the preview or the PDF.';
+  static const String customSectionFillOrRemove =
+      'Fill in or remove the empty items in this section.';
+  static const String customSectionEdit = 'Edit section';
+
   // Tailor — shared
   static const String tailorTitle = 'Tailor to a job';
   static String tailorStepPill(int step) => 'Step $step/3';

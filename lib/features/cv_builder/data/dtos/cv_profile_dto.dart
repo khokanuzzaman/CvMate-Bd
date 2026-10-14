@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/education_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
@@ -12,6 +13,18 @@ import 'package:careermatebd/features/cv_builder/domain/entities/training_info.d
 
 class CvProfileDto {
   const CvProfileDto(this.profile);
+
+  /// Version of the stored shape (Hive JSON and Firestore documents share it).
+  ///
+  /// - missing / 1: before section layouts. Read as the template's default
+  ///   order, everything visible, no custom sections.
+  /// - 2: adds `sectionLayout` and `customSections`.
+  ///
+  /// Changes are additive: every field older versions read is still written
+  /// unchanged, and unknown keys are ignored on read, so an older app reading a
+  /// newer document still sees a complete CV (it just won't show the custom
+  /// sections or the custom order).
+  static const int schemaVersion = 2;
 
   final CvProfile profile;
 
@@ -68,11 +81,14 @@ class CvProfileDto {
       updatedAt:
           DateTime.tryParse(map['updatedAt'] as String? ?? '') ??
           DateTime.now(),
+      sectionLayout: _sectionLayoutFromObject(map['sectionLayout']),
+      customSections: _customSectionsFromObject(map['customSections']),
     );
   }
 
   static Map<String, dynamic> _toMap(CvProfile profile) {
     return {
+      'schemaVersion': schemaVersion,
       'id': profile.id,
       'title': profile.title,
       'personalInfo': _personalInfoToMap(profile.personalInfo),
@@ -87,7 +103,125 @@ class CvProfileDto {
       'template': profile.template.name,
       'createdAt': profile.createdAt.toIso8601String(),
       'updatedAt': profile.updatedAt.toIso8601String(),
+      // Only written once the user customised the layout, so an untouched CV
+      // keeps following its template's default order.
+      if (profile.sectionLayout != null)
+        'sectionLayout': profile.sectionLayout!
+            .map(_sectionConfigToMap)
+            .toList(),
+      'customSections': profile.customSections
+          .map(_customSectionToMap)
+          .toList(),
     };
+  }
+
+  // --- Section layout --------------------------------------------------------
+  // Everything below tolerates missing, mistyped or unknown data and falls back
+  // to defaults: reading an old or odd document must never throw.
+
+  static Map<String, dynamic> _sectionConfigToMap(SectionConfig value) => {
+    'id': value.id,
+    'kind': value.kind.name,
+    if (value.cleanTitleOverride != null)
+      'titleOverride': value.cleanTitleOverride,
+    'visible': value.visible,
+  };
+
+  static List<SectionConfig>? _sectionLayoutFromObject(Object? raw) {
+    if (raw is! List) {
+      return null;
+    }
+    final configs = <SectionConfig>[];
+    for (final entry in raw) {
+      final map = _asStringMap(entry);
+      final kind = CvSectionKind.tryParse(map?['kind']);
+      if (map == null || kind == null) {
+        continue; // unknown kind (from a newer app) or not an object
+      }
+      final id = map['id'];
+      final titleOverride = map['titleOverride'];
+      configs.add(
+        SectionConfig(
+          id: id is String && id.isNotEmpty ? id : kind.name,
+          kind: kind,
+          titleOverride: titleOverride is String ? titleOverride : null,
+          visible: map['visible'] is bool ? map['visible'] as bool : true,
+        ),
+      );
+    }
+    // An empty or wholly unreadable list means "no custom layout".
+    return configs.isEmpty ? null : configs;
+  }
+
+  static Map<String, dynamic> _customSectionToMap(CustomSection value) => {
+    'id': value.id,
+    'title': value.title,
+    'layout': value.layout.name,
+    'items': value.items.map(_customItemToMap).toList(),
+  };
+
+  static Map<String, dynamic> _customItemToMap(CustomSectionItem value) => {
+    'id': value.id,
+    'title': value.title,
+    'description': value.description,
+  };
+
+  static List<CustomSection> _customSectionsFromObject(Object? raw) {
+    if (raw is! List) {
+      return const [];
+    }
+    final sections = <CustomSection>[];
+    final seenIds = <String>{};
+    for (final entry in raw) {
+      final map = _asStringMap(entry);
+      if (map == null) {
+        continue;
+      }
+      final id = map['id'];
+      if (id is! String || id.isEmpty || !seenIds.add(id)) {
+        continue; // a section without a usable, unique id cannot be referenced
+      }
+      final rawItems = map['items'];
+      sections.add(
+        CustomSection(
+          id: id,
+          title: map['title'] is String ? map['title'] as String : '',
+          layout: CustomSectionLayout.parse(map['layout']),
+          items: [
+            if (rawItems is List)
+              for (final (index, item) in rawItems.indexed)
+                if (_asStringMap(item) case final itemMap?)
+                  CustomSectionItem(
+                    id:
+                        itemMap['id'] is String &&
+                            (itemMap['id'] as String).isNotEmpty
+                        ? itemMap['id'] as String
+                        : '$id-item-$index',
+                    title: itemMap['title'] is String
+                        ? itemMap['title'] as String
+                        : '',
+                    description: itemMap['description'] is String
+                        ? itemMap['description'] as String
+                        : '',
+                  ),
+          ],
+        ),
+      );
+    }
+    return sections;
+  }
+
+  /// A decoded JSON object, whatever concrete map type the store produced.
+  static Map<String, dynamic>? _asStringMap(Object? value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return {
+        for (final entry in value.entries) entry.key.toString(): entry.value,
+      };
+    }
+    return null;
   }
 
   static Map<String, dynamic> _personalInfoToMap(PersonalInfo value) => {

@@ -21,11 +21,15 @@ final cvPdfServiceProvider = Provider<CvPdfService>((ref) {
 class CvPdfService {
   const CvPdfService();
 
+  /// [compress] exists so tests can read the page text straight out of the
+  /// bytes; the app always leaves it on.
   Future<Uint8List> generateCvPdf({
     required CvProfile profile,
     PdfPageFormat pageFormat = PdfPageFormat.a4,
+    bool compress = true,
   }) async {
     final document = pw.Document(
+      compress: compress,
       title: profile.displayTitle,
       author: 'CareerMate BD',
       creator: 'CareerMate BD',

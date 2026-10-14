@@ -1,3 +1,4 @@
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/education_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
@@ -23,6 +24,8 @@ class CvProfile {
     required this.template,
     required this.createdAt,
     required this.updatedAt,
+    this.sectionLayout,
+    this.customSections = const [],
   });
 
   final String id;
@@ -39,6 +42,15 @@ class CvProfile {
   final CvTemplate template;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// The user's section order / visibility / renames, or null when they never
+  /// changed it (then the template's default order applies, as it always did).
+  /// Read it through [sections], which cleans it up.
+  final List<SectionConfig>? sectionLayout;
+
+  /// Sections the user added. Their position and visibility live in
+  /// [sectionLayout].
+  final List<CustomSection> customSections;
 
   factory CvProfile.empty() => CvProfile(
     id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -72,6 +84,9 @@ class CvProfile {
     CvTemplate? template,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<SectionConfig>? sectionLayout,
+    bool clearSectionLayout = false,
+    List<CustomSection>? customSections,
   }) {
     return CvProfile(
       id: id ?? this.id,
@@ -88,7 +103,60 @@ class CvProfile {
       template: template ?? this.template,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      sectionLayout: clearSectionLayout
+          ? null
+          : sectionLayout ?? this.sectionLayout,
+      customSections: customSections ?? this.customSections,
     );
+  }
+
+  /// The render order: [sectionLayout] cleaned against [customSections]
+  /// (every section once, nothing dangling), or the template default.
+  List<SectionConfig> get sections => CvSectionLayout.resolve(
+    stored: sectionLayout,
+    customs: customSections,
+    template: template,
+  );
+
+  /// [sections] joined with their custom content, hidden ones included.
+  List<CvSection> get resolvedSections {
+    final customById = {for (final custom in customSections) custom.id: custom};
+    return [
+      for (final config in sections)
+        CvSection(config: config, custom: customById[config.id]),
+    ];
+  }
+
+  /// What renderers print: the visible sections, in order.
+  List<CvSection> get visibleSections => [
+    for (final section in resolvedSections)
+      if (section.visible) section,
+  ];
+
+  /// Whether the built-in [kind] is shown. A hidden section is neither printed
+  /// nor scored as missing content.
+  bool isSectionVisible(CvSectionKind kind) {
+    for (final config in sections) {
+      if (config.kind == kind) {
+        return config.visible;
+      }
+    }
+    return true;
+  }
+
+  /// The text of every visible custom section, for ATS / AI scoring.
+  String get visibleCustomText => [
+    for (final section in visibleSections)
+      if (section.custom != null) section.custom!.plainText,
+  ].where((text) => text.trim().isNotEmpty).join(' ');
+
+  CustomSection? customSectionById(String id) {
+    for (final custom in customSections) {
+      if (custom.id == id) {
+        return custom;
+      }
+    }
+    return null;
   }
 
   String get displayTitle {
@@ -124,5 +192,6 @@ class CvProfile {
       skills.isNotEmpty ||
       projects.isNotEmpty ||
       trainings.isNotEmpty ||
-      languages.isNotEmpty;
+      languages.isNotEmpty ||
+      customSections.any((section) => section.hasContent);
 }

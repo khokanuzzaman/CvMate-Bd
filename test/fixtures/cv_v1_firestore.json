@@ -1,0 +1,16 @@
+{
+  "id": "cv-old-2",
+  "title": "Fresher CV",
+  "personalInfo": {"fullName": "Rahim Uddin", "desiredRole": "Junior Developer", "email": "rahim@email.com", "phone": "01711111111", "address": "Dhaka", "linkedInUrl": "", "portfolioUrl": ""},
+  "professionalSummary": "Recent graduate.",
+  "careerObjective": "Seeking a junior role.",
+  "education": [{"id": "e1", "institution": "NSU", "degree": "BSc CSE", "fieldOfStudy": "", "startYear": "2020", "endYear": "2024", "result": "", "location": "", "isOngoing": false}],
+  "experiences": [],
+  "skills": [{"id": "s1", "name": "Flutter", "level": "Basic"}],
+  "projects": [{"id": "p1", "title": "CvMate", "role": "", "description": "A CV app.", "technologies": ["Flutter"], "link": ""}],
+  "trainings": [],
+  "languages": [],
+  "template": "fresher",
+  "createdAt": "2025-04-01T09:00:00.000",
+  "updatedAt": "2025-04-05T09:00:00.000"
+}
