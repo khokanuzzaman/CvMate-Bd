@@ -4,7 +4,10 @@ A new Flutter project.
 
 ## Setup
 
-1. Install Flutter 3.38.8 (Dart 3.10.7) — the version CI uses.
+1. Install Flutter 3.44.0 (Dart 3.12.0) — the version CI uses. The version is pinned
+   in `.fvmrc`: with [FVM](https://fvm.app) run `fvm install` once and prefix commands
+   with `fvm` (e.g. `fvm flutter test`). When you bump it, change `.fvmrc` and both
+   `flutter-version` entries in `.github/workflows/flutter.yml` together.
 2. Create your local env file (it is gitignored; never commit real keys):
 
    ```sh
