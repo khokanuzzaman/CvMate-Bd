@@ -96,7 +96,14 @@ class CvSectionsScreen extends ConsumerWidget {
         ),
       ),
       itemCount: sections.length,
-      onReorderItem: notifier.reorderSections,
+      // `onReorder` exists on every Flutter version we build with (CI is pinned
+      // to 3.38; `onReorderItem` arrived later). It reports the index before
+      // the moved item is removed, the controller wants the final one.
+      // ignore: deprecated_member_use
+      onReorder: (oldIndex, newIndex) => notifier.reorderSections(
+        oldIndex,
+        newIndex > oldIndex ? newIndex - 1 : newIndex,
+      ),
       itemBuilder: (context, index) {
         final section = sections[index];
         final title = section.titleOr(defaultSectionTitle(section.config.kind));
