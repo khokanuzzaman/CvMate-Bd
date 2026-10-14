@@ -4,6 +4,7 @@ import 'package:careermatebd/features/ats_checker/domain/entities/ats_check_repo
 import 'package:careermatebd/features/ats_checker/domain/entities/ats_job_match_report.dart';
 import 'package:careermatebd/features/ats_checker/domain/usecases/ats_engine_constants.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
 
 class AtsRuleEngine {
@@ -27,6 +28,9 @@ class AtsRuleEngine {
 
   AtsCheckReport analyzeCv(CvProfile profile) {
     final issues = <AtsCheckIssue>[];
+    // A section the user hid is not part of the exported CV, so it is neither
+    // read for content nor reported as missing.
+    bool shown(CvSectionKind kind) => profile.isSectionVisible(kind);
 
     if (profile.personalInfo.phone.trim().isEmpty) {
       issues.add(
@@ -54,34 +58,37 @@ class AtsRuleEngine {
       );
     }
 
-    final summary = profile.professionalSummary.trim();
-    if (summary.isEmpty) {
-      issues.add(
-        const AtsCheckIssue(
-          category: AtsCheckCategory.summary,
-          severity: AtsSuggestionSeverity.high,
-          problem: 'Professional summary is missing.',
-          suggestion:
-              'Add a short ATS-friendly summary that matches your target role and experience level.',
-          exampleImprovement:
-              'Example: Flutter developer with project-based experience in responsive mobile apps, API integration, and clear documentation.',
-        ),
-      );
-    } else if (_wordCount(summary) < 18) {
-      issues.add(
-        const AtsCheckIssue(
-          category: AtsCheckCategory.summary,
-          severity: AtsSuggestionSeverity.medium,
-          problem: 'Professional summary looks too short.',
-          suggestion:
-              'Expand the summary to 2-3 strong lines with your role focus, strengths, and practical proof.',
-          exampleImprovement:
-              'Mention your target role, tools you use, and the kind of value you can contribute.',
-        ),
-      );
+    if (shown(CvSectionKind.summary)) {
+      final summary = profile.professionalSummary.trim();
+      if (summary.isEmpty) {
+        issues.add(
+          const AtsCheckIssue(
+            category: AtsCheckCategory.summary,
+            severity: AtsSuggestionSeverity.high,
+            problem: 'Professional summary is missing.',
+            suggestion:
+                'Add a short ATS-friendly summary that matches your target role and experience level.',
+            exampleImprovement:
+                'Example: Flutter developer with project-based experience in responsive mobile apps, API integration, and clear documentation.',
+          ),
+        );
+      } else if (_wordCount(summary) < 18) {
+        issues.add(
+          const AtsCheckIssue(
+            category: AtsCheckCategory.summary,
+            severity: AtsSuggestionSeverity.medium,
+            problem: 'Professional summary looks too short.',
+            suggestion:
+                'Expand the summary to 2-3 strong lines with your role focus, strengths, and practical proof.',
+            exampleImprovement:
+                'Mention your target role, tools you use, and the kind of value you can contribute.',
+          ),
+        );
+      }
     }
 
-    if (profile.careerObjective.trim().isEmpty) {
+    if (shown(CvSectionKind.objective) &&
+        profile.careerObjective.trim().isEmpty) {
       issues.add(
         const AtsCheckIssue(
           category: AtsCheckCategory.summary,
@@ -95,7 +102,7 @@ class AtsRuleEngine {
       );
     }
 
-    if (profile.education.isEmpty) {
+    if (shown(CvSectionKind.education) && profile.education.isEmpty) {
       issues.add(
         const AtsCheckIssue(
           category: AtsCheckCategory.education,
@@ -107,7 +114,7 @@ class AtsRuleEngine {
       );
     }
 
-    if (profile.skills.isEmpty) {
+    if (shown(CvSectionKind.skills) && profile.skills.isEmpty) {
       issues.add(
         const AtsCheckIssue(
           category: AtsCheckCategory.skills,
@@ -121,7 +128,11 @@ class AtsRuleEngine {
       );
     }
 
-    if (profile.experiences.isEmpty && profile.projects.isEmpty) {
+    final experienceShown = shown(CvSectionKind.experience);
+    final projectsShown = shown(CvSectionKind.projects);
+    if ((experienceShown || projectsShown) &&
+        (!experienceShown || profile.experiences.isEmpty) &&
+        (!projectsShown || profile.projects.isEmpty)) {
       issues.add(
         const AtsCheckIssue(
           category: AtsCheckCategory.experience,
@@ -133,7 +144,8 @@ class AtsRuleEngine {
       );
     }
 
-    if (profile.projects.isNotEmpty &&
+    if (projectsShown &&
+        profile.projects.isNotEmpty &&
         profile.projects.every(
           (project) => _wordCount(project.description) < 8,
         )) {
@@ -150,7 +162,9 @@ class AtsRuleEngine {
       );
     }
 
-    if (profile.experiences.isNotEmpty && !_hasActionVerbs(profile)) {
+    if (experienceShown &&
+        profile.experiences.isNotEmpty &&
+        !_hasActionVerbs(profile)) {
       issues.add(
         const AtsCheckIssue(
           category: AtsCheckCategory.experience,
@@ -164,7 +178,9 @@ class AtsRuleEngine {
       );
     }
 
-    if (profile.experiences.isNotEmpty && !_hasMeasurableEvidence(profile)) {
+    if (experienceShown &&
+        profile.experiences.isNotEmpty &&
+        !_hasMeasurableEvidence(profile)) {
       issues.add(
         const AtsCheckIssue(
           category: AtsCheckCategory.experience,
@@ -253,9 +269,11 @@ class AtsRuleEngine {
       );
     }
 
+    final skillsShown = profile.isSectionVisible(CvSectionKind.skills);
     final skillsSectionSet = {
-      for (final skill in profile.skills)
-        if (skill.name.trim().isNotEmpty) skill.name.trim().toLowerCase(),
+      if (skillsShown)
+        for (final skill in profile.skills)
+          if (skill.name.trim().isNotEmpty) skill.name.trim().toLowerCase(),
     };
     final externalEvidenceText = _externalEvidenceText(profile).toLowerCase();
     final fullEvidenceText = _fullEvidenceText(profile).toLowerCase();
@@ -268,7 +286,9 @@ class AtsRuleEngine {
       final lowerKeyword = keyword.toLowerCase();
       if (_textContainsKeyword(fullEvidenceText, lowerKeyword)) {
         matchedKeywords.add(keyword);
-        if (!skillsSectionSet.contains(lowerKeyword) &&
+        // Nothing to suggest adding to a skills section that is hidden.
+        if (skillsShown &&
+            !skillsSectionSet.contains(lowerKeyword) &&
             _textContainsKeyword(externalEvidenceText, lowerKeyword)) {
           suggestedSkillsToAdd.add(keyword);
         }
@@ -378,57 +398,68 @@ class AtsRuleEngine {
   }
 
   int _estimateCvWordCount(CvProfile profile) {
+    bool shown(CvSectionKind kind) => profile.isSectionVisible(kind);
     final values = <String>[
       profile.personalInfo.fullName,
       profile.personalInfo.desiredRole,
       profile.personalInfo.address,
-      profile.professionalSummary,
-      profile.careerObjective,
-      for (final education in profile.education) ...[
-        education.institution,
-        education.degree,
-        education.fieldOfStudy,
-        education.result,
-      ],
-      for (final experience in profile.experiences) ...[
-        experience.companyName,
-        experience.jobTitle,
-        experience.location,
-        ...experience.highlights,
-      ],
-      for (final skill in profile.skills) skill.name,
-      for (final project in profile.projects) ...[
-        project.title,
-        project.role,
-        project.description,
-        ...project.technologies,
-      ],
-      for (final training in profile.trainings) ...[
-        training.title,
-        training.organization,
-        training.details,
-      ],
-      for (final language in profile.languages) ...[
-        language.name,
-        language.proficiency,
-      ],
+      if (shown(CvSectionKind.summary)) profile.professionalSummary,
+      if (shown(CvSectionKind.objective)) profile.careerObjective,
+      if (shown(CvSectionKind.education))
+        for (final education in profile.education) ...[
+          education.institution,
+          education.degree,
+          education.fieldOfStudy,
+          education.result,
+        ],
+      if (shown(CvSectionKind.experience))
+        for (final experience in profile.experiences) ...[
+          experience.companyName,
+          experience.jobTitle,
+          experience.location,
+          ...experience.highlights,
+        ],
+      if (shown(CvSectionKind.skills))
+        for (final skill in profile.skills) skill.name,
+      if (shown(CvSectionKind.projects))
+        for (final project in profile.projects) ...[
+          project.title,
+          project.role,
+          project.description,
+          ...project.technologies,
+        ],
+      if (shown(CvSectionKind.training))
+        for (final training in profile.trainings) ...[
+          training.title,
+          training.organization,
+          training.details,
+        ],
+      if (shown(CvSectionKind.languages))
+        for (final language in profile.languages) ...[
+          language.name,
+          language.proficiency,
+        ],
+      profile.visibleCustomText,
     ];
 
     return _wordCount(values.join(' '));
   }
 
   int _countThinSections(CvProfile profile) {
-    final sections = <bool>[
-      profile.professionalSummary.trim().isEmpty,
-      profile.careerObjective.trim().isEmpty,
-      profile.education.isEmpty,
-      profile.experiences.isEmpty,
-      profile.skills.isEmpty,
-      profile.projects.isEmpty,
-      profile.trainings.isEmpty,
-      profile.languages.isEmpty,
-    ];
-    return sections.where((isThin) => isThin).length;
+    // Hidden sections are not part of the CV, so they cannot be "thin".
+    final sections = <CvSectionKind, bool>{
+      CvSectionKind.summary: profile.professionalSummary.trim().isEmpty,
+      CvSectionKind.objective: profile.careerObjective.trim().isEmpty,
+      CvSectionKind.education: profile.education.isEmpty,
+      CvSectionKind.experience: profile.experiences.isEmpty,
+      CvSectionKind.skills: profile.skills.isEmpty,
+      CvSectionKind.projects: profile.projects.isEmpty,
+      CvSectionKind.training: profile.trainings.isEmpty,
+      CvSectionKind.languages: profile.languages.isEmpty,
+    };
+    return sections.entries
+        .where((entry) => entry.value && profile.isSectionVisible(entry.key))
+        .length;
   }
 
   bool _hasActionVerbs(CvProfile profile) {
@@ -660,22 +691,31 @@ class AtsRuleEngine {
     return atsTrainableKeywords.contains(keyword.toLowerCase());
   }
 
+  /// Text that can prove a skill (not the skills list itself): only what is
+  /// actually on the CV — visible built-in sections plus visible custom ones.
   String _externalEvidenceText(CvProfile profile) {
+    bool shown(CvSectionKind kind) => profile.isSectionVisible(kind);
     return [
-      profile.professionalSummary,
-      profile.careerObjective,
-      for (final experience in profile.experiences) ...experience.highlights,
-      for (final experience in profile.experiences) experience.jobTitle,
-      for (final project in profile.projects) ...project.technologies,
-      for (final project in profile.projects) project.description,
-      for (final project in profile.projects) project.title,
+      if (shown(CvSectionKind.summary)) profile.professionalSummary,
+      if (shown(CvSectionKind.objective)) profile.careerObjective,
+      if (shown(CvSectionKind.experience)) ...[
+        for (final experience in profile.experiences) ...experience.highlights,
+        for (final experience in profile.experiences) experience.jobTitle,
+      ],
+      if (shown(CvSectionKind.projects)) ...[
+        for (final project in profile.projects) ...project.technologies,
+        for (final project in profile.projects) project.description,
+        for (final project in profile.projects) project.title,
+      ],
+      profile.visibleCustomText,
     ].join(' ');
   }
 
   String _fullEvidenceText(CvProfile profile) {
     return [
       _externalEvidenceText(profile),
-      for (final skill in profile.skills) skill.name,
+      if (profile.isSectionVisible(CvSectionKind.skills))
+        for (final skill in profile.skills) skill.name,
       profile.personalInfo.desiredRole,
     ].join(' ');
   }

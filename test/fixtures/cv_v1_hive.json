@@ -1,0 +1,49 @@
+{
+  "id": "cv-old-1",
+  "title": "Staff Nurse CV",
+  "personalInfo": {
+    "fullName": "Nusrat Jahan",
+    "desiredRole": "Staff Nurse",
+    "email": "nusrat@email.com",
+    "phone": "01812345678",
+    "address": "Dhaka, BD",
+    "linkedInUrl": "",
+    "portfolioUrl": ""
+  },
+  "professionalSummary": "Registered staff nurse with 3 years of ward experience.",
+  "careerObjective": "",
+  "education": [
+    {
+      "id": "ed1",
+      "institution": "Dhaka Nursing College",
+      "degree": "BSc in Nursing",
+      "fieldOfStudy": "",
+      "startYear": "2016",
+      "endYear": "2020",
+      "result": "",
+      "location": "",
+      "isOngoing": false
+    }
+  ],
+  "experiences": [
+    {
+      "id": "ex1",
+      "companyName": "City General Hospital",
+      "jobTitle": "Staff Nurse",
+      "location": "",
+      "startDate": "2021",
+      "endDate": "",
+      "isCurrentRole": true,
+      "highlights": ["Monitored vital signs.", "Administered IV therapy."]
+    }
+  ],
+  "skills": [{"id": "s1", "name": "Patient Care", "level": ""}],
+  "projects": [],
+  "trainings": [
+    {"id": "t1", "title": "BLS", "organization": "Red Crescent", "completionYear": "2023", "details": ""}
+  ],
+  "languages": [{"id": "l1", "name": "Bangla", "proficiency": "Native"}],
+  "template": "modern",
+  "createdAt": "2025-03-01T10:00:00.000",
+  "updatedAt": "2025-03-02T10:00:00.000"
+}

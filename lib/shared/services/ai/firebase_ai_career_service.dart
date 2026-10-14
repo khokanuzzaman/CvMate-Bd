@@ -481,6 +481,23 @@ class FirebaseAiCareerService implements AiCareerService {
             'proficiency': language.proficiency.trim(),
           },
       ],
+      // The user's own visible sections; omitted when there are none so the
+      // payload for an ordinary CV is unchanged.
+      if (profile.visibleSections.any((s) => s.custom?.hasContent ?? false))
+        'customSections': [
+          for (final section in profile.visibleSections)
+            if (section.custom != null && section.custom!.hasContent)
+              {
+                'title': section.titleOr(section.custom!.title).trim(),
+                'items': [
+                  for (final item in section.custom!.filledItems)
+                    {
+                      'title': item.title.trim(),
+                      'description': item.description.trim(),
+                    },
+                ],
+              },
+        ],
     };
   }
 }

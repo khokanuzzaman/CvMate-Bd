@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/education_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
@@ -61,6 +62,7 @@ class CvBuilderController extends Notifier<CvBuilderState> {
       state = state.copyWith(
         draft: profile,
         currentStepIndex: 0,
+        clearCurrentCustomSection: true,
         showValidationErrors: false,
         hasInitializedDraft: true,
         isLoading: false,
@@ -83,6 +85,7 @@ class CvBuilderController extends Notifier<CvBuilderState> {
     if (state.hasActiveDraft && state.draft.id == id) {
       state = state.copyWith(
         currentStepIndex: _normalizeStepIndex(stepIndex),
+        clearCurrentCustomSection: true,
         showValidationErrors: false,
         clearErrorMessage: true,
       );
@@ -104,6 +107,7 @@ class CvBuilderController extends Notifier<CvBuilderState> {
       state = state.copyWith(
         draft: profile,
         currentStepIndex: _normalizeStepIndex(stepIndex),
+        clearCurrentCustomSection: true,
         showValidationErrors: false,
         hasInitializedDraft: true,
         isLoading: false,
@@ -132,6 +136,18 @@ class CvBuilderController extends Notifier<CvBuilderState> {
   void goToStep(int stepIndex) {
     state = state.copyWith(
       currentStepIndex: _normalizeStepIndex(stepIndex),
+      showValidationErrors: false,
+      clearCurrentCustomSection: true,
+    );
+  }
+
+  /// Opens the builder page of a custom section.
+  void goToCustomSection(String id) {
+    if (state.draft.customSectionById(id) == null) {
+      return;
+    }
+    state = state.copyWith(
+      currentCustomSectionId: id,
       showValidationErrors: false,
     );
   }
@@ -168,12 +184,22 @@ class CvBuilderController extends Notifier<CvBuilderState> {
     return CvBuilderValidators.validateStep(step, state.draft);
   }
 
+  /// The first problem on a custom section's page, or null.
+  String? validateCustomSection(String id) {
+    final section = state.draft.customSectionById(id);
+    return section == null
+        ? null
+        : CvBuilderValidators.validateCustomSection(section);
+  }
+
   List<String> previewWarnings() {
     return CvBuilderValidators.buildPreviewWarnings(state.draft);
   }
 
   Future<void> saveNow() async {
-    if (!state.hasActiveDraft || state.isLoading) {
+    // The builder flushes on dispose, which can run after the container itself
+    // is gone (app teardown / restart); there is nothing left to save then.
+    if (!ref.mounted || !state.hasActiveDraft || state.isLoading) {
       return;
     }
 
@@ -416,6 +442,187 @@ class CvBuilderController extends Notifier<CvBuilderState> {
             .toList(),
       ),
     );
+  }
+
+  // --- Section layout --------------------------------------------------------
+  // The layout only controls order, visibility and titles; the typed fields stay
+  // where they are. Every change works on the cleaned effective list
+  // ([CvProfile.sections]) and stores it, so the first edit "materialises" the
+  // template default into an explicit layout.
+
+  /// Moves a section like `ReorderableListView.onReorderItem` reports it
+  /// ([newIndex] is the position the section ends up at).
+  void reorderSections(int oldIndex, int newIndex) {
+    final sections = [...state.draft.sections];
+    if (oldIndex < 0 || oldIndex >= sections.length) {
+      return;
+    }
+    final target = newIndex.clamp(0, sections.length - 1);
+    if (target == oldIndex) {
+      return;
+    }
+    final moved = sections.removeAt(oldIndex);
+    sections.insert(target, moved);
+    _updateDraft(state.draft.copyWith(sectionLayout: sections));
+  }
+
+  void setSectionVisible(String id, bool visible) {
+    _updateDraft(
+      state.draft.copyWith(
+        sectionLayout: [
+          for (final config in state.draft.sections)
+            if (config.id == id) config.copyWith(visible: visible) else config,
+        ],
+      ),
+    );
+  }
+
+  /// Renames a section. An empty [title] puts the default title back. A custom
+  /// section's own title is what is renamed (it has no default to fall back to,
+  /// so an empty title is ignored).
+  void renameSection(String id, String? title) {
+    final value = title?.trim() ?? '';
+    final custom = state.draft.customSectionById(id);
+    if (custom != null) {
+      if (value.isEmpty) {
+        return;
+      }
+      updateCustomSection(custom.copyWith(title: value));
+      return;
+    }
+    _updateDraft(
+      state.draft.copyWith(
+        sectionLayout: [
+          for (final config in state.draft.sections)
+            if (config.id == id)
+              value.isEmpty
+                  ? config.copyWith(clearTitleOverride: true)
+                  : config.copyWith(titleOverride: value)
+            else
+              config,
+        ],
+      ),
+    );
+  }
+
+  /// Back to the template's order, every section shown, default titles. Custom
+  /// sections and all content are kept (custom sections follow the built-ins).
+  void resetSectionLayout() {
+    _updateDraft(state.draft.copyWith(clearSectionLayout: true));
+  }
+
+  /// Adds a custom section at the end and returns it.
+  CustomSection addCustomSection({
+    required String title,
+    required CustomSectionLayout layout,
+  }) {
+    final section = CustomSection.create(title: title.trim(), layout: layout);
+    _updateDraft(
+      state.draft.copyWith(
+        customSections: [...state.draft.customSections, section],
+        sectionLayout: [
+          ...state.draft.sections,
+          SectionConfig.custom(section.id),
+        ],
+      ),
+    );
+    return section;
+  }
+
+  /// Deletes a custom section and its items. Built-in sections cannot be
+  /// deleted (only hidden).
+  void deleteCustomSection(String id) {
+    if (state.draft.customSectionById(id) == null) {
+      return;
+    }
+    final wasCurrent = state.currentCustomSectionId == id;
+    _updateDraft(
+      state.draft.copyWith(
+        customSections: [
+          for (final section in state.draft.customSections)
+            if (section.id != id) section,
+        ],
+        sectionLayout: [
+          for (final config in state.draft.sections)
+            if (config.id != id) config,
+        ],
+      ),
+    );
+    if (wasCurrent) {
+      state = state.copyWith(clearCurrentCustomSection: true);
+    }
+  }
+
+  void updateCustomSection(CustomSection section) {
+    _updateDraft(
+      state.draft.copyWith(
+        customSections: [
+          for (final existing in state.draft.customSections)
+            if (existing.id == section.id) section else existing,
+        ],
+      ),
+    );
+  }
+
+  void addCustomSectionItem(String sectionId) {
+    final section = state.draft.customSectionById(sectionId);
+    if (section == null) {
+      return;
+    }
+    updateCustomSection(
+      section.copyWith(items: [...section.items, CustomSectionItem.empty()]),
+    );
+  }
+
+  void updateCustomSectionItem(String sectionId, CustomSectionItem item) {
+    final section = state.draft.customSectionById(sectionId);
+    if (section == null) {
+      return;
+    }
+    updateCustomSection(
+      section.copyWith(
+        items: _replaceById(section.items, item.id, item, (it) => it.id),
+      ),
+    );
+  }
+
+  void removeCustomSectionItem(String sectionId, String itemId) {
+    final section = state.draft.customSectionById(sectionId);
+    if (section == null) {
+      return;
+    }
+    updateCustomSection(
+      section.copyWith(
+        items: [
+          for (final item in section.items)
+            if (item.id != itemId) item,
+        ],
+      ),
+    );
+  }
+
+  /// Moves an item within a custom section (same index rules as
+  /// [reorderSections]).
+  void reorderCustomSectionItems(String sectionId, int oldIndex, int newIndex) {
+    final section = state.draft.customSectionById(sectionId);
+    if (section == null || oldIndex < 0 || oldIndex >= section.items.length) {
+      return;
+    }
+    final items = [...section.items];
+    final target = newIndex.clamp(0, items.length - 1);
+    if (target == oldIndex) {
+      return;
+    }
+    items.insert(target, items.removeAt(oldIndex));
+    updateCustomSection(section.copyWith(items: items));
+  }
+
+  void changeCustomSectionLayout(String sectionId, CustomSectionLayout layout) {
+    final section = state.draft.customSectionById(sectionId);
+    if (section == null) {
+      return;
+    }
+    updateCustomSection(section.copyWith(layout: layout));
   }
 
   void _updateDraft(CvProfile draft) {

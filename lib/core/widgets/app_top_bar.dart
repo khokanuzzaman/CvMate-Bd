@@ -16,6 +16,7 @@ class AppTopBar extends StatelessWidget {
     this.onTrailingTap,
     this.stepLabel,
     this.trailingTooltip,
+    this.extraActions = const [],
   });
 
   final String title;
@@ -26,6 +27,9 @@ class AppTopBar extends StatelessWidget {
 
   /// Accessible name for the trailing icon button.
   final String? trailingTooltip;
+
+  /// More icon buttons, placed before the trailing one.
+  final List<AppTopBarAction> extraActions;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +51,14 @@ class AppTopBar extends StatelessWidget {
           const SizedBox(width: AppSpacing.s8),
           _StepPill(label: stepLabel!),
         ],
+        for (final action in extraActions) ...[
+          const SizedBox(width: AppSpacing.s8),
+          _IconSquareButton(
+            icon: action.icon,
+            tooltip: action.tooltip,
+            onTap: action.onTap,
+          ),
+        ],
         if (trailingIcon != null) ...[
           const SizedBox(width: AppSpacing.s8),
           _IconSquareButton(
@@ -58,6 +70,19 @@ class AppTopBar extends StatelessWidget {
       ],
     );
   }
+}
+
+/// An extra icon button for [AppTopBar].
+class AppTopBarAction {
+  const AppTopBarAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
 }
 
 class _IconSquareButton extends StatelessWidget {

@@ -1,4 +1,5 @@
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/education_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/project_info.dart';
@@ -23,7 +24,7 @@ abstract final class CvPdfTemplateBuilders {
       build: (context) => [
         _classicHeader(profile),
         pw.SizedBox(height: 18),
-        ..._sharedSections(
+        ..._orderedSections(
           profile,
           sectionTitleBuilder: (title) => _classicSectionTitle(title),
         ),
@@ -41,7 +42,7 @@ abstract final class CvPdfTemplateBuilders {
       build: (context) => [
         _modernHeader(profile),
         pw.SizedBox(height: 18),
-        ..._sharedSections(
+        ..._orderedSections(
           profile,
           sectionTitleBuilder: (title) => _modernSectionTitle(title),
         ),
@@ -59,7 +60,7 @@ abstract final class CvPdfTemplateBuilders {
       build: (context) => [
         _minimalHeader(profile),
         pw.SizedBox(height: 18),
-        ..._sharedSections(
+        ..._orderedSections(
           profile,
           sectionTitleBuilder: (title) => _minimalSectionTitle(title),
         ),
@@ -77,7 +78,7 @@ abstract final class CvPdfTemplateBuilders {
       build: (context) => [
         _professionalHeader(profile),
         pw.SizedBox(height: 18),
-        ..._sharedSections(
+        ..._orderedSections(
           profile,
           sectionTitleBuilder: (title) => _professionalSectionTitle(title),
         ),
@@ -95,9 +96,9 @@ abstract final class CvPdfTemplateBuilders {
       build: (context) => [
         _fresherHeader(profile),
         pw.SizedBox(height: 18),
-        // Freshers usually lead with education and projects; experience (if any)
-        // and the remaining sections follow. See [_fresherSections].
-        ..._fresherSections(
+        // Freshers lead with education and projects by default; that order is
+        // the Fresher template's default section layout (see CvSectionLayout).
+        ..._orderedSections(
           profile,
           sectionTitleBuilder: (title) => _fresherSectionTitle(title),
         ),
@@ -349,113 +350,162 @@ abstract final class CvPdfTemplateBuilders {
     );
   }
 
-  static List<pw.Widget> _sharedSections(
+  /// Every section in the CV's layout order (the user's, or the template's
+  /// default), skipping hidden ones and printing renamed titles. One walk for
+  /// all five templates, so they can never disagree about order. The output is
+  /// a single column in that order, which keeps it ATS-safe.
+  static List<pw.Widget> _orderedSections(
     CvProfile profile, {
     required pw.Widget Function(String title) sectionTitleBuilder,
   }) {
     final widgets = <pw.Widget>[];
 
-    _appendSimpleSection(
-      widgets,
-      title: 'Professional Summary',
-      content: profile.professionalSummary,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendSimpleSection(
-      widgets,
-      title: 'Career Objective',
-      content: profile.careerObjective,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendEducationSection(
-      widgets,
-      profile.education,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendExperienceSection(
-      widgets,
-      profile.experiences,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendSkillsSection(
-      widgets,
-      profile,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendProjectsSection(
-      widgets,
-      profile.projects,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendTrainingSection(
-      widgets,
-      profile.trainings,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendLanguagesSection(
-      widgets,
-      profile,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
+    for (final section in profile.visibleSections) {
+      final title = section.titleOr(_defaultTitle(section.kind));
+      switch (section.kind) {
+        case CvSectionKind.summary:
+          _appendSimpleSection(
+            widgets,
+            title: title,
+            content: profile.professionalSummary,
+            sectionTitleBuilder: sectionTitleBuilder,
+          );
+        case CvSectionKind.objective:
+          _appendSimpleSection(
+            widgets,
+            title: title,
+            content: profile.careerObjective,
+            sectionTitleBuilder: sectionTitleBuilder,
+          );
+        case CvSectionKind.education:
+          _appendEducationSection(
+            widgets,
+            profile.education,
+            title: title,
+            sectionTitleBuilder: sectionTitleBuilder,
+          );
+        case CvSectionKind.experience:
+          _appendExperienceSection(
+            widgets,
+            profile.experiences,
+            title: title,
+            sectionTitleBuilder: sectionTitleBuilder,
+          );
+        case CvSectionKind.skills:
+          _appendSkillsSection(
+            widgets,
+            profile,
+            title: title,
+            sectionTitleBuilder: sectionTitleBuilder,
+          );
+        case CvSectionKind.projects:
+          _appendProjectsSection(
+            widgets,
+            profile.projects,
+            title: title,
+            sectionTitleBuilder: sectionTitleBuilder,
+          );
+        case CvSectionKind.training:
+          _appendTrainingSection(
+            widgets,
+            profile.trainings,
+            title: title,
+            sectionTitleBuilder: sectionTitleBuilder,
+          );
+        case CvSectionKind.languages:
+          _appendLanguagesSection(
+            widgets,
+            profile,
+            title: title,
+            sectionTitleBuilder: sectionTitleBuilder,
+          );
+        case CvSectionKind.custom:
+          _appendCustomSection(
+            widgets,
+            section.custom,
+            title: title,
+            sectionTitleBuilder: sectionTitleBuilder,
+          );
+      }
+    }
 
     _ensureNotEmpty(widgets);
     return widgets;
   }
 
-  /// Fresher ordering: education and projects (plus skills) surface above work
-  /// experience, and experience is simply omitted when the candidate has none.
-  /// Reuses the same section appenders as [_sharedSections] to stay in sync.
-  static List<pw.Widget> _fresherSections(
-    CvProfile profile, {
+  /// What a section is called in the PDF unless the user renamed it.
+  static String _defaultTitle(CvSectionKind kind) => switch (kind) {
+    CvSectionKind.summary => 'Professional Summary',
+    CvSectionKind.objective => 'Career Objective',
+    CvSectionKind.education => 'Education',
+    CvSectionKind.experience => 'Experience',
+    CvSectionKind.skills => 'Skills',
+    CvSectionKind.projects => 'Projects',
+    CvSectionKind.training => 'Training / Certifications',
+    CvSectionKind.languages => 'Languages',
+    CvSectionKind.custom => 'Additional',
+  };
+
+  /// A user-made section, in either layout. Nothing is printed for a section
+  /// with no text in it (the same rule as the built-in ones).
+  static void _appendCustomSection(
+    List<pw.Widget> widgets,
+    CustomSection? section, {
+    required String title,
     required pw.Widget Function(String title) sectionTitleBuilder,
   }) {
-    final widgets = <pw.Widget>[];
+    if (section == null || !section.hasContent) {
+      return;
+    }
 
-    _appendSimpleSection(
-      widgets,
-      title: 'Professional Summary',
-      content: profile.professionalSummary,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendSimpleSection(
-      widgets,
-      title: 'Career Objective',
-      content: profile.careerObjective,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendEducationSection(
-      widgets,
-      profile.education,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendProjectsSection(
-      widgets,
-      profile.projects,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendSkillsSection(
-      widgets,
-      profile,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendExperienceSection(
-      widgets,
-      profile.experiences,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendTrainingSection(
-      widgets,
-      profile.trainings,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-    _appendLanguagesSection(
-      widgets,
-      profile,
-      sectionTitleBuilder: sectionTitleBuilder,
-    );
-
-    _ensureNotEmpty(widgets);
-    return widgets;
+    widgets.add(sectionTitleBuilder(pdfSafeText(title)));
+    switch (section.layout) {
+      case CustomSectionLayout.titledRows:
+        for (final item in section.filledItems) {
+          widgets.add(
+            _entryBlock(
+              title: pdfSafeText(item.title),
+              subtitle: '',
+              meta: '',
+              description: item.description,
+            ),
+          );
+        }
+      case CustomSectionLayout.bullets:
+        widgets.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 10),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                for (final item in section.filledItems)
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.only(top: 4),
+                    child: pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          '- ',
+                          style: const pw.TextStyle(fontSize: 10.4),
+                        ),
+                        pw.Expanded(
+                          child: pw.Text(
+                            pdfSafeText(item.bulletText),
+                            style: const pw.TextStyle(
+                              fontSize: 10.4,
+                              lineSpacing: 2.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+    }
+    widgets.add(pw.SizedBox(height: 14));
   }
 
   static void _ensureNotEmpty(List<pw.Widget> widgets) {
@@ -482,7 +532,7 @@ abstract final class CvPdfTemplateBuilders {
       return;
     }
 
-    widgets.add(sectionTitleBuilder(title));
+    widgets.add(sectionTitleBuilder(pdfSafeText(title)));
     widgets.add(
       pw.Text(text, style: const pw.TextStyle(fontSize: 10.8, lineSpacing: 3)),
     );
@@ -492,13 +542,14 @@ abstract final class CvPdfTemplateBuilders {
   static void _appendEducationSection(
     List<pw.Widget> widgets,
     List<EducationInfo> items, {
+    required String title,
     required pw.Widget Function(String title) sectionTitleBuilder,
   }) {
     if (items.isEmpty) {
       return;
     }
 
-    widgets.add(sectionTitleBuilder('Education'));
+    widgets.add(sectionTitleBuilder(pdfSafeText(title)));
     for (final item in items) {
       widgets.add(
         _entryBlock(
@@ -524,13 +575,14 @@ abstract final class CvPdfTemplateBuilders {
   static void _appendExperienceSection(
     List<pw.Widget> widgets,
     List<ExperienceInfo> items, {
+    required String title,
     required pw.Widget Function(String title) sectionTitleBuilder,
   }) {
     if (items.isEmpty) {
       return;
     }
 
-    widgets.add(sectionTitleBuilder('Experience'));
+    widgets.add(sectionTitleBuilder(pdfSafeText(title)));
     for (final item in items) {
       widgets.add(
         _entryBlock(
@@ -555,6 +607,7 @@ abstract final class CvPdfTemplateBuilders {
   static void _appendSkillsSection(
     List<pw.Widget> widgets,
     CvProfile profile, {
+    required String title,
     required pw.Widget Function(String title) sectionTitleBuilder,
   }) {
     if (profile.skills.isEmpty) {
@@ -574,7 +627,7 @@ abstract final class CvPdfTemplateBuilders {
       return;
     }
 
-    widgets.add(sectionTitleBuilder('Skills'));
+    widgets.add(sectionTitleBuilder(pdfSafeText(title)));
     widgets.add(
       pw.Text(
         skillText,
@@ -587,13 +640,14 @@ abstract final class CvPdfTemplateBuilders {
   static void _appendProjectsSection(
     List<pw.Widget> widgets,
     List<ProjectInfo> items, {
+    required String title,
     required pw.Widget Function(String title) sectionTitleBuilder,
   }) {
     if (items.isEmpty) {
       return;
     }
 
-    widgets.add(sectionTitleBuilder('Projects'));
+    widgets.add(sectionTitleBuilder(pdfSafeText(title)));
     for (final item in items) {
       widgets.add(
         _entryBlock(
@@ -613,13 +667,14 @@ abstract final class CvPdfTemplateBuilders {
   static void _appendTrainingSection(
     List<pw.Widget> widgets,
     List<TrainingInfo> items, {
+    required String title,
     required pw.Widget Function(String title) sectionTitleBuilder,
   }) {
     if (items.isEmpty) {
       return;
     }
 
-    widgets.add(sectionTitleBuilder('Training / Certifications'));
+    widgets.add(sectionTitleBuilder(pdfSafeText(title)));
     for (final item in items) {
       widgets.add(
         _entryBlock(
@@ -636,6 +691,7 @@ abstract final class CvPdfTemplateBuilders {
   static void _appendLanguagesSection(
     List<pw.Widget> widgets,
     CvProfile profile, {
+    required String title,
     required pw.Widget Function(String title) sectionTitleBuilder,
   }) {
     if (profile.languages.isEmpty) {
@@ -654,7 +710,7 @@ abstract final class CvPdfTemplateBuilders {
       return;
     }
 
-    widgets.add(sectionTitleBuilder('Languages'));
+    widgets.add(sectionTitleBuilder(pdfSafeText(title)));
     widgets.add(
       pw.Text(
         languageText,

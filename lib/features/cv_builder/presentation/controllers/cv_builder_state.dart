@@ -12,6 +12,7 @@ class CvBuilderState {
     required this.hasUnsavedChanges,
     required this.lastSavedAt,
     required this.errorMessage,
+    this.currentCustomSectionId,
   });
 
   factory CvBuilderState.initial() => CvBuilderState(
@@ -36,6 +37,10 @@ class CvBuilderState {
   final DateTime? lastSavedAt;
   final String? errorMessage;
 
+  /// When set, the builder is on this custom section's page instead of the
+  /// built-in page for [currentStep].
+  final String? currentCustomSectionId;
+
   CvBuilderStep get currentStep => CvBuilderStep.values[currentStepIndex];
   bool get isFirstStep => currentStepIndex == 0;
   bool get isLastStep => currentStepIndex == CvBuilderStep.values.length - 1;
@@ -53,6 +58,8 @@ class CvBuilderState {
     bool clearLastSavedAt = false,
     String? errorMessage,
     bool clearErrorMessage = false,
+    String? currentCustomSectionId,
+    bool clearCurrentCustomSection = false,
   }) {
     return CvBuilderState(
       draft: draft ?? this.draft,
@@ -66,6 +73,9 @@ class CvBuilderState {
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
+      currentCustomSectionId: clearCurrentCustomSection
+          ? null
+          : currentCustomSectionId ?? this.currentCustomSectionId,
     );
   }
 }

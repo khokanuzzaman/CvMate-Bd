@@ -4,6 +4,7 @@ import 'flows/cover_letter_flow.dart';
 import 'flows/cv_builder_flow.dart';
 import 'flows/interview_flow.dart';
 import 'flows/profile_nav_flow.dart';
+import 'flows/sections_flow.dart';
 import 'flows/stress_flow.dart';
 import 'flows/tailoring_flow.dart';
 import 'flows/tracker_flow.dart';
@@ -14,6 +15,7 @@ import 'support/qa_harness.dart';
 void main() => registerQaSuite(() {
   registerAuthFlow();
   registerCvBuilderFlow();
+  registerSectionsFlow();
   registerTailoringFlow();
   registerCoverLetterFlow();
   registerAtsFlow();
