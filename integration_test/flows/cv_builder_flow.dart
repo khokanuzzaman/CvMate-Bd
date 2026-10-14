@@ -21,6 +21,15 @@ Future<void> _type(WidgetTester tester, String hint, String text) async {
 
 Future<void> _openNewCv(WidgetTester tester) async {
   await tapText(tester, AppStrings.homeNewCv);
+  // New CVs start on the CV style screen; keep the default (International).
+  await waitFor(tester, find.text(AppStrings.styleTitle));
+  await tapOn(
+    tester,
+    find.widgetWithText(
+      PrimaryButton,
+      AppStrings.styleUse(AppStrings.styleShortInternational),
+    ),
+  );
   await waitFor(tester, _step(1, 'Personal'));
 }
 

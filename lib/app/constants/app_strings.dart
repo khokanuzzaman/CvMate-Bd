@@ -330,6 +330,112 @@ abstract final class AppStrings {
       'Fill in or remove the empty items in this section.';
   static const String customSectionEdit = 'Edit section';
 
+  // CV style (market preset), personal details, photo, declaration
+  static const String styleTitle = 'CV style';
+  static const String styleTooltip = 'CV style';
+  static const String styleIntro =
+      "Where are you applying? We'll show the right personal details and "
+      'layout for that market. You can change any field later.';
+  static const String styleInternational = 'International';
+  static const String styleInternationalBody =
+      'Online portals, remote and Western employers. No photo, age or '
+      'personal details.';
+  static const String styleAtsSafe = 'ATS-SAFE';
+  static const String styleGulf = 'Gulf (UAE, Saudi, Qatar…)';
+  static const String styleGulfBody =
+      'Photo, nationality, date of birth, passport and visa status, as Gulf '
+      'recruiters expect.';
+  static const String styleSouthAsia = 'Bangladesh / South Asia';
+  static const String styleSouthAsiaBody =
+      'Local companies and government jobs. Photo, personal details, '
+      'declaration and signature.';
+  static const String styleShortInternational = 'International';
+  static const String styleShortGulf = 'Gulf';
+  static const String styleShortSouthAsia = 'South Asia';
+  static const String stylePaperTitle = 'Paper size';
+  static const String stylePaperHint =
+      'A4 for BD, Gulf, Europe · Letter for US';
+  static const String paperA4 = 'A4';
+  static const String paperLetter = 'Letter';
+  static const String styleTip =
+      'Keep one CV per market. Duplicate this CV and switch style for the '
+      'other.';
+  static String styleUse(String name) => 'Use $name style';
+
+  static const String personalInfoHeader = 'Personal information';
+  static const String personalShowOnCv = 'Show on CV';
+  static const String personalNotAdded = 'Not added';
+  static const String personalFieldPhoto = 'Photo';
+  static const String personalFieldDob = 'Date of birth';
+  static const String personalFieldNationality = 'Nationality';
+  static const String personalFieldPassport = 'Passport no. · expiry';
+  static const String personalPassportLabel = 'Passport';
+  static const String personalFieldVisa = 'Visa status';
+  static const String personalFieldLicence = 'Driving licence';
+  static const String personalFieldMarital = 'Marital status';
+  static const String personalFieldReligion = 'Religion';
+  static const String personalFieldGender = 'Gender';
+  static const String personalDobHint = '12 Mar 1996';
+  static const String personalNationalityHint = 'Bangladeshi';
+  static const String personalPassportNumberHint = 'Passport no.';
+  static const String personalPassportExpiryHint = 'Expiry';
+  static const String personalVisaHint = 'e.g. Visit visa · available now';
+  static const String personalLicenceHint = 'e.g. UAE light vehicle';
+  static const String personalMaritalHint = 'e.g. Single';
+  static const String personalReligionHint = 'e.g. Islam';
+  static const String personalGenderHint = 'e.g. Male';
+  static const String personalMoreFields =
+      'More fields (religion, gender, custom row)';
+  static const String personalFewerFields = 'Fewer fields';
+  static const String personalAddRow = 'Add custom row';
+  static const String personalRowLabelHint = 'Label';
+  static const String personalRowValueHint = 'Value';
+  static const String personalRemoveRow = 'Remove row';
+  static const String personalPrivacyNote =
+      'Only share what the employer asks for. Never put your passport number '
+      'on a CV you post publicly.';
+  static const String personalDetailsPreview = 'Personal details';
+
+  static const String photoPassportTitle = 'Passport-style photo';
+  static const String photoPassportHint =
+      'Plain background, face centred. We crop it to 35×45.';
+  static const String photoTake = 'Take photo';
+  static const String photoGallery = 'Gallery';
+  static const String photoRemove = 'Remove photo';
+  static const String photoCropTitle = 'Crop photo';
+  static const String photoCropHint =
+      'Drag and pinch to fit your face in the frame.';
+  static const String photoCropUse = 'Use photo';
+  static const String photoFailed =
+      'Could not use that photo. Please try another one.';
+
+  static const String declarationTile = 'Declaration & signature';
+  static const String declarationTileHint =
+      'A sign-off line and your signature, common on Bangladeshi CVs.';
+  static const String declarationTitle = 'Declaration & signature';
+  static const String declarationAdd = 'Add declaration';
+  static const String declarationAddHint =
+      'Common on Bangladeshi and government CVs';
+  static const String declarationTextLabel = 'Declaration text';
+  static const String declarationEnglish = 'English';
+  static const String declarationBangla = 'বাংলা';
+  static const String declarationPlace = 'Place';
+  static const String declarationPlaceHint = 'e.g. Dhaka';
+  static const String declarationDate = 'Date';
+  static const String declarationDateOnExport = 'On export';
+  static const String signatureTitle = 'Signature';
+  static const String signatureDraw = 'Draw';
+  static const String signatureUpload = 'Upload';
+  static const String signatureClear = 'Clear';
+  static const String signatureSignAbove = 'Sign above the line';
+  static const String signatureNote =
+      'This places an image of your signature on the PDF. It is not a '
+      'digital certificate.';
+  static const String signatureShow = 'Show signature on CV';
+  static const String signaturePick = 'Choose an image';
+  static const String signatureReplace = 'Choose another image';
+  static const String declarationSave = 'Save';
+
   // Tailor — shared
   static const String tailorTitle = 'Tailor to a job';
   static String tailorStepPill(int step) => 'Step $step/3';

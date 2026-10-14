@@ -3,6 +3,7 @@ import 'flows/auth_flow.dart';
 import 'flows/cover_letter_flow.dart';
 import 'flows/cv_builder_flow.dart';
 import 'flows/interview_flow.dart';
+import 'flows/market_style_flow.dart';
 import 'flows/profile_nav_flow.dart';
 import 'flows/sections_flow.dart';
 import 'flows/stress_flow.dart';
@@ -16,6 +17,7 @@ void main() => registerQaSuite(() {
   registerAuthFlow();
   registerCvBuilderFlow();
   registerSectionsFlow();
+  registerMarketStyleFlow();
   registerTailoringFlow();
   registerCoverLetterFlow();
   registerAtsFlow();

@@ -4,6 +4,7 @@ import 'package:careermatebd/features/cv_builder/domain/entities/education_info.
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/project_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/training_info.dart';
+import 'package:careermatebd/shared/services/pdf/cv_pdf_market_blocks.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -17,17 +18,23 @@ abstract final class CvPdfTemplateBuilders {
   static pw.MultiPage buildClassic({
     required CvProfile profile,
     required PdfPageFormat pageFormat,
+    CvPdfContext extras = const CvPdfContext(),
   }) {
     return pw.MultiPage(
-      pageTheme: _pageTheme(pageFormat),
+      pageTheme: _pageTheme(pageFormat, extras),
       footer: _pageFooter,
       build: (context) => [
-        _classicHeader(profile),
+        CvPdfMarketBlocks.headerWithPhoto(profile, _classicHeader(profile)),
         pw.SizedBox(height: 18),
+        ...CvPdfMarketBlocks.details(
+          profile,
+          sectionTitleBuilder: _classicSectionTitle,
+        ),
         ..._orderedSections(
           profile,
           sectionTitleBuilder: (title) => _classicSectionTitle(title),
         ),
+        ...CvPdfMarketBlocks.declaration(profile, extras),
       ],
     );
   }
@@ -35,17 +42,23 @@ abstract final class CvPdfTemplateBuilders {
   static pw.MultiPage buildModern({
     required CvProfile profile,
     required PdfPageFormat pageFormat,
+    CvPdfContext extras = const CvPdfContext(),
   }) {
     return pw.MultiPage(
-      pageTheme: _pageTheme(pageFormat),
+      pageTheme: _pageTheme(pageFormat, extras),
       footer: _pageFooter,
       build: (context) => [
-        _modernHeader(profile),
+        CvPdfMarketBlocks.headerWithPhoto(profile, _modernHeader(profile)),
         pw.SizedBox(height: 18),
+        ...CvPdfMarketBlocks.details(
+          profile,
+          sectionTitleBuilder: _modernSectionTitle,
+        ),
         ..._orderedSections(
           profile,
           sectionTitleBuilder: (title) => _modernSectionTitle(title),
         ),
+        ...CvPdfMarketBlocks.declaration(profile, extras),
       ],
     );
   }
@@ -53,17 +66,23 @@ abstract final class CvPdfTemplateBuilders {
   static pw.MultiPage buildMinimal({
     required CvProfile profile,
     required PdfPageFormat pageFormat,
+    CvPdfContext extras = const CvPdfContext(),
   }) {
     return pw.MultiPage(
-      pageTheme: _pageTheme(pageFormat),
+      pageTheme: _pageTheme(pageFormat, extras),
       footer: _pageFooter,
       build: (context) => [
-        _minimalHeader(profile),
+        CvPdfMarketBlocks.headerWithPhoto(profile, _minimalHeader(profile)),
         pw.SizedBox(height: 18),
+        ...CvPdfMarketBlocks.details(
+          profile,
+          sectionTitleBuilder: _minimalSectionTitle,
+        ),
         ..._orderedSections(
           profile,
           sectionTitleBuilder: (title) => _minimalSectionTitle(title),
         ),
+        ...CvPdfMarketBlocks.declaration(profile, extras),
       ],
     );
   }
@@ -71,17 +90,26 @@ abstract final class CvPdfTemplateBuilders {
   static pw.MultiPage buildProfessional({
     required CvProfile profile,
     required PdfPageFormat pageFormat,
+    CvPdfContext extras = const CvPdfContext(),
   }) {
     return pw.MultiPage(
-      pageTheme: _pageTheme(pageFormat),
+      pageTheme: _pageTheme(pageFormat, extras),
       footer: _pageFooter,
       build: (context) => [
-        _professionalHeader(profile),
+        CvPdfMarketBlocks.headerWithPhoto(
+          profile,
+          _professionalHeader(profile),
+        ),
         pw.SizedBox(height: 18),
+        ...CvPdfMarketBlocks.details(
+          profile,
+          sectionTitleBuilder: _professionalSectionTitle,
+        ),
         ..._orderedSections(
           profile,
           sectionTitleBuilder: (title) => _professionalSectionTitle(title),
         ),
+        ...CvPdfMarketBlocks.declaration(profile, extras),
       ],
     );
   }
@@ -89,24 +117,33 @@ abstract final class CvPdfTemplateBuilders {
   static pw.MultiPage buildFresher({
     required CvProfile profile,
     required PdfPageFormat pageFormat,
+    CvPdfContext extras = const CvPdfContext(),
   }) {
     return pw.MultiPage(
-      pageTheme: _pageTheme(pageFormat),
+      pageTheme: _pageTheme(pageFormat, extras),
       footer: _pageFooter,
       build: (context) => [
-        _fresherHeader(profile),
+        CvPdfMarketBlocks.headerWithPhoto(profile, _fresherHeader(profile)),
         pw.SizedBox(height: 18),
+        ...CvPdfMarketBlocks.details(
+          profile,
+          sectionTitleBuilder: _fresherSectionTitle,
+        ),
         // Freshers lead with education and projects by default; that order is
         // the Fresher template's default section layout (see CvSectionLayout).
         ..._orderedSections(
           profile,
           sectionTitleBuilder: (title) => _fresherSectionTitle(title),
         ),
+        ...CvPdfMarketBlocks.declaration(profile, extras),
       ],
     );
   }
 
-  static pw.PageTheme _pageTheme(PdfPageFormat pageFormat) {
+  static pw.PageTheme _pageTheme(
+    PdfPageFormat pageFormat,
+    CvPdfContext extras,
+  ) {
     return pw.PageTheme(
       pageFormat: pageFormat,
       margin: const pw.EdgeInsets.fromLTRB(30, 28, 30, 28),
@@ -115,6 +152,9 @@ abstract final class CvPdfTemplateBuilders {
         bold: pw.Font.helveticaBold(),
         italic: pw.Font.helveticaOblique(),
         boldItalic: pw.Font.helveticaBoldOblique(),
+        // Bangla (and anything else Helvetica cannot draw) falls back to Noto
+        // Sans Bengali instead of disappearing or printing as boxes.
+        fontFallback: extras.fallbackFonts,
       ),
     );
   }

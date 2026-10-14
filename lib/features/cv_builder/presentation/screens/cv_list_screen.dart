@@ -129,7 +129,7 @@ class CvListScreen extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Draft saved locally.')));
-    context.push(RouteNames.cvBuilderPath);
+    context.push('${RouteNames.cvStylePath}?from=new');
   }
 
   Future<void> _openBuilder(

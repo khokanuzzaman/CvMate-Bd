@@ -15,7 +15,9 @@ import 'package:careermatebd/features/cv_builder/presentation/screens/cv_builder
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_list_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_pdf_preview_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_preview_screen.dart';
+import 'package:careermatebd/features/cv_builder/presentation/screens/cv_declaration_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_sections_screen.dart';
+import 'package:careermatebd/features/cv_builder/presentation/screens/cv_style_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_template_screen.dart';
 import 'package:careermatebd/features/home/presentation/screens/home_screen.dart';
 import 'package:careermatebd/features/interview_prep/presentation/screens/interview_prep_screen.dart';
@@ -151,6 +153,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => CvSectionsScreen(
           openedFromBuilder: state.uri.queryParameters['from'] == 'builder',
         ),
+      ),
+      GoRoute(
+        path: RouteNames.cvStylePath,
+        name: RouteNames.cvStyle,
+        builder: (context, state) => CvStyleScreen(
+          openBuilderAfter: state.uri.queryParameters['from'] == 'new',
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.cvDeclarationPath,
+        name: RouteNames.cvDeclaration,
+        builder: (context, state) => const CvDeclarationScreen(),
       ),
       GoRoute(
         path: RouteNames.cvPdfPreviewPath,
