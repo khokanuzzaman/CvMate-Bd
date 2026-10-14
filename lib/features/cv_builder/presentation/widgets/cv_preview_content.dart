@@ -1,4 +1,3 @@
-import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
 import 'package:careermatebd/core/theme/app_shadows.dart';
@@ -7,6 +6,7 @@ import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
 import 'package:careermatebd/features/cv_builder/presentation/utils/cv_field_codec.dart';
+import 'package:careermatebd/features/cv_builder/presentation/utils/section_titles.dart';
 import 'package:flutter/material.dart';
 
 /// The CV rendered as a sheet of paper, as in the approved preview design.
@@ -81,7 +81,7 @@ class CvPreviewContent extends StatelessWidget {
   List<Widget> _sectionWidgets() {
     final widgets = <Widget>[];
     for (final section in profile.visibleSections) {
-      final title = section.titleOr(_defaultTitle(section.kind));
+      final title = section.titleOr(defaultSectionTitle(section.kind));
       switch (section.kind) {
         case CvSectionKind.summary:
           widgets.add(_textSection(title, profile.professionalSummary));
@@ -238,18 +238,6 @@ class CvPreviewContent extends StatelessWidget {
     }
     return widgets;
   }
-
-  static String _defaultTitle(CvSectionKind kind) => switch (kind) {
-    CvSectionKind.summary => AppStrings.previewSummary,
-    CvSectionKind.objective => AppStrings.previewObjective,
-    CvSectionKind.experience => AppStrings.previewExperience,
-    CvSectionKind.skills => AppStrings.previewSkills,
-    CvSectionKind.education => AppStrings.previewEducation,
-    CvSectionKind.projects => AppStrings.previewProjects,
-    CvSectionKind.training => AppStrings.previewTraining,
-    CvSectionKind.languages => AppStrings.previewLanguages,
-    CvSectionKind.custom => AppStrings.sectionsCustomDefaultTitle,
-  };
 
   static Widget _textSection(String title, String text) {
     final value = text.trim();

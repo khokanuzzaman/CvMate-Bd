@@ -95,6 +95,12 @@ class CvPreviewScreen extends ConsumerWidget {
                     tooltip: AppStrings.previewMoreOptions,
                     items: [
                       OverflowMenuItem(
+                        label: AppStrings.sectionsTitle,
+                        icon: Icons.view_list_outlined,
+                        onSelected: () =>
+                            context.push(RouteNames.cvSectionsPath),
+                      ),
+                      OverflowMenuItem(
                         label: AppStrings.previewPrint,
                         icon: Icons.print_outlined,
                         enabled: draft.hasContent,

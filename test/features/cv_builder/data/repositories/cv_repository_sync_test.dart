@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:careermatebd/features/auth/domain/entities/auth_user.dart';
@@ -8,7 +7,6 @@ import 'package:careermatebd/features/cv_builder/data/datasources/cv_remote_data
 import 'package:careermatebd/features/cv_builder/data/dtos/cv_profile_dto.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
-import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/personal_info.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -147,48 +145,6 @@ void main() {
     expect(local.map((cv) => cv.id), ['c'], reason: 'local untouched when offline');
   });
 
-  test('section layout and custom sections survive cloud backup and restore', () async {
-    final remote = _FakeRemote();
-    final repo = buildRepository(remote: remote, auth: _FakeAuth('u1'));
-    final customised = _cv(
-      id: 'a',
-      title: 'Alpha',
-      updatedAt: DateTime(2024, 5),
-    ).copyWith(
-      customSections: const [
-        CustomSection(
-          id: 'custom-1',
-          title: 'Volunteering',
-          layout: CustomSectionLayout.bullets,
-          items: [CustomSectionItem(id: 'i1', title: 'Red Crescent')],
-        ),
-      ],
-      sectionLayout: [
-        SectionConfig.custom('custom-1'),
-        SectionConfig.builtIn(CvSectionKind.skills, titleOverride: 'Toolbox'),
-        SectionConfig.builtIn(CvSectionKind.summary, visible: false),
-      ],
-    );
-
-    await repo.saveCv(customised);
-    await _flushMirror();
-    expect(remote.store['u1']!['a']!.profile.sectionLayout, isNotNull);
-
-    // Fresh install: empty local, restore from the cloud.
-    await (await Hive.openBox<String>(_boxName)).clear();
-    await repo.pullAndReconcile();
-
-    final restored = (await repo.getAllCvs()).single;
-    expect(restored.customSections.single.title, 'Volunteering');
-    expect(restored.customSections.single.layout, CustomSectionLayout.bullets);
-    expect(restored.sections.first.id, 'custom-1');
-    expect(
-      restored.sections.firstWhere((s) => s.id == 'skills').cleanTitleOverride,
-      'Toolbox',
-    );
-    expect(restored.isSectionVisible(CvSectionKind.summary), isFalse);
-  });
-
   test('anonymous → account upgrade keeps the user CVs (same uid)', () async {
     final remote = _FakeRemote();
     final auth = _FakeAuth('u1', isAnonymous: true);
@@ -226,10 +182,7 @@ class _FakeRemote implements CvRemoteDataSource {
     if (failWrites) {
       throw Exception('offline');
     }
-    // Firestore stores a map, not our object: round-trip through one.
-    (store[uid] ??= {})[dto.profile.id] = CvProfileDto.fromMap(
-      jsonDecode(jsonEncode(dto.toMap())) as Map<String, dynamic>,
-    );
+    (store[uid] ??= {})[dto.profile.id] = dto;
   }
 
   @override

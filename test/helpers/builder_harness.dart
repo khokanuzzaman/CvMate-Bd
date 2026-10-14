@@ -3,6 +3,7 @@ import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_builder_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_preview_screen.dart';
+import 'package:careermatebd/features/cv_builder/presentation/screens/cv_sections_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_template_screen.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_record.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_service.dart';
@@ -79,6 +80,12 @@ Future<ProviderContainer> pumpBuilderApp(
       GoRoute(
         path: RouteNames.cvPreviewPath,
         builder: (context, state) => const CvPreviewScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.cvSectionsPath,
+        builder: (context, state) => CvSectionsScreen(
+          openedFromBuilder: state.uri.queryParameters['from'] == 'builder',
+        ),
       ),
       GoRoute(
         path: RouteNames.cvTemplatePath,

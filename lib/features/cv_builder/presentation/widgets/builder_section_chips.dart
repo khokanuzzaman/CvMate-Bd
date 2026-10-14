@@ -2,7 +2,8 @@ import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
-import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_flow.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
+import 'package:careermatebd/features/cv_builder/presentation/controllers/builder_pages.dart';
 import 'package:flutter/material.dart';
 
 /// Horizontally scrollable section chips; the current page is a filled
@@ -11,21 +12,26 @@ import 'package:flutter/material.dart';
 class BuilderSectionChips extends StatefulWidget {
   const BuilderSectionChips({
     super.key,
+    required this.profile,
+    required this.pages,
     required this.current,
     required this.onSelected,
   });
 
-  final CvBuilderPage current;
-  final ValueChanged<CvBuilderPage> onSelected;
+  final CvProfile profile;
+  final List<BuilderPageRef> pages;
+  final BuilderPageRef current;
+  final ValueChanged<BuilderPageRef> onSelected;
 
   @override
   State<BuilderSectionChips> createState() => _BuilderSectionChipsState();
 }
 
 class _BuilderSectionChipsState extends State<BuilderSectionChips> {
-  final Map<CvBuilderPage, GlobalKey> _keys = {
-    for (final page in CvBuilderFlow.pages) page: GlobalKey(),
-  };
+  final Map<BuilderPageRef, GlobalKey> _keys = {};
+
+  GlobalKey _keyFor(BuilderPageRef page) =>
+      _keys.putIfAbsent(page, GlobalKey.new);
 
   @override
   void initState() {
@@ -63,12 +69,12 @@ class _BuilderSectionChipsState extends State<BuilderSectionChips> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
       child: Row(
         children: [
-          for (final page in CvBuilderFlow.pages)
+          for (final page in widget.pages)
             Padding(
-              key: _keys[page],
+              key: _keyFor(page),
               padding: const EdgeInsets.only(right: AppSpacing.s8),
               child: _Chip(
-                label: page.chipLabel,
+                label: CvBuilderPages.chipLabel(widget.profile, page),
                 selected: page == widget.current,
                 onTap: () => widget.onSelected(page),
               ),

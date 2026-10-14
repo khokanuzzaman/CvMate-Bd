@@ -1,5 +1,7 @@
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/core/utils/validators.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_section.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/education_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/language_info.dart';
@@ -194,6 +196,17 @@ class CvBuilderValidators {
       }
     }
 
+    return null;
+  }
+
+  /// A custom section may be empty (it is simply left out of the CV), but an
+  /// item in it must have some text: fill it in or remove it.
+  static String? validateCustomSection(CustomSection section) {
+    for (final item in section.items) {
+      if (item.isEmpty) {
+        return AppStrings.customSectionFillOrRemove;
+      }
+    }
     return null;
   }
 
