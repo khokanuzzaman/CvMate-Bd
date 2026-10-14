@@ -25,9 +25,16 @@ through the service layer in lib/shared/services/ai/.
   (EnvConfig.openAiProxyUrl); never ship keys in the client.
 - Don't remove existing functionality unless told. Minimal, focused changes. Small files.
 - Null-safety correct; readable over clever.
-- Add/update tests under test/ mirroring the feature path. Run `flutter analyze` and
-  `flutter test` before finishing and report results.
 - UI strings should be localization-ready (i18n arrives in Phase 2).
+
+## Testing (keep it lean)
+- While working: run only the tests for the files you changed (flutter test <path>).
+- Before opening a PR: flutter analyze + full flutter test once.
+- New tests: 1-2 meaningful tests per new behaviour, plus one regression test per bug fixed.
+  No tests for trivial getters, copy text, or styling.
+- Simulator integration suite: run only the flows the PR touches, and only when UI flows
+  change. Full suite + stress runs only before a release or when I ask.
+- Don't rewrite or expand existing tests unless they break.
 
 ## Definition of done (every session)
 Compiles, `flutter analyze` clean (no new warnings), relevant tests pass, change is
