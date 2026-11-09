@@ -31,6 +31,7 @@ class SettingsLocalDataSource {
         languagePreference: AppLanguagePreferenceX.fromCode(
           map['languagePreference'] as String? ?? 'english',
         ),
+        aiConsent: map['aiConsent'] == true,
       );
     } catch (_) {
       return const AppPreferences.defaults();
@@ -44,6 +45,7 @@ class SettingsLocalDataSource {
       jsonEncode({
         'themeMode': _themeModeToCode(preferences.themeMode),
         'languagePreference': preferences.languagePreference.code,
+        'aiConsent': preferences.aiConsent,
       }),
     );
   }

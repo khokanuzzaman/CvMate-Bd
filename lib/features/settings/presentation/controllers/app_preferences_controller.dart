@@ -49,4 +49,22 @@ class AppPreferencesController extends AsyncNotifier<AppPreferences> {
       return 'Could not save language preference.';
     }
   }
+
+  /// Turns AI features on or off (the consent sheet and the Settings switch).
+  Future<String?> updateAiConsent({required bool enabled}) async {
+    final current = state.asData?.value ?? await future;
+    final next = current.copyWith(aiConsent: enabled);
+    state = AsyncData(next);
+
+    try {
+      final saved = await ref
+          .read(settingsRepositoryProvider)
+          .savePreferences(next);
+      state = AsyncData(saved);
+      return enabled ? 'AI features turned on.' : 'AI features turned off.';
+    } catch (_) {
+      state = AsyncData(current);
+      return 'Could not save the AI setting.';
+    }
+  }
 }

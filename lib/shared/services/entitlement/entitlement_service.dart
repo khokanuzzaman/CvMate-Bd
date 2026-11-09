@@ -6,17 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// One free export is a fair, honest trial — no dark patterns.
 const int kFreeExportLimit = 1;
 
-/// Starting AI credit balance for a non-Pro user.
-/// TODO(billing): move this budget server-side in Phase 2 (see EntitlementRecord).
-const int kInitialAiCredits = 20;
-
 final entitlementServiceProvider = Provider<EntitlementService>((ref) {
   return EntitlementService(ref.watch(entitlementStoreProvider));
 });
 
-/// The single source of truth for plan status and usage gates. Every gate in
-/// the app (exports, and later AI actions) MUST go through this service rather
-/// than checking plan state on its own, so the rules live in exactly one place.
+/// The single source of truth for plan status and the export gate. Every
+/// export MUST go through this service rather than checking plan state on its
+/// own. The AI quota lives on the AI server (see aiEntitlementProvider).
 class EntitlementService {
   EntitlementService(this._store, {this.freeExportLimit = kFreeExportLimit});
 
@@ -36,8 +32,6 @@ class EntitlementService {
     return (freeExportLimit - record.freeExportsUsed).clamp(0, freeExportLimit);
   }
 
-  Future<int> get aiCreditsLeft async => (await _record()).aiCreditsLeft;
-
   /// Whether the user may export right now: Pro is unlimited; everyone else gets
   /// [freeExportLimit] clean exports first.
   Future<bool> canExport() async {
@@ -53,20 +47,6 @@ class EntitlementService {
       return;
     }
     await _update(record.copyWith(freeExportsUsed: record.freeExportsUsed + 1));
-  }
-
-  /// Reserves one AI credit if available. Returns false when the non-Pro user is
-  /// out of credits. TODO(billing): enforce this server-side in Phase 2.
-  Future<bool> consumeAiCredit() async {
-    final record = await _record();
-    if (record.isPro) {
-      return true;
-    }
-    if (record.aiCreditsLeft <= 0) {
-      return false;
-    }
-    await _update(record.copyWith(aiCreditsLeft: record.aiCreditsLeft - 1));
-    return true;
   }
 
   /// Sets Pro status. In Phase 2 this is driven by verified billing state; for

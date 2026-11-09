@@ -472,69 +472,50 @@ class _PreferencesSection extends StatelessWidget {
   }
 }
 
-class _AiSettingsSection extends StatelessWidget {
+class _AiSettingsSection extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final aiMode = _resolveAiMode();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final aiConsent =
+        ref.watch(appPreferencesControllerProvider).asData?.value.aiConsent ??
+        false;
 
     return CustomCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ListTile(
+          SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.auto_awesome_outlined),
-            title: Text(aiMode.$1),
-            subtitle: Text(aiMode.$2),
+            secondary: const Icon(Icons.auto_awesome_outlined),
+            title: const Text(AppStrings.aiFeaturesSetting),
+            subtitle: Text(
+              aiConsent
+                  ? AppStrings.aiFeaturesOnNote
+                  : AppStrings.aiFeaturesOffNote,
+            ),
+            value: aiConsent,
+            onChanged: (enabled) async {
+              final message = await ref
+                  .read(appPreferencesControllerProvider.notifier)
+                  .updateAiConsent(enabled: enabled);
+              if (!context.mounted || message == null) {
+                return;
+              }
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(message)));
+            },
           ),
-          if (EnvConfig.isDirectOpenAiClientActive) ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.error.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                'Direct OpenAI mode is for local development only. Disable it before release.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
+          if (EnvConfig.isMockAiActive)
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.science_outlined),
+              title: Text('Mock AI'),
+              subtitle: Text(
+                'Debug build with USE_MOCK_AI=true: canned answers, no server.',
               ),
             ),
-          ],
         ],
       ),
-    );
-  }
-
-  (String, String) _resolveAiMode() {
-    if (EnvConfig.useFirebaseAi) {
-      return (
-        'Firebase Cloud Function AI',
-        'Server-side AI proxy mode. Flutter does not hold the production OpenAI key.',
-      );
-    }
-
-    if (EnvConfig.isDirectOpenAiClientActive) {
-      return (
-        'Direct OpenAI Local Dev',
-        'Temporary client-side development mode using local .env configuration.',
-      );
-    }
-
-    if (EnvConfig.isDirectOpenAiBlockedForRelease) {
-      return (
-        'Mock AI',
-        'Direct client AI is blocked in release-safe builds. Mock AI remains available.',
-      );
-    }
-
-    return (
-      'Mock AI',
-      'Mock AI responses are active for local-first development and UI testing.',
     );
   }
 }

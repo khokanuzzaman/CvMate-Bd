@@ -1,6 +1,7 @@
 import 'package:careermatebd/app/app.dart';
 import 'package:careermatebd/core/config/env_config.dart';
 import 'package:careermatebd/firebase_options.dart';
+import 'package:careermatebd/shared/services/entitlement/ai_entitlement_repository.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -10,17 +11,17 @@ import 'package:hive_flutter/hive_flutter.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Fail loudly rather than ship canned mock AI output in a release build.
+  // `.env` holds debug-only switches (USE_MOCK_AI), never keys.
+  await dotenv.load(fileName: '.env', isOptional: true);
+
+  // Fail loudly rather than ship canned mock AI output, or no AI server, in a
+  // release build.
   final aiProblem = EnvConfig.aiConfigurationProblem();
   if (aiProblem != null) {
     throw StateError(aiProblem);
   }
-
-  // Development-only dotenv loading for temporary direct OpenAI access.
-  // Remove this client-side key path before Play Store release and use the
-  // Firebase Cloud Functions AI proxy instead.
-  await dotenv.load(fileName: '.env', isOptional: true);
   await Hive.initFlutter();
+  await HiveAiEntitlementCache.openBox();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 

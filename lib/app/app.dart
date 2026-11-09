@@ -6,6 +6,7 @@ import 'package:careermatebd/core/widgets/text_scale_clamp.dart';
 import 'package:careermatebd/features/cv_builder/data/cv_cloud_sync.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
+import 'package:careermatebd/shared/services/entitlement/ai_entitlement_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +19,8 @@ class CareerMateApp extends ConsumerWidget {
     ref.watch(cvCloudSyncProvider);
     // Log app_open once for the analytics funnel.
     ref.watch(analyticsBootstrapProvider);
+    // Keep "AI actions left" current when the app returns to the foreground.
+    ref.watch(aiEntitlementResumeRefreshProvider);
 
     final router = ref.watch(appRouterProvider);
     final preferences = ref.watch(appPreferencesControllerProvider);
@@ -36,12 +39,12 @@ class CareerMateApp extends ConsumerWidget {
         final appChild = TextScaleClamp(
           child: child ?? const SizedBox.shrink(),
         );
-        if (!EnvConfig.isDirectOpenAiClientActive) {
+        if (!EnvConfig.isMockAiActive) {
           return appChild;
         }
 
         return Banner(
-          message: 'DEV OPENAI',
+          message: 'MOCK AI',
           location: BannerLocation.topEnd,
           color: Theme.of(context).colorScheme.error,
           textStyle:

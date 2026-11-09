@@ -11,8 +11,12 @@ import 'package:careermatebd/shared/models/ai/ai_models.dart';
 import 'package:careermatebd/shared/services/ai/ai_career_service.dart';
 import 'package:careermatebd/shared/services/ai/ai_prompt_builder.dart';
 import 'package:careermatebd/shared/services/ai/ai_response_parser.dart';
-import 'package:careermatebd/shared/services/ai/direct_openai_ai_career_service.dart';
-import 'package:careermatebd/shared/services/ai/firebase_ai_career_service.dart';
+import 'package:careermatebd/app/router/router_ai_interaction_port.dart';
+import 'package:careermatebd/shared/services/ai/ai_consent_guard.dart';
+import 'package:careermatebd/shared/services/ai/ai_server_client.dart';
+import 'package:careermatebd/shared/services/ai/guarded_ai_career_service.dart';
+import 'package:careermatebd/shared/services/ai/server_ai_career_service.dart';
+import 'package:careermatebd/shared/services/entitlement/ai_entitlement_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final aiPromptBuilderProvider = Provider<AiPromptBuilder>((ref) {
@@ -30,24 +34,44 @@ final mockAiCareerServiceProvider = Provider<MockAiCareerService>((ref) {
   );
 });
 
+final serverAiCareerServiceProvider = Provider<ServerAiCareerService>((ref) {
+  return ServerAiCareerService(
+    client: ref.watch(aiServerClientProvider),
+    responseParser: ref.watch(aiResponseParserProvider),
+    onRemainingActions: (remaining) => unawaited(
+      ref.read(aiEntitlementProvider.notifier).applyRemaining(remaining),
+    ),
+  );
+});
+
+/// The AI service every feature uses: the AI server behind the one consent
+/// and quota guard (always in release), or the mock in debug builds with
+/// `USE_MOCK_AI=true`.
 final aiCareerServiceProvider = Provider<AiCareerService>((ref) {
   // Defense in depth for entry points other than `main()`: never hand a
-  // release build the mock.
+  // release build the mock or a non-HTTPS server.
   final problem = EnvConfig.aiConfigurationProblem();
   if (problem != null) {
     throw StateError(problem);
   }
 
-  if (EnvConfig.useFirebaseAi) {
-    return ref.watch(firebaseAiCareerServiceProvider);
+  if (EnvConfig.isMockAiActive) {
+    // Canned answers on the device: nothing is sent, so no consent needed.
+    return ref.watch(mockAiCareerServiceProvider);
   }
 
-  if (EnvConfig.shouldUseDirectOpenAiService) {
-    return ref.watch(directOpenAiCareerServiceProvider);
-  }
-
-  return ref.watch(mockAiCareerServiceProvider);
+  return guardedServerAiCareerService(ref);
 });
+
+/// The AI server service behind the consent and quota guard (what release
+/// builds use). Public so integration tests can pick it on a mock-AI build.
+AiCareerService guardedServerAiCareerService(Ref ref) {
+  return GuardedAiCareerService(
+    inner: ref.watch(serverAiCareerServiceProvider),
+    consentGuard: ref.watch(aiConsentGuardProvider),
+    port: ref.watch(aiInteractionPortProvider),
+  );
+}
 
 class MockAiCareerService implements AiCareerService {
   const MockAiCareerService({

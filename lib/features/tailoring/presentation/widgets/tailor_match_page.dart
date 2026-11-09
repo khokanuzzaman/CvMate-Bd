@@ -8,6 +8,7 @@ import 'package:careermatebd/core/widgets/app_card.dart';
 import 'package:careermatebd/core/widgets/app_chip.dart';
 import 'package:careermatebd/core/widgets/score_ring.dart';
 import 'package:careermatebd/features/ats_checker/domain/entities/ats_job_match_report.dart';
+import 'package:careermatebd/features/subscription/presentation/widgets/ai_actions_left_label.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_controller.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_display.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_flow_controller.dart';
@@ -57,14 +58,21 @@ class TailorMatchPage extends ConsumerWidget {
           AppSpacing.screen,
           AppSpacing.s16,
         ),
-        child: PrimaryButton(
-          label: tailoring
-              ? AppStrings.tailorTailoring
-              : AppStrings.tailorTailorMyCv,
-          trailingIcon: Icons.arrow_forward_rounded,
-          onPressed: report == null || state.isBusy
-              ? null
-              : () => ref.read(tailoringFlowProvider.notifier).tailor(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AiActionsLeftLabel(center: true),
+            const SizedBox(height: AppSpacing.s8),
+            PrimaryButton(
+              label: tailoring
+                  ? AppStrings.tailorTailoring
+                  : AppStrings.tailorTailorMyCv,
+              trailingIcon: Icons.arrow_forward_rounded,
+              onPressed: report == null || state.isBusy
+                  ? null
+                  : () => ref.read(tailoringFlowProvider.notifier).tailor(),
+            ),
+          ],
         ),
       ),
     );

@@ -2,61 +2,53 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 abstract final class EnvConfig {
-  static const String openAiProxyUrl = String.fromEnvironment(
-    'OPENAI_PROXY_URL',
-    defaultValue: '',
+  /// The AI server (repo `cvmate-api`). Every AI call and the AI quota go
+  /// through it; the app never holds a model API key.
+  static const String aiApiBaseUrl = String.fromEnvironment(
+    'AI_API_BASE_URL',
+    defaultValue: 'https://api.khokan.me',
   );
 
-  static const bool useFirebaseAi = bool.fromEnvironment(
-    'USE_FIREBASE_AI',
-    defaultValue: false,
-  );
+  /// `X-App-Id` the AI server uses to pick this app's Firebase project,
+  /// quota rules and provider key.
+  static const String aiAppId = 'cvmate';
 
-  static const String firebaseFunctionsRegion = String.fromEnvironment(
-    'FIREBASE_FUNCTIONS_REGION',
-    defaultValue: 'us-central1',
-  );
-
-  static String get openAiApiKey =>
-      _readEnvValue('OPENAI_API_KEY', fallback: '');
-
-  static String get directOpenAiModel {
-    final value = _readEnvValue('OPENAI_MODEL', fallback: 'gpt-4o-mini');
-    return value.isEmpty ? 'gpt-4o-mini' : value;
-  }
-
+  /// Debug builds only: `USE_MOCK_AI=true` in `.env` answers every AI feature
+  /// with canned output instead of calling the server (the `.env.example`
+  /// default; also when the key is missing, e.g. in unit and widget tests).
+  /// Set it to false to use the AI server in a debug build.
   static bool get useMockAi => _readBool('USE_MOCK_AI', defaultValue: true);
-  static bool get wantsDirectOpenAi => !useMockAi;
-  static bool get canUseDirectOpenAiInThisBuild => !kReleaseMode;
-  static bool get shouldUseDirectOpenAiService =>
-      wantsDirectOpenAi && canUseDirectOpenAiInThisBuild;
-  static bool get isDirectOpenAiClientActive =>
-      shouldUseDirectOpenAiService && hasOpenAiApiKey;
-  static bool get isDirectOpenAiBlockedForRelease =>
-      wantsDirectOpenAi && !canUseDirectOpenAiInThisBuild;
+
+  /// Whether this build answers AI features with the mock. Never in release:
+  /// a release build always uses the AI server.
+  static bool get isMockAiActive => !kReleaseMode && useMockAi;
 
   /// Why this build must not start, or null when its AI setup is acceptable.
   ///
-  /// With the defaults (`USE_FIREBASE_AI=false`, `USE_MOCK_AI=true`) the app
-  /// answers every AI feature with canned mock output. That is fine for
-  /// development and tests, but a **release** build that does it would ship
-  /// fake tailoring, cover letters and interview questions to users. So a
-  /// release build must be built with `--dart-define=USE_FIREBASE_AI=true`.
-  /// (Direct OpenAI calls are debug-only, see [canUseDirectOpenAiInThisBuild].)
+  /// A **release** build must call the real AI server over HTTPS and must
+  /// never ship the canned mock answers (fake tailoring, cover letters and
+  /// interview questions) to users.
   static String? aiConfigurationProblem({
     bool isRelease = kReleaseMode,
-    bool firebaseAi = useFirebaseAi,
+    String baseUrl = aiApiBaseUrl,
+    bool? mockAi,
   }) {
-    if (isRelease && !firebaseAi) {
-      return 'This release build would use the mock AI. Build it with '
-          '--dart-define=USE_FIREBASE_AI=true so AI features go through the '
-          'Firebase proxy, or ship without AI features.';
+    if (!isRelease) {
+      return null;
+    }
+    // Only an explicit USE_MOCK_AI=true is refused; a missing key is fine
+    // because release never uses the mock.
+    if (mockAi ?? _readBool('USE_MOCK_AI', defaultValue: false)) {
+      return 'This release build would use the mock AI. Remove '
+          'USE_MOCK_AI=true from .env so AI features use the AI server.';
+    }
+    final uri = Uri.tryParse(baseUrl.trim());
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      return 'This release build has no HTTPS AI server. Build it with '
+          '--dart-define=AI_API_BASE_URL=https://api.khokan.me.';
     }
     return null;
   }
-
-  static bool get hasOpenAiApiKey => openAiApiKey.isNotEmpty;
-  static bool get hasOpenAiProxy => openAiProxyUrl.isNotEmpty;
 
   static bool _readBool(String key, {required bool defaultValue}) {
     final rawValue = _readEnvValue(key, fallback: '').toLowerCase();
