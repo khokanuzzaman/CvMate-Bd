@@ -91,7 +91,9 @@ Future<void> _bootQa() async {
     );
   }
   await _assertEmulatorReachable();
-  await dotenv.load(fileName: '.env', isOptional: true);
+  // QA runs use the mock AI whatever the local .env says; a flow that needs
+  // the AI server path overrides aiCareerServiceProvider (see tailoring flow).
+  dotenv.loadFromString(envString: 'USE_MOCK_AI=true');
   await Hive.initFlutter();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAuth.instance.useAuthEmulator(

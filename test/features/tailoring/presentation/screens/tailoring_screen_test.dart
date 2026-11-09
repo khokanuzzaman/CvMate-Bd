@@ -28,7 +28,6 @@ const _jobPost =
 const _usedFreeExport = EntitlementRecord(
   isPro: false,
   freeExportsUsed: 1,
-  aiCreditsLeft: 20,
 );
 
 Future<CoreFlowApp> _open(
