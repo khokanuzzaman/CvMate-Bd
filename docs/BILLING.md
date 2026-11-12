@@ -31,7 +31,7 @@ the signed-in uid. Buying needs a Firebase user (guest accounts count).
 | `lib/features/subscription/presentation/controllers/paywall_controller.dart` | load offering, buy, restore, wait for the server |
 | `lib/features/subscription/presentation/screens/paywall_screen.dart` | store prices, trial, Restore, Terms / Privacy, auto-renew terms |
 | `lib/shared/services/entitlement/entitlement_service.dart` | the single export gate |
-| `lib/app/constants/app_links.dart` | Terms (Apple standard EULA by default) and Privacy Policy URLs |
+| `lib/app/constants/app_links.dart` | Terms and Privacy Policy URLs (default https://api.khokan.me/cvmate/terms and /privacy, served by cvmate-api) |
 
 ## Export gate
 
@@ -56,9 +56,10 @@ hand, see `cvmate-api/DEPLOY.md`).
 # sandbox purchases on a device or simulator with a StoreKit sandbox account
 flutter run --dart-define=REVENUECAT_IOS_API_KEY=appl_xxx   # USE_FAKE_BILLING=false in .env
 # release
-flutter build ipa --dart-define=REVENUECAT_IOS_API_KEY=appl_xxx \
-  --dart-define=PRIVACY_POLICY_URL=https://…
+flutter build ipa --dart-define=REVENUECAT_IOS_API_KEY=appl_xxx
 ```
 
-Until `PRIVACY_POLICY_URL` is set, the paywall's Privacy link opens the
-in-app privacy text (a launch blocker: publish the policy first).
+The paywall's Terms and Privacy links default to
+https://api.khokan.me/cvmate/terms and https://api.khokan.me/cvmate/privacy
+(cvmate-api serves them); `--dart-define=TERMS_URL=…` /
+`PRIVACY_POLICY_URL=…` override them. Deploy those pages before release.
