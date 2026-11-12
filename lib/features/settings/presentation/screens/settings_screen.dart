@@ -6,6 +6,9 @@ import 'package:careermatebd/core/widgets/custom_app_bar.dart';
 import 'package:careermatebd/core/widgets/custom_button.dart';
 import 'package:careermatebd/core/widgets/custom_card.dart';
 import 'package:careermatebd/core/widgets/custom_error_view.dart';
+import 'package:careermatebd/features/account_deletion/data/account_deletion_service.dart';
+import 'package:careermatebd/features/account_deletion/presentation/controllers/account_deletion_controller.dart';
+import 'package:careermatebd/features/account_deletion/presentation/widgets/delete_account_dialogs.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/forgot_password_controller.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/logout_controller.dart';
@@ -26,6 +29,7 @@ class SettingsScreen extends ConsumerWidget {
     final overview = ref.watch(settingsOverviewControllerProvider);
     final logoutState = ref.watch(logoutControllerProvider);
     final forgotPasswordState = ref.watch(forgotPasswordControllerProvider);
+    final deletionState = ref.watch(accountDeletionControllerProvider);
 
     return Scaffold(
       appBar: const CustomAppBar(title: AppStrings.settings),
@@ -66,6 +70,31 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(height: 12),
                     _InlineMessage(
                       message: forgotPasswordState.errorMessage!,
+                      isError: true,
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                      onPressed: deletionState.isDeleting
+                          ? null
+                          : () => _deleteAccount(context, ref),
+                      icon: const Icon(Icons.delete_forever_outlined),
+                      label: Text(
+                        deletionState.isDeleting
+                            ? AppStrings.deleteAccountDeleting
+                            : AppStrings.deleteAccount,
+                      ),
+                    ),
+                  ),
+                  if (deletionState.errorMessage != null) ...[
+                    const SizedBox(height: 8),
+                    _InlineMessage(
+                      message: deletionState.errorMessage!,
                       isError: true,
                     ),
                   ],
@@ -168,6 +197,41 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Confirm → delete (asking for the password if Firebase needs a recent
+  /// sign-in) → back to onboarding. The steps live in
+  /// [AccountDeletionController]; this only drives the dialogs.
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    final hasAccount = ref.read(currentAuthUserProvider) != null;
+    if (!await confirmAccountDeletion(context, hasAccount: hasAccount) ||
+        !context.mounted) {
+      return;
+    }
+    final controller = ref.read(accountDeletionControllerProvider.notifier);
+    var outcome = await controller.delete();
+    if (outcome == AccountDeletionOutcome.needsPassword && context.mounted) {
+      final password = await askPasswordForDeletion(context);
+      if (password == null || !context.mounted) {
+        return;
+      }
+      outcome = await controller.delete(password: password);
+    }
+    if (outcome != AccountDeletionOutcome.deleted || !context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            hasAccount
+                ? AppStrings.deleteAccountDone
+                : AppStrings.deleteLocalDataDone,
+          ),
+        ),
+      );
+    context.go(RouteNames.onboardingPath);
   }
 
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {

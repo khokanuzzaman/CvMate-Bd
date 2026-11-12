@@ -178,6 +178,9 @@ class _FakeRemote implements CvRemoteDataSource {
   }
 
   @override
+  Future<void> deleteAllForUser(String uid) async => store.remove(uid);
+
+  @override
   Future<void> upsert(String uid, CvProfileDto dto) async {
     if (failWrites) {
       throw Exception('offline');

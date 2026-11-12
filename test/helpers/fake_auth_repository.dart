@@ -75,6 +75,43 @@ class FakeAuthRepository implements AuthRepository {
     return const Success<void>(null);
   }
 
+  /// What [needsRecentLogin] answers (Firebase's "sign in again" rule).
+  bool recentLoginRequired = false;
+
+  /// The password [reauthenticateWithPassword] accepts.
+  String acceptedPassword = 'secret12';
+  final List<String> reauthPasswords = [];
+  int deleteCount = 0;
+
+  @override
+  bool get needsRecentLogin =>
+      recentLoginRequired && !(_currentUser?.isAnonymous ?? true);
+
+  @override
+  Future<Result<void>> reauthenticateWithPassword(String password) async {
+    reauthPasswords.add(password);
+    if (password != acceptedPassword) {
+      return const FailureResult<void>(
+        Failure('Incorrect password. Please try again.', code: 'wrong-password'),
+      );
+    }
+    recentLoginRequired = false;
+    return const Success<void>(null);
+  }
+
+  @override
+  Future<Result<void>> deleteCurrentUser() async {
+    if (recentLoginRequired) {
+      return const FailureResult<void>(
+        Failure('Sign in again.', code: 'requires-recent-login'),
+      );
+    }
+    deleteCount++;
+    _currentUser = null;
+    _controller.add(null);
+    return const Success<void>(null);
+  }
+
   Future<void> dispose() => _controller.close();
 
   Result<AuthUser> _authenticate({

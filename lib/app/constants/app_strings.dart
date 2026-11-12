@@ -680,6 +680,34 @@ abstract final class AppStrings {
       'One-time payment of $price, charged to your $account. Unlocks export '
       'of one CV and adds 5 AI actions. No subscription, nothing renews.';
 
+  // Account deletion (Settings)
+  static const String deleteAccount = 'Delete account';
+  static const String deleteAccountDeleting = 'Deleting…';
+  static const String deleteAccountTitle = 'Delete your account?';
+  static const String deleteAccountBody =
+      'This permanently deletes your CvMate account: your CV backup, your '
+      'plan and AI history on our server, and all CvMate data on this '
+      "device. It can't be undone.";
+  static String deleteAccountSubscriptionNote({required bool apple}) =>
+      'Deleting your account does not cancel a subscription. If you have '
+      'CvMate Pro, cancel it first in your '
+      '${apple ? 'Apple ID' : 'Google Play'} settings.';
+  static const String deleteAccountManageSubscriptions =
+      'Manage subscriptions';
+  static const String deleteLocalDataTitle = 'Delete CvMate data?';
+  static const String deleteLocalDataBody =
+      "You're not signed in, so there's no account to delete. This removes "
+      "all CvMate data from this device. It can't be undone.";
+  static const String deleteAccountConfirm = 'Delete';
+  static const String deleteAccountCancel = 'Cancel';
+  static const String deleteAccountPasswordTitle = 'Confirm your password';
+  static const String deleteAccountPasswordBody =
+      'For your security, enter your password to delete your account.';
+  static const String deleteAccountPasswordLabel = 'Password';
+  static const String deleteAccountDone = 'Your account was deleted.';
+  static const String deleteLocalDataDone = 'CvMate data was removed from '
+      'this device.';
+
   // ATS check
   static const String atsTitle = 'ATS check';
   static const String atsCheckedNow = 'Checked just now';

@@ -82,6 +82,9 @@ class AiEntitlementRepository {
 abstract class AiEntitlementCache {
   Future<AiEntitlement?> read(String uid);
   Future<void> write(String uid, AiEntitlement entitlement);
+
+  /// Forgets every cached value (account deletion).
+  Future<void> clear();
 }
 
 /// Hive cache of the last entitlement per uid. The box is opened in `main()`
@@ -109,6 +112,11 @@ class HiveAiEntitlementCache implements AiEntitlementCache {
   @override
   Future<void> write(String uid, AiEntitlement entitlement) async {
     await _box?.put(uid, jsonEncode(entitlement.toJson()));
+  }
+
+  @override
+  Future<void> clear() async {
+    await _box?.clear();
   }
 
   Box<String>? get _box =>

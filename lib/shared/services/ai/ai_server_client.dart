@@ -92,6 +92,18 @@ class AiServerClient {
     );
   }
 
+  /// DELETE with an empty JSON object (the server rejects an empty body sent
+  /// as JSON).
+  Future<Map<String, dynamic>> deleteJson(String path) {
+    return _send(
+      (options) => dio.delete<Object?>(
+        path,
+        data: const <String, dynamic>{},
+        options: options,
+      ),
+    );
+  }
+
   Future<Map<String, dynamic>> getJson(String path) {
     return _send((options) => dio.get<Object?>(path, options: options));
   }

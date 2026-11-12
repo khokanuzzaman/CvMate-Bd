@@ -13,4 +13,12 @@ abstract final class AppLinks {
     'PRIVACY_POLICY_URL',
     defaultValue: 'https://api.khokan.me/cvmate/privacy',
   );
+
+  /// Where an Apple ID's subscriptions are managed or cancelled.
+  static const String appleSubscriptions =
+      'https://apps.apple.com/account/subscriptions';
+
+  /// Where a Google Play account's subscriptions are managed or cancelled.
+  static const String googlePlaySubscriptions =
+      'https://play.google.com/store/account/subscriptions';
 }

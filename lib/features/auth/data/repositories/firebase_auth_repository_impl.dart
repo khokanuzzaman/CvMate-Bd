@@ -169,6 +169,66 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  /// Firebase's window for sensitive actions after a sign-in is about five
+  /// minutes; asking a little earlier avoids a failed delete.
+  static const Duration _recentLoginWindow = Duration(minutes: 4);
+
+  @override
+  bool get needsRecentLogin {
+    final user = _firebaseAuth.currentUser;
+    if (user == null || user.isAnonymous) {
+      return false;
+    }
+    final lastSignIn = user.metadata.lastSignInTime;
+    return lastSignIn == null ||
+        DateTime.now().difference(lastSignIn) > _recentLoginWindow;
+  }
+
+  @override
+  Future<Result<void>> reauthenticateWithPassword(String password) async {
+    final user = _firebaseAuth.currentUser;
+    final email = user?.email;
+    if (user == null || email == null || email.isEmpty) {
+      return const FailureResult<void>(
+        Failure('Please sign in again, then try once more.'),
+      );
+    }
+    try {
+      await user.reauthenticateWithCredential(
+        fb_auth.EmailAuthProvider.credential(email: email, password: password),
+      );
+      return const Success<void>(null);
+    } on fb_auth.FirebaseAuthException catch (error) {
+      return FailureResult<void>(
+        Failure(_messageForException(error), code: error.code),
+      );
+    } catch (_) {
+      return const FailureResult<void>(
+        Failure('Something went wrong. Please try again.'),
+      );
+    }
+  }
+
+  @override
+  Future<Result<void>> deleteCurrentUser() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) {
+      return const Success<void>(null);
+    }
+    try {
+      await user.delete();
+      return const Success<void>(null);
+    } on fb_auth.FirebaseAuthException catch (error) {
+      return FailureResult<void>(
+        Failure(_messageForException(error), code: error.code),
+      );
+    } catch (_) {
+      return const FailureResult<void>(
+        Failure('Could not delete your account right now. Please try again.'),
+      );
+    }
+  }
+
   AuthUser? _mapUser(fb_auth.User? user) {
     if (user == null) {
       return null;
@@ -200,6 +260,8 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       'weak-password' => 'Password must be at least 6 characters.',
       'too-many-requests' =>
         'Too many attempts detected. Please try again later.',
+      'requires-recent-login' =>
+        'For your security, please enter your password again.',
       'network-request-failed' =>
         'Network error. Please check your internet connection.',
       _ => error.message ?? 'Authentication failed. Please try again.',
