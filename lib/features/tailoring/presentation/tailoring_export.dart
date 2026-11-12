@@ -10,7 +10,7 @@ const String _exportSource = 'tailoring';
 
 /// "Save & export": saves the tailored CV as a new copy (unless this exact
 /// result was already saved), then shares the PDF through the single export
-/// gate (first export free, then the paywall).
+/// gate (Pro, an unlocked CV or the one free export; otherwise the paywall).
 Future<void> saveAndExportTailored(WidgetRef ref, BuildContext context) async {
   final notifier = ref.read(tailoringControllerProvider.notifier);
 
@@ -45,6 +45,7 @@ Future<void> saveAndExportTailored(WidgetRef ref, BuildContext context) async {
     context: context,
     source: _exportSource,
     exportType: 'share',
+    cvId: _exportedCvId(ref, profile.id),
     export: () async {
       final bytes = await pdfService.generateCvPdf(profile: profile);
       await Printing.sharePdf(bytes: bytes, filename: fileName);
@@ -68,6 +69,7 @@ Future<void> printTailored(WidgetRef ref, BuildContext context) async {
     context: context,
     source: _exportSource,
     exportType: 'print',
+    cvId: _exportedCvId(ref, profile.id),
     export: () => Printing.layoutPdf(
       name: fileName,
       onLayout: (format) =>
@@ -75,3 +77,8 @@ Future<void> printTailored(WidgetRef ref, BuildContext context) async {
     ),
   );
 }
+
+/// The tailored copy once it is saved (its own CV, its own unlock), else the
+/// CV being tailored.
+String _exportedCvId(WidgetRef ref, String fallback) =>
+    ref.read(tailoringControllerProvider).savedCvId ?? fallback;

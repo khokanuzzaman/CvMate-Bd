@@ -43,9 +43,7 @@ void main() {
   ) async {
     await _pumpOnSe(tester);
 
-    final cta = tester.getRect(
-      find.widgetWithText(PrimaryButton, AppStrings.paywallCta),
-    );
+    final cta = tester.getRect(find.byType(PrimaryButton));
     final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
 
     // Monthly and Yearly cards, whole, above the pinned button.
@@ -75,10 +73,7 @@ void main() {
   ) async {
     await _pumpOnSe(tester);
 
-    for (final text in [
-      AppStrings.paywallNotAvailable,
-      AppStrings.paywallRestore,
-    ]) {
+    for (final text in [AppStrings.paywallTerms, AppStrings.paywallRestore]) {
       expect(
         find.ancestor(
           of: find.textContaining(text, findRichText: true),
@@ -90,7 +85,7 @@ void main() {
     }
     expect(
       find.ancestor(
-        of: find.widgetWithText(PrimaryButton, AppStrings.paywallCta),
+        of: find.byType(PrimaryButton),
         matching: find.byType(SingleChildScrollView),
       ),
       findsNothing,

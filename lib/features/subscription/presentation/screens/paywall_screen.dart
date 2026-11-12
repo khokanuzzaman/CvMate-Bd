@@ -1,5 +1,4 @@
 import 'package:careermatebd/app/constants/app_strings.dart';
-import 'package:careermatebd/app/constants/pricing_constants.dart';
 import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
@@ -7,19 +6,24 @@ import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/app_card.dart';
-import 'package:careermatebd/features/subscription/presentation/widgets/paywall_plan_card.dart';
+import 'package:careermatebd/features/subscription/presentation/controllers/paywall_controller.dart';
+import 'package:careermatebd/features/subscription/presentation/widgets/paywall_legal.dart';
+import 'package:careermatebd/features/subscription/presentation/widgets/paywall_plans.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
+import 'package:careermatebd/shared/services/billing/billing_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// The fair export gate, shown after a user's free export is used.
+/// The paywall: Pro monthly / yearly and the one-CV unlock, with prices from
+/// the store (RevenueCat offering), the free trial when this user is
+/// eligible, Restore, Terms / Privacy links and the auto-renew terms of the
+/// selected plan. Nothing is pre-selected; no countdowns or fake urgency.
 ///
-/// Billing is not wired yet, so the plans are display-only and the call to
-/// action stays disabled: no purchase is possible and the screen says so. No
-/// countdowns, no fake urgency, no pre-selected auto-renew. Prices come from
-/// [PricingConstants].
+/// After a purchase it waits for the AI server to report the new plan (the
+/// only source of truth for Pro) and then closes with `true`, so an export
+/// that opened it can continue.
 class PaywallScreen extends ConsumerStatefulWidget {
   const PaywallScreen({super.key, this.source});
 
@@ -44,9 +48,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     });
   }
 
-  void _close() {
+  void _close({bool purchased = false}) {
     if (context.canPop()) {
-      context.pop();
+      context.pop(purchased);
     } else {
       context.go(RouteNames.homePath);
     }
@@ -54,6 +58,22 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(paywallControllerProvider, (previous, next) {
+      if (next.phase == PaywallPhase.done &&
+          previous?.phase != PaywallPhase.done) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(next.notice ?? AppStrings.paywallPurchaseDone),
+            ),
+          );
+        _close(purchased: true);
+      }
+    });
+    final state = ref.watch(paywallControllerProvider);
+    final controller = ref.read(paywallControllerProvider.notifier);
+    final canSell = state.offering.hasValue && !state.isBusy;
     // On short screens (iPhone SE) the header and cards tighten up so the
     // prices are visible without scrolling; only the button stays pinned.
     final compact = MediaQuery.sizeOf(context).height < _compactHeight;
@@ -71,7 +91,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   AppSpacing.screen,
                   0,
                 ),
-                child: _CloseButton(onTap: _close),
+                child: _CloseButton(onTap: state.isBusy ? null : _close),
               ),
             ),
             Expanded(
@@ -87,13 +107,24 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   children: [
                     _Header(compact: compact),
                     _Benefits(compact: compact),
-                    _Plans(compact: compact),
-                    const _Notes(),
+                    PaywallPlans(
+                      offering: state.offering,
+                      selected: state.selected,
+                      onSelect: canSell ? controller.select : null,
+                      onRetry: controller.load,
+                      compact: compact,
+                    ),
+                    PaywallLegal(
+                      selected: state.selectedPackage,
+                      notice: state.notice,
+                      noticeIsError: state.noticeIsError,
+                      onRestore: canSell ? controller.restore : null,
+                    ),
                   ],
                 ),
               ),
             ),
-            const _CtaBar(),
+            _CtaBar(state: state, onBuy: controller.buy),
           ],
         ),
       ),
@@ -107,7 +138,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
 class _CloseButton extends StatelessWidget {
   const _CloseButton({required this.onTap});
 
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -256,169 +287,46 @@ class _Benefits extends StatelessWidget {
   }
 }
 
-class _Plans extends StatelessWidget {
-  const _Plans({required this.compact});
+/// The only pinned element: the call to action for the selected option.
+class _CtaBar extends ConsumerWidget {
+  const _CtaBar({required this.state, required this.onBuy});
 
-  final bool compact;
+  final PaywallState state;
+  final VoidCallback onBuy;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final signedIn = ref.watch(purchaserUidProvider) != null;
+    final package = state.selectedPackage;
+    final (label, onPressed) = switch (state.phase) {
+      PaywallPhase.purchasing ||
+      PaywallPhase.restoring => (AppStrings.paywallCtaProcessing, null),
+      PaywallPhase.activating => (AppStrings.paywallCtaActivating, null),
+      _ when !state.offering.hasValue => (AppStrings.paywallChoosePlan, null),
+      _ when !signedIn => (
+        AppStrings.paywallCtaSignIn,
+        () => context.push(RouteNames.loginPath),
+      ),
+      _ when package == null => (AppStrings.paywallChoosePlan, null),
+      _ => (_buyLabel(package), onBuy),
+    };
     return Padding(
-      padding: EdgeInsets.only(top: compact ? AppSpacing.s18 : AppSpacing.s20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: PaywallPlanCard(
-                  name: AppStrings.paywallMonthly,
-                  price: PricingConstants.format(PricingConstants.monthlyPrice),
-                  unit: AppStrings.paywallPerMonth,
-                  compact: compact,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.s12),
-              Expanded(
-                child: PaywallPlanCard(
-                  name: AppStrings.paywallYearly,
-                  price: PricingConstants.format(PricingConstants.yearlyPrice),
-                  unit: AppStrings.paywallPerYear,
-                  highlighted: true,
-                  compact: compact,
-                  badge: AppStrings.paywallSave(
-                    PricingConstants.yearlySavingsPercent,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: compact ? AppSpacing.s10 : AppSpacing.s14),
-          _OneTimeCard(compact: compact),
-        ],
-      ),
-    );
-  }
-}
-
-class _OneTimeCard extends StatelessWidget {
-  const _OneTimeCard({required this.compact});
-
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final ink = AppTextStyles.body.copyWith(
-      color: AppColors.accentInk,
-      fontWeight: FontWeight.w700,
-    );
-    return Semantics(
-      container: true,
-      label:
-          '${AppStrings.paywallOneTimeTitle}, '
-          '${AppStrings.paywallOneTimeSubtitle}, '
-          '${PricingConstants.format(PricingConstants.singleCvPrice)}',
-      child: ExcludeSemantics(
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.s16,
-            vertical: compact ? AppSpacing.s10 : AppSpacing.s14,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.accentSoft.withValues(alpha: 0.35),
-            borderRadius: AppRadii.cardRadius,
-            border: Border.all(color: AppColors.accentSoft),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(AppStrings.paywallOneTimeTitle, style: ink),
-                    Text(
-                      AppStrings.paywallOneTimeSubtitle,
-                      style: AppTextStyles.bodySm.copyWith(
-                        color: AppColors.accentInk,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.s12),
-              Text(
-                PricingConstants.format(PricingConstants.singleCvPrice),
-                style: AppTextStyles.title.copyWith(color: AppColors.accentInk),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// What the screen is honest about, directly under the prices: nothing can be
-/// bought yet, and the footer line. Scrolls with the content.
-class _Notes extends StatelessWidget {
-  const _Notes();
-
-  @override
-  Widget build(BuildContext context) {
-    final small = AppTextStyles.bodySm.copyWith(color: AppColors.muted);
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.s14),
-      child: Column(
-        children: [
-          Text(
-            AppStrings.paywallNotAvailable,
-            textAlign: TextAlign.center,
-            style: small.copyWith(color: AppColors.accentInk),
-          ),
-          const SizedBox(height: AppSpacing.s10),
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text('${AppStrings.paywallFooter} · ', style: small),
-              Semantics(
-                button: true,
-                enabled: false,
-                label: AppStrings.paywallRestore,
-                child: ExcludeSemantics(
-                  child: Text(
-                    AppStrings.paywallRestore,
-                    style: small.copyWith(
-                      color: AppColors.muted2,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The only pinned element: the call to action.
-class _CtaBar extends StatelessWidget {
-  const _CtaBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: const EdgeInsets.fromLTRB(
         AppSpacing.screen,
         AppSpacing.s8,
         AppSpacing.screen,
         AppSpacing.s12,
       ),
-      // Deliberately disabled: no purchase is possible yet, and we will not
-      // pretend otherwise.
-      child: PrimaryButton(label: AppStrings.paywallCta, onPressed: null),
+      child: PrimaryButton(label: label, onPressed: onPressed),
     );
+  }
+
+  static String _buyLabel(BillingPackage package) {
+    if (!package.isSubscription) {
+      return AppStrings.paywallCtaBuy(package.priceLabel);
+    }
+    return package.freeTrial != null
+        ? AppStrings.paywallCtaTrial
+        : AppStrings.paywallCtaSubscribe;
   }
 }

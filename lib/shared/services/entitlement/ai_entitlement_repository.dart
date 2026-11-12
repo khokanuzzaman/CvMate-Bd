@@ -25,6 +25,7 @@ class AiEntitlementRepository {
   const AiEntitlementRepository({required this.client, required this.cache});
 
   static const String entitlementPath = '/v1/me/entitlement';
+  static const String exportUnlocksPath = '/v1/me/cv-export-unlocks';
 
   final AiServerClient client;
   final AiEntitlementCache cache;
@@ -47,6 +48,34 @@ class AiEntitlementRepository {
     }
     await cache.write(uid, entitlement);
     return entitlement;
+  }
+
+  /// Binds one purchased export unlock to [cvId] on the server (idempotent
+  /// per CV) and returns [current] with the server's unlock counts, or null
+  /// when no unlock is left. Throws [AppException] for other failures.
+  Future<AiEntitlement?> claimExportUnlock(
+    String uid,
+    String cvId,
+    AiEntitlement current,
+  ) async {
+    final Map<String, dynamic> body;
+    try {
+      body = await client.postJson(exportUnlocksPath, {'cvId': cvId});
+    } on AppException catch (error) {
+      if (error.code == AiFailureCodes.quotaExceeded) {
+        return null; // 402 no_export_unlock
+      }
+      rethrow;
+    }
+    final updated = current.withUnlocks(
+      available: AiEntitlement.unlockCount(body['cvExportUnlocks']),
+      unlockedCvIds: AiEntitlement.cvIds(body['unlockedCvIds']),
+    );
+    if (!updated.hasUnlocked(cvId)) {
+      return null;
+    }
+    await cache.write(uid, updated);
+    return updated;
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:careermatebd/core/config/env_config.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -41,6 +42,48 @@ void main() {
     test('debug and profile builds may use the mock', () {
       expect(
         EnvConfig.aiConfigurationProblem(isRelease: false, mockAi: true),
+        isNull,
+      );
+    });
+  });
+
+  group('EnvConfig.billingConfigurationProblem', () {
+    test('a release iOS build without the RevenueCat key is refused', () {
+      final problem = EnvConfig.billingConfigurationProblem(
+        isRelease: true,
+        platform: TargetPlatform.iOS,
+        iosApiKey: ' ',
+        fakeBilling: false,
+      );
+      expect(problem, contains('REVENUECAT_IOS_API_KEY'));
+    });
+
+    test('a release build with the fake purchase service is refused; debug '
+        'and Android without a key are fine', () {
+      expect(
+        EnvConfig.billingConfigurationProblem(
+          isRelease: true,
+          platform: TargetPlatform.iOS,
+          iosApiKey: 'appl_public',
+          fakeBilling: true,
+        ),
+        contains('USE_FAKE_BILLING'),
+      );
+      expect(
+        EnvConfig.billingConfigurationProblem(
+          isRelease: true,
+          platform: TargetPlatform.android,
+          iosApiKey: '',
+          fakeBilling: false,
+        ),
+        isNull,
+      );
+      expect(
+        EnvConfig.billingConfigurationProblem(
+          isRelease: false,
+          platform: TargetPlatform.iOS,
+          iosApiKey: '',
+        ),
         isNull,
       );
     });

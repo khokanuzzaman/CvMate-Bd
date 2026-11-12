@@ -31,6 +31,30 @@ void main() {
   });
 
   test('a body without actionsLeft is not an entitlement', () {
-    expect(AiEntitlement.fromJson({'error': {'code': 'internal'}}), isNull);
+    expect(
+      AiEntitlement.fromJson({
+        'error': {'code': 'internal'},
+      }),
+      isNull,
+    );
+  });
+
+  test('reads CV export unlocks, and tolerates a server without them', () {
+    final withUnlocks = AiEntitlement.fromJson({
+      'plan': 'free',
+      'actionsLeft': 8,
+      'cvExportUnlocks': 1,
+      'unlockedCvIds': ['cv-a', 7],
+    })!;
+    expect(withUnlocks.cvExportUnlocks, 1);
+    expect(withUnlocks.unlockedCvIds, ['cv-a']);
+    expect(withUnlocks.hasUnlocked('cv-a'), isTrue);
+    expect(AiEntitlement.fromJson(withUnlocks.toJson())!.unlockedCvIds, [
+      'cv-a',
+    ]);
+
+    final older = AiEntitlement.fromJson({'plan': 'pro', 'actionsLeft': 3})!;
+    expect(older.cvExportUnlocks, 0);
+    expect(older.unlockedCvIds, isEmpty);
   });
 }

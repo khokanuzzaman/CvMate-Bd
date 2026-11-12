@@ -1,11 +1,15 @@
 import 'package:careermatebd/features/settings/presentation/controllers/settings_overview_controller.dart';
-import 'package:careermatebd/shared/services/entitlement/entitlement_service.dart';
+import 'package:careermatebd/shared/services/entitlement/ai_entitlement_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Whether the user is on the Pro plan, from [EntitlementService] — the single
-/// source of truth for plan status.
-final profileIsProProvider = FutureProvider.autoDispose<bool>((ref) {
-  return ref.watch(entitlementServiceProvider).isPro;
+/// Whether the user is on the Pro plan, from the AI server (the only source
+/// of truth for Pro): null while loading, false when unknown or free.
+final profileIsProProvider = Provider.autoDispose<bool?>((ref) {
+  final entitlement = ref.watch(aiEntitlementProvider);
+  if (entitlement.isLoading && !entitlement.hasValue) {
+    return null;
+  }
+  return entitlement.asData?.value?.isProAt(DateTime.now()) ?? false;
 });
 
 /// "1.0.0 (12)" for the footer, from the same package-info loader Settings

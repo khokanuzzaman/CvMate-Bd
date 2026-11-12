@@ -194,7 +194,10 @@ void registerCvBuilderFlow() {
       // iPhone SE). Only checked at normal text size: at 1.5x the page scrolls.
       if (qaTextScale <= 1.0) {
         final cta = tester.getRect(
-          find.widgetWithText(PrimaryButton, AppStrings.paywallCta),
+          find.descendant(
+            of: find.byType(PaywallScreen),
+            matching: find.byType(PrimaryButton),
+          ),
         );
         for (final element in find.byType(PaywallPlanCard).evaluate()) {
           final rect = tester.getRect(find.byWidget(element.widget));
