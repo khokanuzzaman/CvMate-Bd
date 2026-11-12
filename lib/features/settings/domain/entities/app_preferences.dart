@@ -25,22 +25,30 @@ class AppPreferences {
   const AppPreferences({
     required this.themeMode,
     required this.languagePreference,
+    this.aiConsent = false,
   });
 
   const AppPreferences.defaults()
     : themeMode = ThemeMode.system,
-      languagePreference = AppLanguagePreference.english;
+      languagePreference = AppLanguagePreference.english,
+      aiConsent = false;
 
   final ThemeMode themeMode;
   final AppLanguagePreference languagePreference;
 
+  /// Whether the user allowed AI features to send CV text to the AI server
+  /// and Anthropic (App Store guideline 5.1.2). Off until they choose.
+  final bool aiConsent;
+
   AppPreferences copyWith({
     ThemeMode? themeMode,
     AppLanguagePreference? languagePreference,
+    bool? aiConsent,
   }) {
     return AppPreferences(
       themeMode: themeMode ?? this.themeMode,
       languagePreference: languagePreference ?? this.languagePreference,
+      aiConsent: aiConsent ?? this.aiConsent,
     );
   }
 }

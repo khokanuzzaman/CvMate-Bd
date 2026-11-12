@@ -849,4 +849,22 @@ abstract final class AppStrings {
       'Terms placeholder\n\nCareerMate BD provides career writing and '
       'preparation tools. AI suggestions may help improve clarity, but users '
       'remain responsible for reviewing all content before sending it.';
+
+  // AI consent (App Store guideline 5.1.2) and the AI quota
+  static const String aiConsentTitle = 'Use AI features?';
+  static const String aiConsentBody =
+      'AI features send the CV text you choose to our server and to Anthropic '
+      '(Claude) to write suggestions. Passport number, date of birth, '
+      'religion, marital status, gender and your photo are never sent. '
+      'Anthropic does not use this data to train its models.';
+  static const String aiConsentPrivacyLink = 'Privacy policy';
+  static const String aiConsentAllow = 'Allow AI';
+  static const String aiConsentNotNow = 'Not now';
+  static const String aiFeaturesSetting = 'AI features';
+  static const String aiFeaturesOnNote =
+      'CV text you choose is sent to our server and Anthropic (Claude).';
+  static const String aiFeaturesOffNote =
+      'Off: AI actions ask for permission first and send nothing until you '
+      'allow them.';
+  static String aiActionsLeft(int count) => 'AI actions left: $count';
 }

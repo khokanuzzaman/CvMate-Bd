@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Release builds need network access: AI server, Firebase Auth, Firestore. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="CareerMate BD"
         android:name="${applicationName}"

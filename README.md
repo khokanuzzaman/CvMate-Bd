@@ -15,10 +15,11 @@ A new Flutter project.
    ```
 
    `.env` is bundled as an app asset, so Flutter will not build or test
-   without it. The defaults keep AI in mock mode (`USE_MOCK_AI=true`). The
-   compile-time options (`OPENAI_PROXY_URL`, `USE_FIREBASE_AI`,
-   `FIREBASE_FUNCTIONS_REGION`) are passed with `--dart-define`, not set in
-   `.env` — see the comments in `.env.example`.
+   without it. Never put keys in it. The default keeps AI in mock mode
+   (`USE_MOCK_AI=true`, canned answers, nothing sent). Set
+   `USE_MOCK_AI=false` to use the real AI server in a debug build; its URL is
+   a compile-time option (`--dart-define=AI_API_BASE_URL=...`, default
+   `https://api.khokan.me`), see the comments in `.env.example`.
 3. Install dependencies and check everything works:
 
    ```sh
@@ -30,17 +31,31 @@ A new Flutter project.
 CI runs the same steps on every pull request and on pushes to `main`
 (`.github/workflows/flutter.yml`).
 
-## Release builds
+## AI server
 
-A release build **refuses to start** (`StateError` in `main()`) unless AI goes
-through the Firebase proxy, so canned mock AI output can never ship:
+All AI goes through our own server, the `cvmate-api` repo (checked out next
+to this one as `../cvmate-api`, live at `https://api.khokan.me`): the app sends its Firebase ID token and
+`X-App-Id: cvmate`, the server checks the AI quota and calls Claude. The app
+never holds a model API key. Details: [`docs/AI_BACKEND.md`](docs/AI_BACKEND.md).
+
+Run a debug build against it (with `USE_MOCK_AI=false` in `.env`):
 
 ```sh
-flutter build apk --release --dart-define=USE_FIREBASE_AI=true
+flutter run --dart-define=AI_API_BASE_URL=https://api.khokan.me
 ```
 
-Debug builds and `flutter test` keep using the mock by default. The check lives
-in `EnvConfig.aiConfigurationProblem` (`lib/core/config/env_config.dart`).
+## Release builds
+
+A release build always uses the AI server and **refuses to start**
+(`StateError` in `main()`) if `.env` asks for the mock or the AI server URL is
+not HTTPS, so canned mock AI output can never ship:
+
+```sh
+flutter build ipa --release --dart-define=AI_API_BASE_URL=https://api.khokan.me
+```
+
+The check lives in `EnvConfig.aiConfigurationProblem`
+(`lib/core/config/env_config.dart`).
 
 ## QA on the iOS Simulator
 

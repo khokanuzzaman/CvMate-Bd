@@ -20,7 +20,7 @@ void main() {
 
   test('Pro bypasses the export gate and never consumes the free counter', () async {
     final store = _FakeStore(
-      const EntitlementRecord(isPro: true, freeExportsUsed: 0, aiCreditsLeft: 20),
+      const EntitlementRecord(isPro: true, freeExportsUsed: 0),
     );
     final service = EntitlementService(store);
 
@@ -54,18 +54,6 @@ void main() {
 
     await service.setPro(isPro: true);
     expect(await service.canExport(), isTrue);
-  });
-
-  test('AI credits decrement on use and stop at zero for non-Pro', () async {
-    final store = _FakeStore(
-      const EntitlementRecord(isPro: false, freeExportsUsed: 0, aiCreditsLeft: 1),
-    );
-    final service = EntitlementService(store);
-
-    expect(await service.aiCreditsLeft, 1);
-    expect(await service.consumeAiCredit(), isTrue);
-    expect(await service.aiCreditsLeft, 0);
-    expect(await service.consumeAiCredit(), isFalse, reason: 'out of credits');
   });
 }
 

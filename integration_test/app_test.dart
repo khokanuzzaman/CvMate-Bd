@@ -1,3 +1,4 @@
+import 'flows/ai_server_flow.dart';
 import 'flows/ats_flow.dart';
 import 'flows/auth_flow.dart';
 import 'flows/cover_letter_flow.dart';
@@ -19,6 +20,7 @@ void main() => registerQaSuite(() {
   registerSectionsFlow();
   registerMarketStyleFlow();
   registerTailoringFlow();
+  registerAiServerFlow();
   registerCoverLetterFlow();
   registerAtsFlow();
   registerInterviewFlow();

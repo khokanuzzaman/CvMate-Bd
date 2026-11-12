@@ -18,6 +18,7 @@ import 'package:careermatebd/features/profile/presentation/widgets/settings_grou
 import 'package:careermatebd/features/profile/presentation/widgets/theme_selector.dart';
 import 'package:careermatebd/features/settings/domain/entities/app_preferences.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
+import 'package:careermatebd/features/subscription/presentation/widgets/ai_actions_left_label.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -76,6 +77,8 @@ class ProfileScreen extends ConsumerWidget {
             Text(AppStrings.profileTitle, style: AppTextStyles.h1),
             const SizedBox(height: AppSpacing.s16),
             ProfileAccountCard(user: user, isPro: isPro),
+            const SizedBox(height: AppSpacing.s8),
+            const AiActionsLeftLabel(),
             if (isPro == false) ...[
               const SizedBox(height: AppSpacing.s14),
               GoProBanner(

@@ -28,7 +28,6 @@ class _App {
 const _pro = EntitlementRecord(
   isPro: true,
   freeExportsUsed: 0,
-  aiCreditsLeft: 20,
 );
 
 Future<_App> _open(

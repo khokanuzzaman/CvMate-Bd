@@ -110,7 +110,7 @@ class CvBuilderValidators {
       return emailError;
     }
 
-    final phoneError = Validators.bangladeshPhone(info.phone);
+    final phoneError = Validators.phone(info.phone);
     if (phoneError != null) {
       return phoneError;
     }

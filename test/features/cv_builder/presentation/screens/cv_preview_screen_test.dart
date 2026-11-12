@@ -265,7 +265,6 @@ void main() {
         const EntitlementRecord(
           isPro: false,
           freeExportsUsed: 1,
-          aiCreditsLeft: 20,
         ),
       );
       await pumpBuilderApp(
@@ -484,7 +483,6 @@ void main() {
         const EntitlementRecord(
           isPro: false,
           freeExportsUsed: 1,
-          aiCreditsLeft: 20,
         ),
       );
       await pumpBuilderApp(

@@ -1,45 +1,38 @@
-# Next session: CV control, PR 2 of 2
+# Next session: iOS launch, week 2 (billing)
 
-Designs in `docs/design/`: `CV style · market preset@2x.png`,
-`Personal details · Gulf style@2x.png`, `Declaration & signature@2x.png`.
-PR 1 (flexible sections) is merged; build on its section layout.
+Done: the app talks to our own AI server (`cvmate-api`, https://api.khokan.me),
+see `docs/AI_BACKEND.md`. AI consent, "AI actions left", the `ai_quota`
+paywall and the release guard are in. The Cloud Function, `cloud_functions`
+and the direct OpenAI client are removed.
+
+Still open before the App Store submission:
+
+- **Billing.** RevenueCat in the app (Pro monthly + a credit pack), Restore
+  purchases on Profile and the paywall. The server already has the webhook
+  stub `POST /v1/webhooks/revenuecat/cvmate`; the billing PR on the server
+  sets `plan` / `proExpiresAt` / `bonusCredits`. The app then only refreshes
+  `aiEntitlementProvider` after a purchase. Keep the export gate local until
+  the server owns it too.
+- **Privacy policy.** Publish it (mention the AI server and Anthropic, what is
+  never sent) and point the consent sheet link and Settings → Privacy Policy
+  at the URL (needs `url_launcher`); fill in the App Store privacy labels.
+- **Account deletion** (App Store 5.1.1(v)): delete Firestore `users/{uid}`,
+  the Auth user, and ask the server to drop the entitlement row.
 
 ```
-CV control, PR 2 of 2: market styles, regional details, declaration, signature, photo, paper
-size, Bangla in PDF. ONE PR off main. Follow the lean testing rules in CLAUDE.md.
+iOS launch, week 2: RevenueCat billing in the app. ONE PR off main. Follow
+the lean testing rules in CLAUDE.md. Read docs/AI_BACKEND.md and
+../cvmate-api/README.md first.
 
-DESIGN: the three PNGs above + DESIGN_TOKENS.md, built from lib/core widgets.
-
-1. CV style preset (per CV): international | gulf | southAsia, chosen on a "CV style" screen
-   (from the builder top bar and when creating a CV). Changing style only flips field and
-   section visibility defaults; it never deletes data.
-   - international: no photo, no DOB/nationality/passport/visa/marital/religion/gender,
-     no declaration or signature.
-   - gulf: photo, DOB, nationality, passport no. + expiry, visa status, driving licence on.
-   - southAsia: photo, DOB, nationality, marital status, declaration, signature on.
-   The user can still toggle any single field after choosing a style.
-2. Personal details: add optional fields, each with its own "show on CV" switch: date of birth,
-   nationality, passport number + expiry, visa status (free text), driving licence, marital
-   status, religion, gender, plus user-added custom rows (label + value). Show the safety note
-   about not posting passport numbers publicly.
-3. Photo: take or pick, crop to a passport ratio (35x45), stored locally and synced like the
-   rest of the CV. Only rendered when the photo field is visible.
-4. Declaration + signature: declaration toggle, editable text with English and Bangla
-   defaults, place, date (default "date of export"). Signature: draw on a pad or upload an
-   image, stored as a PNG. Label it honestly as an image, not a digital certificate.
-5. Paper size per CV: A4 (default) or Letter, used by every PDF template and the preview.
-6. PDF: all 5 templates render the visible personal fields, photo, declaration and signature
-   in a sensible place. International style stays ATS-safe (single column, no photo).
-   Embed Noto Sans Bengali (already in assets/fonts) as a PDF fallback font so Bangla text
-   never disappears or prints as boxes.
-7. Storage: additive schema change (bump version, old CVs load with style = international and
-   all new fields hidden). Never throws on old or odd data.
-8. AI and ATS: never send passport number, DOB, religion, marital status, gender or photo to
-   the AI. ATS ignores these fields.
+1. purchases_flutter, configured with the Firebase uid as app user id.
+2. Paywall: real products (Pro monthly, a credit pack), purchase + restore,
+   loading/error states. After a purchase refresh aiEntitlementProvider.
+3. Profile: Restore purchases (replaces "Coming soon").
+4. EntitlementService.isPro reads the server plan (aiEntitlementProvider)
+   instead of the local flag; the export gate keeps its rule.
 
 TESTS (lean)
-- One migration test: an old CV loads as international with new fields hidden.
-- One PDF test: gulf style with photo + passport fields, and a Bangla string that renders.
-- One test that the AI prompt excludes the private fields.
-- Integration: only create CV -> choose Gulf -> fill personal details -> preview -> export.
+- Paywall purchase success refreshes the entitlement; a cancelled purchase
+  changes nothing.
+- Integration: paywall from ai_quota → purchase (sandbox mock) → AI works.
 ```

@@ -21,11 +21,19 @@ through the service layer in lib/shared/services/ai/.
 - Match existing folder/layer structure and neighboring-file patterns before inventing new ones.
 - No business logic in widgets — use Riverpod providers + repositories + services.
 - Always handle loading/empty/error/success (reuse core/widgets/).
-- NEVER hardcode secrets/keys/private URLs. AI keys stay behind the proxy
-  (EnvConfig.openAiProxyUrl); never ship keys in the client.
+- NEVER hardcode secrets/keys/private URLs. AI keys stay on the AI server
+  (repo ../cvmate-api, EnvConfig.aiApiBaseUrl); never ship keys in the client.
+- Every AI call goes through aiCareerServiceProvider (consent + quota guard).
 - Don't remove existing functionality unless told. Minimal, focused changes. Small files.
 - Null-safety correct; readable over clever.
 - UI strings should be localization-ready (i18n arrives in Phase 2).
+
+## Run
+- Mock AI (default `.env`, `USE_MOCK_AI=true`): `flutter run`
+- Real AI server (set `USE_MOCK_AI=false` in `.env`, sign in first):
+  `flutter run --dart-define=AI_API_BASE_URL=https://api.khokan.me`
+- Release: `flutter build ipa --release --dart-define=AI_API_BASE_URL=https://api.khokan.me`
+  (refuses to start on the mock or a non-HTTPS URL).
 
 ## Testing (keep it lean)
 - While working: run only the tests for the files you changed (flutter test <path>).
