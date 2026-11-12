@@ -6,13 +6,14 @@ import 'package:careermatebd/features/profile/presentation/screens/profile_scree
 import 'package:careermatebd/features/settings/data/repositories/settings_repository_impl.dart';
 import 'package:careermatebd/features/settings/domain/entities/app_preferences.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/settings_overview_controller.dart';
-import 'package:careermatebd/shared/services/entitlement/entitlement_record.dart';
+import 'package:careermatebd/shared/services/entitlement/ai_entitlement.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../helpers/builder_harness.dart';
+import '../../../../helpers/fake_ai_entitlement.dart';
 import '../../../../helpers/fake_auth_repository.dart';
 import '../../../../helpers/fake_settings_repository.dart';
 import '../../../../helpers/routed_screen_harness.dart';
@@ -25,16 +26,11 @@ class _App {
   final FakeSettingsRepository settings;
 }
 
-const _pro = EntitlementRecord(
-  isPro: true,
-  freeExportsUsed: 0,
-);
-
 Future<_App> _open(
   WidgetTester tester, {
   bool signedIn = true,
   bool anonymous = false,
-  EntitlementRecord? plan,
+  AiEntitlement? plan,
   Future<PackageInfo> Function()? packageInfo,
 }) async {
   final auth = FakeAuthRepository(displayName: 'Ayesha Rahman');
@@ -56,7 +52,8 @@ Future<_App> _open(
     surface: const Size(390, 1500),
     overrides: [
       authRepositoryProvider.overrideWithValue(auth),
-      entitlementStoreProvider.overrideWithValue(FakeEntitlementStore(plan)),
+      entitlementStoreProvider.overrideWithValue(FakeEntitlementStore()),
+      ...fakeEntitlementOverrides(FakeAiEntitlementController(plan)),
       settingsRepositoryProvider.overrideWithValue(settings),
       packageInfoLoaderProvider.overrideWithValue(
         packageInfo ??
@@ -154,7 +151,7 @@ void main() {
     testWidgets('a Pro user sees the Pro badge and no Go Pro banner', (
       tester,
     ) async {
-      await _open(tester, plan: _pro);
+      await _open(tester, plan: proEntitlement);
 
       expect(find.text(AppStrings.planPro), findsOneWidget);
       expect(find.text(AppStrings.planFree), findsNothing);
@@ -285,15 +282,13 @@ void main() {
       expect(find.text(AppStrings.profileCloudOffNote), findsOneWidget);
     });
 
-    testWidgets('Restore purchase is disabled', (tester) async {
+    testWidgets('Restore purchases opens the paywall, where Restore is', (
+      tester,
+    ) async {
       await _open(tester);
 
-      expect(find.text(AppStrings.paywallRestore), findsOneWidget);
-      expect(find.text(AppStrings.profileComingSoon), findsOneWidget);
-
       await _tap(tester, find.text(AppStrings.paywallRestore));
-      expect(find.byType(AlertDialog), findsNothing);
-      expect(find.text(placeholderFor(RouteNames.paywallPath)), findsNothing);
+      expect(find.text(uriTextFor('/paywall?source=restore')), findsOneWidget);
     });
 
     testWidgets('Privacy & terms shows the policy and terms', (tester) async {

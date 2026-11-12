@@ -15,6 +15,20 @@ final aiEntitlementProvider =
       AiEntitlementController.new,
     );
 
+/// How long to wait between entitlement checks after a purchase: the store
+/// confirms on the device before RevenueCat's webhook reaches the server, so
+/// the new plan shows up a few seconds later (about 15 s in total here).
+final entitlementPollDelaysProvider = Provider<List<Duration>>((ref) {
+  return const [
+    Duration.zero,
+    Duration(seconds: 1),
+    Duration(seconds: 2),
+    Duration(seconds: 3),
+    Duration(seconds: 4),
+    Duration(seconds: 5),
+  ];
+});
+
 /// Refreshes the AI quota whenever the app comes back to the foreground.
 /// Watched once by the app root.
 final aiEntitlementResumeRefreshProvider = Provider<void>((ref) {
@@ -71,6 +85,61 @@ class AiEntitlementController extends AsyncNotifier<AiEntitlement?> {
       }
     } catch (_) {
       // Offline or server error: the cached value stays on screen.
+    }
+  }
+
+  /// The current value, waiting for the first load. Null when unknown.
+  Future<AiEntitlement?> current() async {
+    try {
+      return await future;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Refreshes until [done] holds for the server's value, waiting
+  /// [entitlementPollDelaysProvider] between tries. Returns whether it did.
+  Future<bool> refreshUntil(bool Function(AiEntitlement value) done) async {
+    for (final delay in ref.read(entitlementPollDelaysProvider)) {
+      if (delay > Duration.zero) {
+        await Future<void>.delayed(delay);
+      }
+      if (!ref.mounted) {
+        return false;
+      }
+      await refresh();
+      final value = state.asData?.value;
+      if (value != null && done(value)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Binds one purchased export unlock to [cvId]. True when the CV is (now)
+  /// unlocked; false when no unlock is left, offline or signed out.
+  Future<bool> claimExportUnlock(String cvId) async {
+    final uid = _uid;
+    final current = await this.current();
+    if (uid == null || current == null) {
+      return false;
+    }
+    if (current.hasUnlocked(cvId)) {
+      return true;
+    }
+    try {
+      final updated = await ref
+          .read(aiEntitlementRepositoryProvider)
+          .claimExportUnlock(uid, cvId, current);
+      if (updated == null) {
+        return false;
+      }
+      if (ref.mounted && _uid == uid) {
+        state = AsyncData(updated);
+      }
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

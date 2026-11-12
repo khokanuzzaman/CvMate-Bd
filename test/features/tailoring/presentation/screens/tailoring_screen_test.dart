@@ -25,10 +25,7 @@ const _jobPost =
     'interfaces with React, JavaScript, TypeScript, Next.js, REST API and Git. '
     'Experience with CI/CD, design systems and Agile teams is a plus.';
 
-const _usedFreeExport = EntitlementRecord(
-  isPro: false,
-  freeExportsUsed: 1,
-);
+const _usedFreeExport = EntitlementRecord(freeExportsUsed: 1);
 
 Future<CoreFlowApp> _open(
   WidgetTester tester, {

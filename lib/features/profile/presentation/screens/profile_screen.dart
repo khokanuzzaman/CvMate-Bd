@@ -54,7 +54,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentAuthUserProvider);
-    final isPro = ref.watch(profileIsProProvider).asData?.value;
+    final isPro = ref.watch(profileIsProProvider);
     final preferences =
         ref.watch(appPreferencesControllerProvider).asData?.value ??
         const AppPreferences.defaults();
@@ -128,13 +128,11 @@ class ProfileScreen extends ConsumerWidget {
                       : AppStrings.profileCloudOffNote,
                   trailing: _BackupPill(on: backup == CloudBackupStatus.on),
                 ),
-                const SettingsRow(
+                // Restore lives on the paywall (with the store terms).
+                SettingsRow(
                   label: AppStrings.paywallRestore,
-                  enabled: false,
-                  trailing: Text(
-                    AppStrings.profileComingSoon,
-                    style: TextStyle(color: AppColors.muted2, fontSize: 12.5),
-                  ),
+                  onTap: () =>
+                      context.push('${RouteNames.paywallPath}?source=restore'),
                 ),
                 SettingsRow(
                   label: AppStrings.profilePrivacyTerms,

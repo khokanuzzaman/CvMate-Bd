@@ -11,7 +11,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // `.env` holds debug-only switches (USE_MOCK_AI), never keys.
+  // `.env` holds debug-only switches (USE_MOCK_AI, USE_FAKE_BILLING) and the
+  // public RevenueCat SDK key; never secret keys.
   await dotenv.load(fileName: '.env', isOptional: true);
 
   // Fail loudly rather than ship canned mock AI output, or no AI server, in a
@@ -19,6 +20,11 @@ Future<void> main() async {
   final aiProblem = EnvConfig.aiConfigurationProblem();
   if (aiProblem != null) {
     throw StateError(aiProblem);
+  }
+  // Nor a release build that cannot sell anything, or sells fake packages.
+  final billingProblem = EnvConfig.billingConfigurationProblem();
+  if (billingProblem != null) {
+    throw StateError(billingProblem);
   }
   await Hive.initFlutter();
   await HiveAiEntitlementCache.openBox();

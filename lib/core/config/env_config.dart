@@ -50,6 +50,70 @@ abstract final class EnvConfig {
     return null;
   }
 
+  /// RevenueCat **public** SDK keys (app-specific `appl_…` / `goog_…` keys,
+  /// made to ship in the client; not secrets). Read from
+  /// `--dart-define=REVENUECAT_IOS_API_KEY=…` first, else from `.env`. Never
+  /// hard-coded.
+  static String get revenueCatIosApiKey => _defineOrEnv(
+    const String.fromEnvironment('REVENUECAT_IOS_API_KEY'),
+    'REVENUECAT_IOS_API_KEY',
+  );
+
+  /// Android slot; may stay empty until Google Play billing is set up.
+  static String get revenueCatAndroidApiKey => _defineOrEnv(
+    const String.fromEnvironment('REVENUECAT_ANDROID_API_KEY'),
+    'REVENUECAT_ANDROID_API_KEY',
+  );
+
+  /// The RevenueCat key for [platform], or '' when there is none.
+  static String revenueCatApiKeyFor(TargetPlatform platform) =>
+      switch (platform) {
+        TargetPlatform.iOS => revenueCatIosApiKey,
+        TargetPlatform.android => revenueCatAndroidApiKey,
+        _ => '',
+      };
+
+  /// Debug builds only: `USE_FAKE_BILLING=true` in `.env` (the default, also
+  /// when the key is missing, e.g. in tests) sells canned packages without a
+  /// store. Purchases made with it never reach the server, so they never make
+  /// anyone Pro. Set it to false to use RevenueCat in a debug build.
+  static bool get useFakeBilling =>
+      _readBool('USE_FAKE_BILLING', defaultValue: true);
+
+  /// Whether this build uses the fake purchase service. Never in release.
+  static bool get isFakeBillingActive => !kReleaseMode && useFakeBilling;
+
+  /// Why this build must not start, or null when its billing setup is
+  /// acceptable. A **release** iOS build needs the RevenueCat iOS key, and no
+  /// release build may ship the fake purchase service.
+  static String? billingConfigurationProblem({
+    bool isRelease = kReleaseMode,
+    TargetPlatform? platform,
+    String? iosApiKey,
+    bool? fakeBilling,
+  }) {
+    if (!isRelease) {
+      return null;
+    }
+    if (fakeBilling ?? _readBool('USE_FAKE_BILLING', defaultValue: false)) {
+      return 'This release build would use the fake purchase service. Remove '
+          'USE_FAKE_BILLING=true from .env.';
+    }
+    final target = platform ?? defaultTargetPlatform;
+    if (target == TargetPlatform.iOS &&
+        (iosApiKey ?? revenueCatIosApiKey).trim().isEmpty) {
+      return 'This release build has no RevenueCat iOS key. Build it with '
+          '--dart-define=REVENUECAT_IOS_API_KEY=<public key> (or set '
+          'REVENUECAT_IOS_API_KEY in .env).';
+    }
+    return null;
+  }
+
+  static String _defineOrEnv(String defined, String envKey) {
+    final value = defined.trim();
+    return value.isNotEmpty ? value : _readEnvValue(envKey, fallback: '');
+  }
+
   static bool _readBool(String key, {required bool defaultValue}) {
     final rawValue = _readEnvValue(key, fallback: '').toLowerCase();
     if (rawValue.isEmpty) {
