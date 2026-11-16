@@ -19,6 +19,9 @@ abstract final class AiFailureCodes {
   /// Too many AI requests in a minute: a snackbar is enough.
   static const String rateLimited = 'ai_rate_limited';
   static const String unavailable = 'ai_unavailable';
+
+  /// No network connection (DNS or connect failed).
+  static const String offline = 'ai_offline';
   static const String tooLong = 'ai_payload_too_large';
   static const String invalidInput = 'ai_invalid_input';
   static const String authRequired = 'ai_auth_required';
@@ -28,6 +31,8 @@ abstract final class AiFailureCodes {
 
 abstract final class AiFailureMessages {
   static const String busy = 'AI is busy, please try again.';
+  static const String offline =
+      'You are offline. Check your connection and try again.';
   static const String quota = "You've used all your AI actions.";
   static const String rateLimited =
       'Too many AI requests. Please wait a minute and try again.';
@@ -159,8 +164,15 @@ class AiServerClient {
 
   AppException _mapError(DioException error) {
     final response = error.response;
+    if (response == null && error.type == DioExceptionType.connectionError) {
+      // No network, or DNS / connect failed.
+      return const AppException(
+        AiFailureMessages.offline,
+        code: AiFailureCodes.offline,
+      );
+    }
     if (response == null) {
-      // Offline, DNS, TLS, connect / receive timeout.
+      // TLS, connect / receive timeout.
       return const AppException(
         AiFailureMessages.busy,
         code: AiFailureCodes.unavailable,

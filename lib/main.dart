@@ -1,7 +1,9 @@
 import 'package:careermatebd/app/app.dart';
 import 'package:careermatebd/core/config/env_config.dart';
 import 'package:careermatebd/firebase_options.dart';
+import 'package:careermatebd/shared/services/crash/crash_reporter.dart';
 import 'package:careermatebd/shared/services/entitlement/ai_entitlement_repository.dart';
+import 'package:careermatebd/shared/services/review/review_prompt_store.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -28,8 +30,19 @@ Future<void> main() async {
   }
   await Hive.initFlutter();
   await HiveAiEntitlementCache.openBox();
+  await HiveReviewPromptStore.openBox();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  runApp(const ProviderScope(child: CareerMateApp()));
+  // Off until the telemetry bootstrap reads "Share usage analytics" (and
+  // always off in debug builds unless ANALYTICS_DEBUG=true).
+  final crashReporter = CrashReporter(sink: const FirebaseCrashSink());
+  installCrashHandlers(crashReporter);
+
+  runApp(
+    ProviderScope(
+      overrides: [crashReporterProvider.overrideWithValue(crashReporter)],
+      child: const CareerMateApp(),
+    ),
+  );
 }

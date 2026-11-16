@@ -128,7 +128,7 @@ void main() {
       FakeAiReply(429, aiErrorBody('rate_limit')): AiFailureCodes.rateLimited,
       FakeAiReply(503, aiErrorBody('budget_exceeded')):
           AiFailureCodes.unavailable,
-      const FakeAiReply.offline(): AiFailureCodes.unavailable,
+      const FakeAiReply.offline(): AiFailureCodes.offline,
       FakeAiReply(413, aiErrorBody('payload_too_large')): AiFailureCodes.tooLong,
     };
 
@@ -144,7 +144,7 @@ void main() {
           FakeAiServer([const FakeAiReply.offline()]),
         ).generateProfessionalSummary(profile: _cv()),
       ),
-      AiFailureMessages.busy,
+      AiFailureMessages.offline,
     );
     expect(remaining, [0], reason: 'a 402 sets the counter to zero');
   });

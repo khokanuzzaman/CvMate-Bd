@@ -7,12 +7,14 @@ import 'package:careermatebd/features/settings/domain/entities/app_preferences.d
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
 import 'package:careermatebd/shared/services/ai/ai_server_client.dart';
 import 'package:careermatebd/shared/services/ai/mock_ai_career_service.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../helpers/core_flow_harness.dart';
 import '../../../helpers/fake_ai_server.dart';
 import '../../../helpers/fake_settings_repository.dart';
 
@@ -41,6 +43,7 @@ Future<_Harness> _pump(
   WidgetTester tester, {
   required List<FakeAiReply> replies,
   bool consent = false,
+  RecordingAnalytics? analytics,
 }) async {
   final server = FakeAiServer(replies);
   final settings = FakeSettingsRepository(
@@ -58,6 +61,9 @@ Future<_Harness> _pump(
           ({bool forceRefresh = false}) async => 'token',
         ),
         settingsRepositoryProvider.overrideWithValue(settings),
+        analyticsServiceProvider.overrideWithValue(
+          analytics ?? RecordingAnalytics(),
+        ),
         aiInteractionPortProvider.overrideWithValue(
           NavigatorAiInteractionPort(
             context: () => navigatorKey.currentContext,
@@ -141,5 +147,47 @@ void main() {
       AiFailureCodes.quotaExceeded,
     );
     expect(app.pushed, ['/paywall?source=ai_quota']);
+  });
+
+  testWidgets('logs consent, each AI action with its result, and an empty '
+      'quota, with no text from the CV', (tester) async {
+    final analytics = RecordingAnalytics();
+    final app = await _pump(
+      tester,
+      analytics: analytics,
+      replies: [
+        FakeAiReply(200, aiSuccessBody('x', _summary)),
+        FakeAiReply(402, aiErrorBody('ai_quota')),
+      ],
+    );
+
+    final first = app.improveSummary();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(AppStrings.aiConsentAllow));
+    await tester.pumpAndSettle();
+    await first;
+    final second = app.improveSummary();
+    await tester.pumpAndSettle();
+    await second;
+
+    expect(analytics.events.map((event) => event.$1), [
+      'ai_consent_shown',
+      'ai_consent_result',
+      'ai_action_start',
+      'ai_action_result',
+      'ai_action_start',
+      'ai_action_result',
+      'quota_exhausted',
+    ]);
+    expect(analytics.paramsFor('ai_consent_result').single, {
+      'result': 'allowed',
+    });
+    final results = analytics.paramsFor('ai_action_result').toList();
+    expect(results.first, {
+      'action': 'professional_summary',
+      'result': 'ok',
+      'latency_bucket': 'lt_1s',
+    });
+    expect(results.last['result'], 'quota');
   });
 }

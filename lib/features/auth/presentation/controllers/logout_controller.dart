@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_form_state.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final logoutControllerProvider =
@@ -19,6 +23,9 @@ class LogoutController extends Notifier<AuthFormState> {
     final result = await ref.read(authRepositoryProvider).signOut();
     return result.when(
       success: (_) {
+        unawaited(
+          ref.read(analyticsServiceProvider).log(AnalyticsEvent.logout),
+        );
         state = state.copyWith(
           isLoading: false,
           successMessage: 'Logged out successfully.',

@@ -6,35 +6,51 @@ import 'package:careermatebd/shared/models/ai/ai_models.dart';
 import 'package:careermatebd/shared/services/ai/ai_career_service.dart';
 import 'package:careermatebd/shared/services/ai/ai_consent_guard.dart';
 import 'package:careermatebd/shared/services/ai/ai_server_client.dart';
+import 'package:careermatebd/shared/services/ai/ai_telemetry.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_params.dart';
 
 /// Wraps the real (or mock) [AiCareerService] so every AI entry point gets the
 /// same rules in one place:
-/// - no consent: the consent sheet; "Not now" means no request is sent;
+/// - no consent: the consent sheet; "Not now" means no request is sent
+///   (the mock sends nothing, so it has no [consentGuard]);
 /// - out of AI actions ([AiFailureCodes.quotaExceeded]): the paywall opens
-///   with source `ai_quota` (the caller still gets the failure to show).
+///   with source `ai_quota` (the caller still gets the failure to show);
+/// - [telemetry]: start / result analytics, failure codes, rating rules.
 class GuardedAiCareerService implements AiCareerService {
   const GuardedAiCareerService({
     required this.inner,
     required this.consentGuard,
     required this.port,
+    required this.telemetry,
   });
 
   static const String consentDeclinedMessage =
       'AI features are off. You can turn them on in Settings.';
 
   final AiCareerService inner;
-  final AiConsentGuard consentGuard;
+  final AiConsentGuard? consentGuard;
   final AiInteractionPort port;
+  final AiTelemetry telemetry;
 
-  Future<Result<T>> _guarded<T>(Future<Result<T>> Function() call) async {
-    if (!await consentGuard.ensureConsent()) {
+  Future<Result<T>> _guarded<T>(
+    AiAction action,
+    Future<Result<T>> Function() call,
+  ) async {
+    final guard = consentGuard;
+    if (guard != null && !await guard.ensureConsent()) {
       return const FailureResult(
         Failure(consentDeclinedMessage, code: AiFailureCodes.consentRequired),
       );
     }
+    telemetry.started(action);
+    final stopwatch = Stopwatch()..start();
     final result = await call();
-    if (result case FailureResult(:final error)
-        when error.code == AiFailureCodes.quotaExceeded) {
+    final failure = switch (result) {
+      FailureResult(:final error) => error,
+      _ => null,
+    };
+    telemetry.finished(action, failure, stopwatch.elapsed);
+    if (failure?.code == AiFailureCodes.quotaExceeded) {
       port.openPaywall('ai_quota');
     }
     return result;
@@ -49,6 +65,7 @@ class GuardedAiCareerService implements AiCareerService {
     String jobPostText = '',
   }) {
     return _guarded(
+      AiAction.professionalSummary,
       () => inner.generateProfessionalSummary(
         profile: profile,
         language: language,
@@ -68,6 +85,7 @@ class GuardedAiCareerService implements AiCareerService {
     String jobPostText = '',
   }) {
     return _guarded(
+      AiAction.careerObjective,
       () => inner.generateCareerObjective(
         profile: profile,
         language: language,
@@ -88,6 +106,7 @@ class GuardedAiCareerService implements AiCareerService {
     String jobTitle = '',
   }) {
     return _guarded(
+      AiAction.experienceBullet,
       () => inner.improveExperienceBullet(
         bullet: bullet,
         profile: profile,
@@ -107,6 +126,7 @@ class GuardedAiCareerService implements AiCareerService {
     AiTone tone = AiTone.professional,
   }) {
     return _guarded(
+      AiAction.projectDescription,
       () => inner.improveProjectDescription(
         project: project,
         profile: profile,
@@ -126,6 +146,7 @@ class GuardedAiCareerService implements AiCareerService {
     int maxSuggestions = 5,
   }) {
     return _guarded(
+      AiAction.suggestSkills,
       () => inner.suggestSkills(
         profile: profile,
         language: language,
@@ -150,6 +171,7 @@ class GuardedAiCareerService implements AiCareerService {
     AiTone tone = AiTone.formal,
   }) {
     return _guarded(
+      AiAction.coverLetter,
       () => inner.generateCoverLetter(
         profile: profile,
         companyName: companyName,
@@ -176,6 +198,7 @@ class GuardedAiCareerService implements AiCareerService {
     AiTone tone = AiTone.formal,
   }) {
     return _guarded(
+      AiAction.applicationEmail,
       () => inner.generateJobApplicationEmail(
         profile: profile,
         companyName: companyName,
@@ -201,6 +224,7 @@ class GuardedAiCareerService implements AiCareerService {
     AiTone tone = AiTone.confident,
   }) {
     return _guarded(
+      AiAction.linkedinMessage,
       () => inner.generateLinkedInMessage(
         profile: profile,
         companyName: companyName,
@@ -225,6 +249,7 @@ class GuardedAiCareerService implements AiCareerService {
     String answerStyle = '',
   }) {
     return _guarded(
+      AiAction.interviewQuestions,
       () => inner.generateInterviewQuestions(
         profile: profile,
         language: language,
@@ -244,6 +269,7 @@ class GuardedAiCareerService implements AiCareerService {
     String jobPostText = '',
   }) {
     return _guarded(
+      AiAction.atsSuggestions,
       () => inner.generateAtsSuggestions(
         profile: profile,
         language: language,
@@ -258,10 +284,8 @@ class GuardedAiCareerService implements AiCareerService {
     AiOutputLanguage language = AiOutputLanguage.english,
   }) {
     return _guarded(
-      () => inner.analyzeJobPost(
-        jobPostText: jobPostText,
-        language: language,
-      ),
+      AiAction.analyzeJobPost,
+      () => inner.analyzeJobPost(jobPostText: jobPostText, language: language),
     );
   }
 
@@ -272,6 +296,7 @@ class GuardedAiCareerService implements AiCareerService {
     AiOutputLanguage language = AiOutputLanguage.english,
   }) {
     return _guarded(
+      AiAction.cvJobMatch,
       () => inner.calculateCvJobMatch(
         profile: profile,
         jobPostText: jobPostText,
@@ -291,6 +316,7 @@ class GuardedAiCareerService implements AiCareerService {
     AiTone tone = AiTone.professional,
   }) {
     return _guarded(
+      AiAction.tailorCv,
       () => inner.tailorCvForJob(
         profile: profile,
         jobPostText: jobPostText,

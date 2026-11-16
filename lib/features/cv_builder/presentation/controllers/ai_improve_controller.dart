@@ -12,8 +12,6 @@ import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_bui
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_library_controller.dart';
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
 import 'package:careermatebd/shared/services/ai/mock_ai_career_service.dart';
-import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
-import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -210,12 +208,6 @@ class AiImproveController extends Notifier<AiImproveState> {
     }
 
     state = state.copyWith(isGenerating: true, clearErrorMessage: true);
-    unawaited(
-      ref.read(analyticsServiceProvider).logEvent(
-        AnalyticsEvents.aiActionUsed,
-        params: {AnalyticsEvents.paramAction: state.improvementType.name},
-      ),
-    );
     final aiService = ref.read(aiCareerServiceProvider);
 
     switch (state.improvementType) {

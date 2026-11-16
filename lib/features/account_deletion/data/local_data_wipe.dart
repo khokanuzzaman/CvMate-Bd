@@ -19,7 +19,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Removes CvMate's data from this device (Hive): CVs, cover letters, job
 /// applications, interview sessions, the cached plan and the preferences
-/// (including the AI consent, so the next account is asked again).
+/// (including the AI consent, so the next account is asked again; an
+/// analytics opt-out is kept).
 ///
 /// The one-free-export counter is kept on purpose: it is not personal data,
 /// and resetting it would turn "delete account" into a free-export reset.
@@ -34,9 +35,16 @@ Future<void> wipeLocalCvMateData(Ref ref) async {
     'interview sessions': () =>
         ref.read(interviewPrepSessionRepositoryProvider).clearAllSessions(),
     'plan cache': () => ref.read(aiEntitlementCacheProvider).clear(),
-    'preferences': () => ref
-        .read(settingsRepositoryProvider)
-        .savePreferences(const AppPreferences.defaults()),
+    // Back to defaults, except an analytics opt-out, which is kept.
+    'preferences': () async {
+      final repository = ref.read(settingsRepositoryProvider);
+      final current = await repository.loadPreferences();
+      await repository.savePreferences(
+        const AppPreferences.defaults().copyWith(
+          shareUsageAnalytics: current.shareUsageAnalytics,
+        ),
+      );
+    },
   };
   for (final MapEntry(:key, :value) in steps.entries) {
     try {

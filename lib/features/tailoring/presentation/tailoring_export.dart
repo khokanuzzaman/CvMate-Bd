@@ -2,11 +2,12 @@ import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/features/subscription/presentation/export_gate.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_controller.dart';
 import 'package:careermatebd/shared/services/pdf/cv_pdf_service.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
 
-const String _exportSource = 'tailoring';
+const ExportSource _exportSource = ExportSource.tailoring;
 
 /// "Save & export": saves the tailored CV as a new copy (unless this exact
 /// result was already saved), then shares the PDF through the single export
@@ -44,7 +45,7 @@ Future<void> saveAndExportTailored(WidgetRef ref, BuildContext context) async {
     ref: ref,
     context: context,
     source: _exportSource,
-    exportType: 'share',
+    format: ExportFormat.share,
     cvId: _exportedCvId(ref, profile.id),
     export: () async {
       final bytes = await pdfService.generateCvPdf(profile: profile);
@@ -68,7 +69,7 @@ Future<void> printTailored(WidgetRef ref, BuildContext context) async {
     ref: ref,
     context: context,
     source: _exportSource,
-    exportType: 'print',
+    format: ExportFormat.print,
     cvId: _exportedCvId(ref, profile.id),
     export: () => Printing.layoutPdf(
       name: fileName,
