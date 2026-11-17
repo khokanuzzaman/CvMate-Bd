@@ -361,3 +361,46 @@ Every parameter is an enum.
       unless you have decided to enforce them.
 - [ ] Sign in on a test build, create a CV and check that it appears under
       `users/<uid>/cvs` in the Firestore console.
+
+### 17 Nov 2026: account deletion through the server (cvmate-api #7)
+
+- **Build:** Debug, `flutter run` from the tip of PR #29 (af17ec7, includes
+  #24–#28; CvMate-Bd main did not have them yet), with
+  `--dart-define=AI_API_BASE_URL=https://api.khokan.me` and
+  `USE_MOCK_AI=true`.
+- **Server:** api.khokan.me, cvmate-api main with #7 (664acec), the Admin
+  key in place (`no_firebase_admin_credentials` absent from the logs).
+- **Device:** iPhone 17 Pro simulator, iOS 26.5. Two throwaway accounts
+  (A and B).
+- **How it was checked:** a temporary, uncommitted probe in the debug build
+  called `GET /v1/me/entitlement`, Firebase Auth `accounts:lookup` and the
+  Firestore REST API with the user's own ID token, before and after the
+  delete, and logged only status codes, counts and the DELETE response's
+  `steps`.
+
+| Item | Result | Evidence |
+|---|---|---|
+| Login and Register: no Google button | PASS | Neither screen shows a Google button or the "or" divider. |
+| Cloud backup on a new account | PASS | A's CV appeared at `users/<uid>/cvs/<id>` in the console, with no "Missing or insufficient permissions" in the logs. The parent doc `users/<uid>` does not exist (subcollection only). |
+| Delete, sign-in older than 5 min (A) | PASS | The first call got `reauth_required` and nothing was deleted. The app asked for the password, re-authenticated and retried once. Response `steps = {serverData: done, firestore: done, authUser: done}`. |
+| Delete right after sign-in (B) | PASS | One call, no password prompt, same `steps`, signed out to Login. |
+| After delete: `GET /v1/me/entitlement` | PASS (A, B) | 401 `unauthenticated`, "This account was deleted." |
+| After delete: Firebase Auth | PASS (A, B) | `accounts:lookup` went from 200 (1 user) to 400 `USER_NOT_FOUND`. |
+| After delete: Firestore | PASS (A); weak (B) | A: `users/<uid>/cvs` went from 1 doc to 0, although `users/<uid>` itself never existed, so the recursive delete reaches orphaned subcollections. B had no backup doc before the delete (0 docs), so B only shows the step does not fail on an empty tree. |
+| First attempts before the rebuild | FAIL, fixed | Twice the server answered with the old handler: `{ok, deleted}` with no `steps`, Auth user and backup left in place. See finding 13. A was finished by the retry above. |
+
+#### Findings
+
+13. **A deploy that does not rebuild the image keeps the old code.** The
+    Dockerfile compiles `src` into the image, so `git pull` plus a restart
+    left the pre-#7 handler running; it returned 200 after deleting only the
+    server's own data. Deploy with `docker compose up -d --build` (as
+    DEPLOY.md says), then check the running build, for example that a
+    `DELETE /v1/me` response includes `steps`.
+
+#### Run before every release (added)
+
+- [ ] After deploying the API, delete a throwaway account with a backed-up
+      CV and check the response has `steps` with `firestore: done` and
+      `authUser: done`, then that the user is gone from Firebase
+      Authentication and `users/<uid>` from Firestore.
