@@ -38,12 +38,14 @@ final accountDeletionControllerProvider =
     );
 
 /// Runs [AccountDeletionService] for the Settings screen and keeps its
-/// loading / error state. The screen asks for confirmation first.
+/// loading / error state. The screen asks for confirmation and, when the
+/// server wants a recent sign-in ([AccountDeletionOutcome.needsPassword]),
+/// for the password.
 class AccountDeletionController extends Notifier<AccountDeletionState> {
   @override
   AccountDeletionState build() => const AccountDeletionState();
 
-  Future<AccountDeletionOutcome> delete() async {
+  Future<AccountDeletionOutcome> delete({String? password}) async {
     if (state.isDeleting) {
       return AccountDeletionOutcome.failed;
     }
@@ -52,11 +54,17 @@ class AccountDeletionController extends Notifier<AccountDeletionState> {
     final account = ref.read(currentAuthUserProvider) == null
         ? AccountKind.guest
         : AccountKind.signedIn;
-    unawaited(analytics.log(AnalyticsEvent.accountDeleteStart(account)));
-    final result = await ref.read(accountDeletionServiceProvider).delete();
+    // A retry with the password is the same deletion, not a new start.
+    if (password == null) {
+      unawaited(analytics.log(AnalyticsEvent.accountDeleteStart(account)));
+    }
+    final result = await ref
+        .read(accountDeletionServiceProvider)
+        .delete(password: password);
     await analytics.log(
       AnalyticsEvent.accountDeleteResult(account, switch (result.outcome) {
         AccountDeletionOutcome.deleted => DeleteResult.deleted,
+        AccountDeletionOutcome.needsPassword => DeleteResult.needsPassword,
         AccountDeletionOutcome.failed => DeleteResult.failed,
       }),
     );

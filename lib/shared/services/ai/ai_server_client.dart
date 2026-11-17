@@ -26,6 +26,10 @@ abstract final class AiFailureCodes {
   static const String tooLong = 'ai_payload_too_large';
   static const String invalidInput = 'ai_invalid_input';
   static const String authRequired = 'ai_auth_required';
+
+  /// The server wants a recent sign-in (account deletion): ask for the
+  /// password, re-authenticate, then call again.
+  static const String reauthRequired = 'ai_reauth_required';
   static const String consentRequired = 'ai_consent_required';
   static const String failed = 'ai_failed';
 }
@@ -40,6 +44,8 @@ abstract final class AiFailureMessages {
   static const String tooLong = 'This text is too long.';
   static const String invalidInput = 'Please check your input and try again.';
   static const String login = 'Please sign in to use AI features.';
+  static const String reauth =
+      'For your security, please enter your password again.';
   static const String generic = 'AI generation failed. Please try again.';
 }
 
@@ -186,6 +192,11 @@ class AiServerClient {
 
     final serverCode = _serverErrorCode(response.data);
     switch (response.statusCode) {
+      case 401 when serverCode == 'reauth_required':
+        return const AppException(
+          AiFailureMessages.reauth,
+          code: AiFailureCodes.reauthRequired,
+        );
       case 401:
         return const AppException(
           AiFailureMessages.login,

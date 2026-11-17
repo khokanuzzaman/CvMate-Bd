@@ -1,4 +1,8 @@
+import 'package:careermatebd/core/errors/app_exception.dart';
+import 'package:careermatebd/core/errors/failure.dart';
+import 'package:careermatebd/core/utils/result.dart';
 import 'package:careermatebd/features/auth/domain/repositories/auth_repository.dart';
+import 'package:careermatebd/shared/services/ai/ai_server_client.dart';
 import 'package:careermatebd/shared/services/billing/billing_service.dart';
 
 /// How a deletion attempt ended.
@@ -6,8 +10,12 @@ enum AccountDeletionOutcome {
   /// Everything is gone; the app should go back to onboarding.
   deleted,
 
-  /// The server call failed; [AccountDeletionResult.message] says what to
-  /// tell the user. Nothing on this device was touched.
+  /// The server wants a recent sign-in: ask for the password and call
+  /// again with it. Nothing was deleted.
+  needsPassword,
+
+  /// A step failed; [AccountDeletionResult.message] says what to tell the
+  /// user. Nothing on this device was touched.
   failed,
 }
 
@@ -22,6 +30,9 @@ abstract final class AccountDeletionMessages {
   static const String failed =
       "Couldn't finish deleting your account. Check your connection and try "
       'again; it continues from where it stopped.';
+  static const String reauthFailed =
+      "Couldn't confirm your sign-in. Please sign out, sign in again and "
+      'then delete your account.';
 }
 
 /// Deletes the signed-in user's account (App Store guideline 5.1.1(v)):
@@ -33,10 +44,13 @@ abstract final class AccountDeletionMessages {
 /// 3. RevenueCat `logOut()`;
 /// 4. all CvMate data on this device.
 ///
-/// The app needs no Firestore access and no fresh sign-in. If the server
-/// call fails nothing else happens and the user stays signed in; the server
-/// steps are idempotent, so a retry finishes the job. A guest with no
-/// account only gets step 4.
+/// The server refuses (`reauth_required`) when the sign-in is more than 5
+/// minutes old, before deleting anything: that gives
+/// [AccountDeletionOutcome.needsPassword], and calling again with the
+/// [password] re-authenticates and retries once. If the server call fails
+/// nothing else happens and the user stays signed in; the server steps are
+/// idempotent, so a retry finishes the job. A guest with no account only
+/// gets step 4.
 class AccountDeletionService {
   AccountDeletionService({
     required this.auth,
@@ -50,11 +64,32 @@ class AccountDeletionService {
   final BillingService billing;
   final Future<void> Function() wipeLocalData;
 
-  Future<AccountDeletionResult> delete() async {
+  Future<AccountDeletionResult> delete({String? password}) async {
     if (auth.currentUser != null) {
+      if (password != null) {
+        final reauth = await auth.reauthenticateWithPassword(password);
+        if (reauth case FailureResult(:final Failure error)) {
+          return AccountDeletionResult(
+            AccountDeletionOutcome.failed,
+            message: error.message,
+          );
+        }
+      }
       try {
         await deleteAccountOnServer();
-      } catch (_) {
+      } catch (error) {
+        if (error is AppException &&
+            error.code == AiFailureCodes.reauthRequired) {
+          // Asked once; after a re-authentication, don't loop.
+          return password == null
+              ? const AccountDeletionResult(
+                  AccountDeletionOutcome.needsPassword,
+                )
+              : const AccountDeletionResult(
+                  AccountDeletionOutcome.failed,
+                  message: AccountDeletionMessages.reauthFailed,
+                );
+        }
         return const AccountDeletionResult(
           AccountDeletionOutcome.failed,
           message: AccountDeletionMessages.failed,

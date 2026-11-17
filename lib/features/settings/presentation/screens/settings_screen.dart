@@ -199,8 +199,9 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  /// Confirm → delete → back to onboarding. The steps live in
-  /// [AccountDeletionController]; this only drives the dialog.
+  /// Confirm → delete (asking for the password if the server wants a recent
+  /// sign-in) → back to onboarding. The steps live in
+  /// [AccountDeletionController]; this only drives the dialogs.
   Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
     final hasAccount = ref.read(currentAuthUserProvider) != null;
     if (!await confirmAccountDeletion(context, hasAccount: hasAccount) ||
@@ -208,7 +209,14 @@ class SettingsScreen extends ConsumerWidget {
       return;
     }
     final controller = ref.read(accountDeletionControllerProvider.notifier);
-    final outcome = await controller.delete();
+    var outcome = await controller.delete();
+    if (outcome == AccountDeletionOutcome.needsPassword && context.mounted) {
+      final password = await askPasswordForDeletion(context);
+      if (password == null || !context.mounted) {
+        return;
+      }
+      outcome = await controller.delete(password: password);
+    }
     if (outcome != AccountDeletionOutcome.deleted || !context.mounted) {
       return;
     }

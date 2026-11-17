@@ -169,21 +169,6 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  /// Firebase's window for sensitive actions after a sign-in is about five
-  /// minutes; asking a little earlier avoids a failed delete.
-  static const Duration _recentLoginWindow = Duration(minutes: 4);
-
-  @override
-  bool get needsRecentLogin {
-    final user = _firebaseAuth.currentUser;
-    if (user == null || user.isAnonymous) {
-      return false;
-    }
-    final lastSignIn = user.metadata.lastSignInTime;
-    return lastSignIn == null ||
-        DateTime.now().difference(lastSignIn) > _recentLoginWindow;
-  }
-
   @override
   Future<Result<void>> reauthenticateWithPassword(String password) async {
     final user = _firebaseAuth.currentUser;
@@ -205,26 +190,6 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     } catch (_) {
       return const FailureResult<void>(
         Failure('Something went wrong. Please try again.'),
-      );
-    }
-  }
-
-  @override
-  Future<Result<void>> deleteCurrentUser() async {
-    final user = _firebaseAuth.currentUser;
-    if (user == null) {
-      return const Success<void>(null);
-    }
-    try {
-      await user.delete();
-      return const Success<void>(null);
-    } on fb_auth.FirebaseAuthException catch (error) {
-      return FailureResult<void>(
-        Failure(_messageForException(error), code: error.code),
-      );
-    } catch (_) {
-      return const FailureResult<void>(
-        Failure('Could not delete your account right now. Please try again.'),
       );
     }
   }
