@@ -264,7 +264,13 @@ The file is not part of any target, so it never ships in the app.
 | Feedback with both boxes ticked | NOT RUN | |
 | Test crash in Crashlytics | PASS (app side) | An uncaught `StateError` was thrown in the running app through the Dart debug service, with no code change. Crashlytics uploaded at once (HTTP 200 from `crashlyticsreports-pa`). The test message is in none of the local Crashlytics files. Check in the console that the issue shows the type, the stack and no message. |
 | Events in Firebase DebugView | PASS (app side) | Debug mode was on. See below for what was sent. Check that DebugView shows them. |
-| Account deletion | NOT RUN | Waiting for the go-ahead. |
+| Account deletion: confirmation dialog | PASS | Shows the subscription note and the *Manage subscriptions* link. |
+| Account deletion: password re-check | PASS | Sign-in older than 5 minutes gives `needs_password`, then "Confirm your password". |
+| Account deletion: first attempt | FAIL | The server data was deleted, then the Firestore step failed ("Couldn't delete your CV backup"). The deployed Firestore rules were the default deny-all; the repo's `firestore.rules` had never been deployed. The Firebase user was left in place, still signed in. |
+| Account deletion: retry after deploying the rules | PASS | `account_delete_result = deleted`; the app lands on onboarding. |
+| After deletion: `GET /v1/me/entitlement` with the old token | PASS | 401 `unauthenticated`, "This account was deleted." |
+| After deletion: Firebase Auth | PASS | `accounts:lookup` gives 400 `USER_NOT_FOUND`. It gave 200 before. |
+| After deletion: Firestore `users/<uid>` and `users/<uid>/cvs` | PASS, but weak | 404 and 0 documents. They were already empty, because no backup was ever written under the deny-all rules. Re-test with a backed-up CV. |
 
 **Events sent:**
 - `app_open`, `onboarding_step`, `onboarding_complete(choice=log_in)`;
@@ -306,3 +312,34 @@ Every parameter is an enum.
 7. **Expected App Check rejections.** Without a registered debug token,
    `firebaseappcheck.googleapis.com` answers 403 on the simulator. This is
    expected; the server is in monitor mode.
+8. **Firestore rules were never deployed (root cause of the deletion
+   failure).** Production still had the default deny-all rules, so every
+   Cloud backup read and write failed and account deletion stopped at the
+   Firestore step. The rules in `firestore.rules` were deployed on 17 Nov
+   2026. See the new pre-release check below.
+9. **Cloud backup showed "On" while every write failed.** Surface backup
+   errors in the UI, for example a "Backup failed, tap to retry" state on the
+   Cloud backup row and in the builder, instead of a silent failure.
+10. **Account deletion must not depend on Firestore access from the app.**
+    Move the Firestore cleanup (`users/<uid>/**`) and the Firebase Auth user
+    deletion into the server's `DELETE /v1/me` handler, using the Admin SDK.
+    The app then makes one call. Apple's guideline 5.1.1(v) needs deletion to
+    always work, whatever the state of the client rules or App Check.
+11. **A failed deletion leaves a half-deleted account.** The server data was
+    gone (401 on every request) while the user stayed signed in with a
+    Firebase account. Retrying finishes the job. Finding 10 removes this
+    state.
+
+#### Run before every release
+
+- [ ] Deploy the Firestore rules from the repo:
+      `firebase deploy --only firestore:rules --project careermatebd`.
+- [ ] Then open Firebase console > Firestore Database > **Rules**. The
+      published rules should match `firestore.rules`: owner-only access under
+      `users/{userId}/**`, everything else denied. The publish time should be
+      the deploy you just ran.
+- [ ] Open Firebase console > App Check > **APIs**. Cloud Firestore and
+      Authentication should be **Unenforced** (see `docs/APP_CHECK.md`),
+      unless you have decided to enforce them.
+- [ ] Sign in on a test build, create a CV and check that it appears under
+      `users/<uid>/cvs` in the Firestore console.
