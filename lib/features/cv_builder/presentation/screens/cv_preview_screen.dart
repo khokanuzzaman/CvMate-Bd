@@ -22,7 +22,8 @@ import 'package:go_router/go_router.dart';
 import 'package:printing/printing.dart';
 
 /// Paper-style CV preview with the template picker and PDF export. Export still
-/// goes through [runGatedExport] (first export free, then the paywall).
+/// goes through [runGatedExport] (Pro, an unlocked CV or the one free export;
+/// otherwise the paywall).
 class CvPreviewScreen extends ConsumerWidget {
   const CvPreviewScreen({super.key});
 
@@ -191,6 +192,7 @@ class CvPreviewScreen extends ConsumerWidget {
       context: context,
       source: _exportSource,
       exportType: kind.name,
+      cvId: profile.id,
       export: () async {
         switch (kind) {
           case _ExportKind.share:

@@ -1,74 +1,135 @@
+import 'package:careermatebd/shared/services/entitlement/ai_entitlement.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_record.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_service.dart';
-import 'package:careermatebd/shared/services/entitlement/entitlement_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../helpers/builder_harness.dart';
+
 void main() {
-  test('first export is allowed and the second is blocked (fair 1 free)', () async {
-    final store = _FakeStore(const EntitlementRecord.initial());
-    final service = EntitlementService(store);
+  test(
+    'first export is allowed and the second is blocked (fair 1 free)',
+    () async {
+      final store = FakeEntitlementStore();
+      final service = EntitlementService(store);
 
-    expect(await service.canExport(), isTrue);
-    expect(await service.remainingFreeExports, 1);
+      final first = await service.checkExport(cvId: 'cv-a');
+      expect(first, ExportAccess.freeExport);
+      expect(await service.remainingFreeExports, 1);
 
-    await service.recordSuccessfulExport();
+      await service.recordSuccessfulExport(first);
 
-    expect(await service.canExport(), isFalse);
-    expect(await service.remainingFreeExports, 0);
-    expect(store.saveCount, 1, reason: 'exactly one successful export persisted');
-  });
+      expect(await service.checkExport(cvId: 'cv-a'), ExportAccess.blocked);
+      expect(await service.remainingFreeExports, 0);
+      expect(
+        store.saveCount,
+        1,
+        reason: 'exactly one successful export persisted',
+      );
+    },
+  );
 
-  test('Pro bypasses the export gate and never consumes the free counter', () async {
-    final store = _FakeStore(
-      const EntitlementRecord(isPro: true, freeExportsUsed: 0),
+  test(
+    'the counter only moves on a successful export, not on checkExport()',
+    () async {
+      final store = FakeEntitlementStore();
+      final service = EntitlementService(store);
+
+      await service.checkExport(cvId: 'cv-a');
+      await service.checkExport(cvId: 'cv-a');
+
+      expect(
+        await service.remainingFreeExports,
+        1,
+        reason: 'checks do not consume',
+      );
+      expect(
+        store.saveCount,
+        0,
+        reason: 'checkExport() must never write locally',
+      );
+    },
+  );
+
+  test('server Pro bypasses the gate and never uses the free export', () async {
+    final store = FakeEntitlementStore();
+    final service = EntitlementService(
+      store,
+      server: _Server(const AiEntitlement(isPro: true, actionsLeft: 100)),
     );
-    final service = EntitlementService(store);
 
-    expect(await service.canExport(), isTrue);
-    await service.recordSuccessfulExport();
-    await service.recordSuccessfulExport();
-
-    expect(await service.canExport(), isTrue, reason: 'Pro is unlimited');
-    expect(await service.remainingFreeExports, 1, reason: 'free counter untouched');
-    expect(store.record.freeExportsUsed, 0);
+    final access = await service.checkExport(cvId: 'cv-a');
+    expect(access, ExportAccess.pro);
+    await service.recordSuccessfulExport(access);
+    expect(store.saveCount, 0, reason: 'Pro does not use the free export');
   });
 
-  test('the counter only moves on a successful export, not on canExport()', () async {
-    final store = _FakeStore(const EntitlementRecord.initial());
-    final service = EntitlementService(store);
+  test('an expired cached Pro is not Pro', () async {
+    final service = EntitlementService(
+      FakeEntitlementStore(const EntitlementRecord(freeExportsUsed: 1)),
+      server: _Server(
+        AiEntitlement(
+          isPro: true,
+          actionsLeft: 100,
+          proExpiresAt: DateTime.utc(2026, 1, 1),
+        ),
+      ),
+      now: () => DateTime.utc(2026, 11, 12),
+    );
 
-    await service.canExport();
-    await service.canExport();
-    await service.canExport();
-
-    expect(await service.remainingFreeExports, 1, reason: 'checks do not consume');
-    expect(store.saveCount, 0, reason: 'canExport() must never write');
+    expect(await service.checkExport(cvId: 'cv-a'), ExportAccess.blocked);
   });
 
-  test('setPro unblocks exporting after the free export is used', () async {
-    final store = _FakeStore(const EntitlementRecord.initial());
-    final service = EntitlementService(store);
+  test('an unlocked CV exports; a purchased unlock is claimed only for a new '
+      'CV after the free export', () async {
+    final server = _Server(
+      const AiEntitlement(
+        isPro: false,
+        actionsLeft: 8,
+        cvExportUnlocks: 1,
+        unlockedCvIds: ['cv-old'],
+      ),
+      claimable: true,
+    );
+    final store = FakeEntitlementStore();
+    final service = EntitlementService(store, server: server);
 
-    await service.recordSuccessfulExport();
-    expect(await service.canExport(), isFalse);
+    expect(await service.checkExport(cvId: 'cv-old'), ExportAccess.unlockedCv);
+    // The free export comes first; the purchased unlock is kept.
+    expect(await service.checkExport(cvId: 'cv-new'), ExportAccess.freeExport);
+    expect(server.claims, isEmpty);
 
-    await service.setPro(isPro: true);
-    expect(await service.canExport(), isTrue);
+    await service.recordSuccessfulExport(ExportAccess.freeExport);
+    expect(await service.checkExport(cvId: 'cv-new'), ExportAccess.unlockedCv);
+    expect(server.claims, ['cv-new']);
+  });
+
+  test('blocked when no unlock is left or the claim fails', () async {
+    final server = _Server(
+      const AiEntitlement(isPro: false, actionsLeft: 0, cvExportUnlocks: 1),
+    );
+    final service = EntitlementService(
+      FakeEntitlementStore(const EntitlementRecord(freeExportsUsed: 1)),
+      server: server,
+    );
+
+    expect(await service.checkExport(cvId: 'cv-a'), ExportAccess.blocked);
+    expect(server.claims, ['cv-a']);
   });
 }
 
-class _FakeStore implements EntitlementStore {
-  _FakeStore(this.record);
+class _Server implements ServerPlan {
+  _Server(this.value, {this.claimable = false});
 
-  EntitlementRecord record;
-  int saveCount = 0;
-
-  @override
-  Future<EntitlementRecord> load() async => record;
+  final AiEntitlement? value;
+  final bool claimable;
+  final List<String> claims = [];
 
   @override
-  Future<void> save(EntitlementRecord value) async {
-    record = value;
-    saveCount++;
+  Future<AiEntitlement?> current() async => value;
+
+  @override
+  Future<bool> claimExportUnlock(String cvId) async {
+    claims.add(cvId);
+    return claimable;
   }
 }

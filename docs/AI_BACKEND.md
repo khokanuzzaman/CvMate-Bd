@@ -39,15 +39,17 @@ the server, not in Firestore.
 | 401 after the retry | `ai_auth_required` | Sign in again |
 | 404 `app_not_found`, 500 | `ai_failed` (404 is logged) | Generic error |
 
-## Quota
+## Quota and plan
 
 `GET /v1/me/entitlement` →
-`{plan, proExpiresAt, actionsLeft, resetsAt}` (epoch ms; `resetsAt` is null on
-the free plan). Free: 3 AI actions in total. Pro: 100 per calendar month
-(UTC). Bonus credits are used last. `aiEntitlementProvider` shows the cached
-value (Hive, per uid) first, then refreshes on start, on app resume and after
-every AI call. Profile and the Tailor button show "AI actions left: N". The
-export gate (one free clean export) is still local, unchanged.
+`{plan, proExpiresAt, actionsLeft, resetsAt, cvExportUnlocks, unlockedCvIds}`
+(epoch ms; `resetsAt` is null on the free plan). The server is the **only**
+source of truth for Pro: the app has no local Pro flag. Free: 3 AI actions in
+total. Pro: 100 per calendar month (UTC). Bonus credits (5 per one-CV
+purchase) are used last. `aiEntitlementProvider` shows the cached value
+(Hive, per uid) first, then refreshes on start, on app resume, after every
+AI call and after a purchase. Profile and the Tailor button show "AI actions
+left: N". Billing (RevenueCat) and the export gate: see `docs/BILLING.md`.
 
 To make a user Pro or change the budget, see `cvmate-api/DEPLOY.md`.
 

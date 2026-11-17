@@ -605,7 +605,7 @@ abstract final class AppStrings {
   static const String paywallBodySuffix =
       '. Go Pro for unlimited tailored CVs — or pay once for just this one.';
   static const String paywallBenefitTailoring =
-      'Unlimited job tailoring & AI rewrites';
+      '100 AI actions a month for tailoring & rewrites';
   static const String paywallBenefitTemplates =
       'All templates, clean exports — no watermark';
   static const String paywallBenefitCloud =
@@ -615,13 +615,70 @@ abstract final class AppStrings {
   static const String paywallPerMonth = '/mo';
   static const String paywallPerYear = '/yr';
   static String paywallSave(int percent) => 'SAVE $percent%';
+  static String paywallTrial(int count, String unit) =>
+      '$count-$unit free trial';
   static const String paywallOneTimeTitle = 'Just this CV — one-time';
-  static const String paywallOneTimeSubtitle = 'No subscription';
-  static const String paywallNotAvailable =
-      "Pro isn't available yet — nothing is charged today.";
-  static const String paywallCta = 'Coming soon';
-  static const String paywallFooter = 'No auto-renew tricks · cancel anytime';
-  static const String paywallRestore = 'Restore purchase';
+  static const String paywallOneTimeSubtitle = '+5 AI actions · no subscription';
+  static const String paywallChoosePlan = 'Choose a plan';
+  static const String paywallCtaSubscribe = 'Subscribe';
+  static const String paywallCtaTrial = 'Start free trial';
+  static String paywallCtaBuy(String price) => 'Buy for $price';
+  static const String paywallCtaSignIn = 'Sign in to continue';
+  static const String paywallCtaProcessing = 'Processing…';
+  static const String paywallCtaActivating = 'Activating your plan…';
+  static const String paywallRestore = 'Restore purchases';
+  static const String paywallTerms = 'Terms of Use';
+  static const String paywallPrivacy = 'Privacy Policy';
+  static const String paywallLoading = 'Loading plans…';
+  static const String paywallLoadFailed = "Couldn't load the plans";
+  static const String paywallUnavailable =
+      "Purchases aren't available on this device.";
+  static const String paywallSignInNeeded =
+      'Sign in first so your purchase stays with your account.';
+  static const String paywallCancelled =
+      'Purchase cancelled. Nothing was charged.';
+  static const String paywallPending =
+      'Your purchase is waiting for approval. It unlocks as soon as the store '
+      'confirms it.';
+  static const String paywallActivationSlow =
+      'Payment received. Activating can take a minute — your plan updates '
+      'automatically.';
+  static const String paywallRestoredNothing =
+      'No active subscription was found for this store account.';
+  static const String paywallProActive =
+      "You're Pro. Thanks for supporting "
+      'CvMate!';
+  static const String paywallPurchaseDone = 'Purchase complete.';
+  static String paywallStoreAccount({required bool apple}) =>
+      apple ? 'Apple ID' : 'Google Play account';
+
+  /// The auto-renew terms Apple requires next to a subscription's price.
+  static String paywallSubscriptionTerms({
+    required String price,
+    required bool yearly,
+    required String account,
+    String? trial,
+  }) {
+    final period = yearly ? 'year' : 'month';
+    final start = trial == null
+        ? '$price per $period. Payment is charged to your $account when you '
+              'confirm the purchase.'
+        : '$trial, then $price per $period. Payment is charged to your '
+              '$account when the trial ends; cancel before then and you are '
+              'not charged.';
+    return '$start The subscription renews automatically for the same price '
+        'and period unless auto-renew is turned off at least 24 hours before '
+        'the end of the current period; the renewal is charged within the 24 '
+        'hours before it ends. Manage or cancel it any time in your $account '
+        'settings.';
+  }
+
+  static String paywallOneTimeTerms({
+    required String price,
+    required String account,
+  }) =>
+      'One-time payment of $price, charged to your $account. Unlocks export '
+      'of one CV and adds 5 AI actions. No subscription, nothing renews.';
 
   // ATS check
   static const String atsTitle = 'ATS check';

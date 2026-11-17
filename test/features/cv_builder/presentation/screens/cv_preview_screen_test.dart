@@ -262,10 +262,7 @@ void main() {
       tester,
     ) async {
       final store = FakeEntitlementStore(
-        const EntitlementRecord(
-          isPro: false,
-          freeExportsUsed: 1,
-        ),
+        const EntitlementRecord(freeExportsUsed: 1),
       );
       await pumpBuilderApp(
         tester,
@@ -480,10 +477,7 @@ void main() {
       final calls = <MethodCall>[];
       _mockPrintingPlugin(tester, calls);
       final store = FakeEntitlementStore(
-        const EntitlementRecord(
-          isPro: false,
-          freeExportsUsed: 1,
-        ),
+        const EntitlementRecord(freeExportsUsed: 1),
       );
       await pumpBuilderApp(
         tester,

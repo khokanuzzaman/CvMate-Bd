@@ -6,6 +6,7 @@ import 'package:careermatebd/core/widgets/text_scale_clamp.dart';
 import 'package:careermatebd/features/cv_builder/data/cv_cloud_sync.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
+import 'package:careermatebd/shared/services/billing/billing_identity_sync.dart';
 import 'package:careermatebd/shared/services/entitlement/ai_entitlement_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +22,8 @@ class CareerMateApp extends ConsumerWidget {
     ref.watch(analyticsBootstrapProvider);
     // Keep "AI actions left" current when the app returns to the foreground.
     ref.watch(aiEntitlementResumeRefreshProvider);
+    // RevenueCat's app user id follows the Firebase uid.
+    ref.watch(billingIdentitySyncProvider);
 
     final router = ref.watch(appRouterProvider);
     final preferences = ref.watch(appPreferencesControllerProvider);

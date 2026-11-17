@@ -11,6 +11,7 @@ import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -105,6 +106,7 @@ Future<CoreFlowApp> pumpCoreFlow(
   FakeCoverLetterRepository? letters,
   RecordingAnalytics? analytics,
   Size surface = const Size(390, 1000),
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = surface;
   tester.view.devicePixelRatio = 1;
@@ -122,6 +124,7 @@ Future<CoreFlowApp> pumpCoreFlow(
       entitlementServiceProvider.overrideWithValue(
         EntitlementService(entitlements ?? FakeEntitlementStore()),
       ),
+      ...overrides,
     ],
   );
   addTearDown(container.dispose);

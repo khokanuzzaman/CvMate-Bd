@@ -122,6 +122,7 @@ class CvPdfPreviewScreen extends ConsumerWidget {
       ref: ref,
       context: context,
       source: 'cv_pdf_preview',
+      cvId: profile.id,
       exportType: 'share',
       export: () async {
         final bytes = await pdfService.generateCvPdf(profile: profile);
@@ -142,6 +143,7 @@ class CvPdfPreviewScreen extends ConsumerWidget {
       ref: ref,
       context: context,
       source: 'cv_pdf_preview',
+      cvId: profile.id,
       exportType: 'print',
       export: () => Printing.layoutPdf(
         name: fileName,

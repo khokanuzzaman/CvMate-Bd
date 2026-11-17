@@ -46,12 +46,11 @@ void registerProfileNavFlow() {
       await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));
       await pumpFor(tester, const Duration(milliseconds: 500));
       await shot(tester, 'profile', 'profile-bottom');
+      // Restore purchases → the paywall (Restore is there) → close.
       await tapText(tester, AppStrings.paywallRestore);
-      expect(
-        find.byType(AlertDialog),
-        findsNothing,
-        reason: 'Restore is disabled',
-      );
+      await waitFor(tester, find.text(AppStrings.paywallTitle));
+      await tapOn(tester, find.bySemanticsLabel(AppStrings.paywallClose));
+      await waitGone(tester, find.text(AppStrings.paywallTitle));
       await tapText(tester, AppStrings.profilePrivacyTerms);
       await waitFor(tester, find.byType(AlertDialog));
       await shot(tester, 'profile', 'privacy-terms');
