@@ -338,6 +338,15 @@ Every parameter is an enum.
     Firebase account. Retrying finishes the job. Finding 10 removes this
     state. *Fix in review:* if a server step fails the app stays signed in
     with its device data and shows a retry message; the retry finishes.
+12. **Google sign-in placeholder removed; adding Google later needs Apple
+    too.** The disabled "Continue with Google" / "Sign up with Google"
+    button ("coming soon") was removed from Login and Register, since App
+    Review rejects placeholder features. If Google sign-in is added later,
+    Sign in with Apple is required as well (guideline 4.8), and the
+    delete-account re-authentication must support both: on
+    `reauth_required` it re-authenticates with the user's own provider
+    (Google or Apple credential), not the password, with a test per
+    provider on the app and the server.
 
 #### Run before every release
 

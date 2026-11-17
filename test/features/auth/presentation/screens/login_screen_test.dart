@@ -46,11 +46,10 @@ void main() {
     expect(find.text(AppStrings.authPasswordLabel), findsOneWidget);
     expect(find.text(AppStrings.loginForgot), findsOneWidget);
     expect(_logInButton, findsOneWidget);
-    expect(find.text(AppStrings.authOr), findsOneWidget);
     expect(find.text(AppStrings.loginNewHere), findsOneWidget);
   });
 
-  testWidgets('Google sign-in is shown disabled (not implemented yet)', (
+  testWidgets('no placeholder Google sign-in button (App Review)', (
     tester,
   ) async {
     await pumpAuthScreen(
@@ -59,11 +58,9 @@ void main() {
       initialLocation: '/login',
     );
 
-    final button = tester.widget<SocialAuthButton>(
-      find.byType(SocialAuthButton),
-    );
-    expect(button.label, AppStrings.loginGoogle);
-    expect(button.onPressed, isNull);
+    expect(find.byType(SocialAuthButton), findsNothing);
+    expect(find.textContaining('Google'), findsNothing);
+    expect(find.text(AppStrings.authOr), findsNothing);
   });
 
   testWidgets('password field toggles between hidden and visible', (

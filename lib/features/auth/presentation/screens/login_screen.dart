@@ -7,10 +7,8 @@ import 'package:careermatebd/core/utils/validators.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/app_text_field.dart';
 import 'package:careermatebd/core/widgets/brand_logo_tile.dart';
-import 'package:careermatebd/core/widgets/social_auth_button.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/login_controller.dart';
 import 'package:careermatebd/features/auth/presentation/widgets/auth_error_banner.dart';
-import 'package:careermatebd/features/auth/presentation/widgets/auth_or_divider.dart';
 import 'package:careermatebd/features/auth/presentation/widgets/auth_page_layout.dart';
 import 'package:careermatebd/features/auth/presentation/widgets/auth_switch_link.dart';
 import 'package:flutter/material.dart';
@@ -147,15 +145,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ? AppStrings.loginSubmitting
                       : AppStrings.authLogIn,
                   onPressed: state.isLoading ? null : _submit,
-                ),
-                const SizedBox(height: AppSpacing.s20),
-                const AuthOrDivider(),
-                const SizedBox(height: AppSpacing.s20),
-                // TODO(google-sign-in): wire once AuthRepository supports it.
-                const SocialAuthButton(
-                  label: AppStrings.loginGoogle,
-                  onPressed: null,
-                  disabledHint: AppStrings.authGoogleComingSoon,
                 ),
               ],
             ),

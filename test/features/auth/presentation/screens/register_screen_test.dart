@@ -59,7 +59,7 @@ void main() {
     expect(find.text(AppStrings.authHaveAccount), findsOneWidget);
   });
 
-  testWidgets('Google sign-up is shown disabled (not implemented yet)', (
+  testWidgets('no placeholder Google sign-up button (App Review)', (
     tester,
   ) async {
     await pumpAuthScreen(
@@ -68,11 +68,9 @@ void main() {
       initialLocation: '/register',
     );
 
-    final button = tester.widget<SocialAuthButton>(
-      find.byType(SocialAuthButton),
-    );
-    expect(button.label, AppStrings.registerGoogle);
-    expect(button.onPressed, isNull);
+    expect(find.byType(SocialAuthButton), findsNothing);
+    expect(find.textContaining('Google'), findsNothing);
+    expect(find.text(AppStrings.authOr), findsNothing);
   });
 
   testWidgets('strength meter follows the password being typed', (
