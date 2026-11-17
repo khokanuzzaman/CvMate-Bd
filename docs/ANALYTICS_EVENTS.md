@@ -75,7 +75,7 @@ enforces it is in `lib/shared/services/analytics/`:
 | `login` | `method`: `email` | A login succeeds | Do people come back on new devices? |
 | `logout` | – | A logout succeeds | How often do people sign out? |
 | `account_delete_start` | `account`: `guest` \| `signed_in` | *Delete account* is confirmed (not on the password retry) | How many users try to delete their account? |
-| `account_delete_result` | `account`, `result`: `deleted` \| `needs_password` \| `failed` | Deletion ends | Does deletion work, or does it fail? |
+| `account_delete_result` | `account`, `result`: `deleted` \| `failed` | Deletion ends | Does deletion work, or does it fail? |
 
 ### CV building and ATS
 

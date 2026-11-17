@@ -199,9 +199,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  /// Confirm → delete (asking for the password if Firebase needs a recent
-  /// sign-in) → back to onboarding. The steps live in
-  /// [AccountDeletionController]; this only drives the dialogs.
+  /// Confirm → delete → back to onboarding. The steps live in
+  /// [AccountDeletionController]; this only drives the dialog.
   Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
     final hasAccount = ref.read(currentAuthUserProvider) != null;
     if (!await confirmAccountDeletion(context, hasAccount: hasAccount) ||
@@ -209,14 +208,7 @@ class SettingsScreen extends ConsumerWidget {
       return;
     }
     final controller = ref.read(accountDeletionControllerProvider.notifier);
-    var outcome = await controller.delete();
-    if (outcome == AccountDeletionOutcome.needsPassword && context.mounted) {
-      final password = await askPasswordForDeletion(context);
-      if (password == null || !context.mounted) {
-        return;
-      }
-      outcome = await controller.delete(password: password);
-    }
+    final outcome = await controller.delete();
     if (outcome != AccountDeletionOutcome.deleted || !context.mounted) {
       return;
     }

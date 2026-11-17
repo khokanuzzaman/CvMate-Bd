@@ -24,8 +24,8 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
 
 void main() {
   testWidgets('Delete account: the dialog points to the store to cancel a '
-      'subscription, asks for the password, then deletes and goes to '
-      'onboarding', (tester) async {
+      'subscription, then deletes (no password, even for an old sign-in) '
+      'and goes to onboarding', (tester) async {
     final auth = FakeAuthRepository();
     addTearDown(auth.dispose);
     await auth.signInWithEmailAndPassword(email: 'a@b.c', password: 'secret12');
@@ -51,8 +51,7 @@ void main() {
         accountDeletionServiceProvider.overrideWithValue(
           AccountDeletionService(
             auth: auth,
-            deleteServerData: () async => steps.add('server'),
-            deleteCloudData: (uid) async => steps.add('firestore'),
+            deleteAccountOnServer: () async => steps.add('server'),
             billing: FakeBillingService(),
             wipeLocalData: () async => steps.add('local'),
           ),
@@ -68,13 +67,9 @@ void main() {
         findsOneWidget);
 
     await _tap(tester, find.text(AppStrings.deleteAccountConfirm));
-    expect(find.text(AppStrings.deleteAccountPasswordTitle), findsOneWidget);
-    expect(steps, isEmpty, reason: 'nothing is deleted before re-auth');
 
-    await tester.enterText(find.byType(TextField), 'secret12');
-    await _tap(tester, find.text(AppStrings.deleteAccountConfirm));
-
-    expect(steps, ['server', 'firestore', 'local']);
+    expect(find.byType(TextField), findsNothing);
+    expect(steps, ['server', 'local']);
     expect(auth.currentUser, isNull);
     expect(find.text(placeholderFor(RouteNames.onboardingPath)),
         findsOneWidget);
@@ -105,8 +100,7 @@ void main() {
         accountDeletionServiceProvider.overrideWithValue(
           AccountDeletionService(
             auth: auth,
-            deleteServerData: () async => steps.add('server'),
-            deleteCloudData: (uid) async => steps.add('firestore'),
+            deleteAccountOnServer: () async => steps.add('server'),
             billing: FakeBillingService(),
             wipeLocalData: () async => steps.add('local'),
           ),

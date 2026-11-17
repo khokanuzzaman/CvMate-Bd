@@ -13,17 +13,15 @@ class _Steps {
     FakeAuthRepository auth, {
     FakeBillingService? billing,
   }) {
-    final store = billing ?? FakeBillingService();
     return AccountDeletionService(
       auth: auth,
-      deleteServerData: () async {
+      deleteAccountOnServer: () async {
         log.add('server');
         if (serverFails) {
           throw Exception('offline');
         }
       },
-      deleteCloudData: (uid) async => log.add('firestore:$uid'),
-      billing: store,
+      billing: billing ?? FakeBillingService(),
       wipeLocalData: () async => log.add('local'),
     );
   }
@@ -37,17 +35,19 @@ Future<FakeAuthRepository> _signedIn() async {
 }
 
 void main() {
-  test('deletes in order: server, Firestore, Auth user, RevenueCat, device',
+  test('one server call, then sign-out, RevenueCat and this device; no '
+      'Firestore or client-side Auth delete, even for an old sign-in',
       () async {
     final auth = await _signedIn();
+    auth.recentLoginRequired = true;
     final billing = FakeBillingService();
     final steps = _Steps();
 
     final result = await steps.service(auth, billing: billing).delete();
 
     expect(result.outcome, AccountDeletionOutcome.deleted);
-    expect(steps.log, ['server', 'firestore:signed-in-user', 'local']);
-    expect(auth.deleteCount, 1);
+    expect(steps.log, ['server', 'local']);
+    expect(auth.deleteCount, 0, reason: 'the server deletes the Auth user');
     expect(auth.currentUser, isNull);
     expect(billing.identityCalls, [null], reason: 'Purchases.logOut()');
   });
@@ -61,39 +61,23 @@ void main() {
 
     expect(result.outcome, AccountDeletionOutcome.deleted);
     expect(steps.log, ['local']);
-    expect(auth.deleteCount, 0);
   });
 
-  test('an old sign-in asks for the password before deleting anything; '
-      'the right password then deletes', () async {
-    final auth = await _signedIn();
-    auth.recentLoginRequired = true;
-    final steps = _Steps();
-    final service = steps.service(auth);
-
-    expect((await service.delete()).outcome,
-        AccountDeletionOutcome.needsPassword);
-    expect(steps.log, isEmpty);
-
-    final wrong = await service.delete(password: 'nope');
-    expect(wrong.outcome, AccountDeletionOutcome.failed);
-    expect(wrong.message, contains('Incorrect password'));
-    expect(steps.log, isEmpty);
-
-    expect((await service.delete(password: 'secret12')).outcome,
-        AccountDeletionOutcome.deleted);
-    expect(steps.log, ['server', 'firestore:signed-in-user', 'local']);
-  });
-
-  test('when the server cannot be reached nothing else is deleted', () async {
+  test('a failed server call keeps the user signed in and the device data; '
+      'a retry finishes', () async {
     final auth = await _signedIn();
     final steps = _Steps()..serverFails = true;
+    final service = steps.service(auth);
 
-    final result = await steps.service(auth).delete();
-
+    final result = await service.delete();
     expect(result.outcome, AccountDeletionOutcome.failed);
-    expect(result.message, AccountDeletionMessages.server);
+    expect(result.message, AccountDeletionMessages.failed);
     expect(steps.log, ['server']);
     expect(auth.currentUser, isNotNull);
+
+    steps.serverFails = false;
+    expect((await service.delete()).outcome, AccountDeletionOutcome.deleted);
+    expect(steps.log, ['server', 'server', 'local']);
+    expect(auth.currentUser, isNull);
   });
 }

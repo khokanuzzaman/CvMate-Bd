@@ -700,10 +700,6 @@ abstract final class AppStrings {
       "all CvMate data from this device. It can't be undone.";
   static const String deleteAccountConfirm = 'Delete';
   static const String deleteAccountCancel = 'Cancel';
-  static const String deleteAccountPasswordTitle = 'Confirm your password';
-  static const String deleteAccountPasswordBody =
-      'For your security, enter your password to delete your account.';
-  static const String deleteAccountPasswordLabel = 'Password';
   static const String deleteAccountDone = 'Your account was deleted.';
   static const String deleteLocalDataDone = 'CvMate data was removed from '
       'this device.';

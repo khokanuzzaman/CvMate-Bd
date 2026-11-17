@@ -287,7 +287,6 @@ enum AccountKind implements AnalyticsValue {
 /// How account deletion ended.
 enum DeleteResult implements AnalyticsValue {
   deleted,
-  needsPassword,
   failed;
 
   @override
