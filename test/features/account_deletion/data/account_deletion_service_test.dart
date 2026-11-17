@@ -57,6 +57,21 @@ void main() {
     expect(billing.identityCalls, [null], reason: 'Purchases.logOut()');
   });
 
+  test('an anonymous Firebase user (no password) is deleted with the one '
+      'server call and never asked for a password', () async {
+    final auth = FakeAuthRepository();
+    addTearDown(auth.dispose);
+    await auth.signInAnonymously();
+    final steps = _Steps();
+
+    final result = await steps.service(auth).delete();
+
+    expect(result.outcome, AccountDeletionOutcome.deleted);
+    expect(steps.log, ['server', 'local']);
+    expect(auth.reauthPasswords, isEmpty);
+    expect(auth.currentUser, isNull);
+  });
+
   test('a guest with no account only wipes this device', () async {
     final auth = FakeAuthRepository();
     addTearDown(auth.dispose);
