@@ -3,7 +3,9 @@ import 'dart:developer' as developer;
 
 import 'package:careermatebd/core/config/env_config.dart';
 import 'package:careermatebd/core/errors/app_exception.dart';
+import 'package:careermatebd/core/utils/number_formatter.dart';
 import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
+import 'package:careermatebd/shared/services/ai/ai_input_limits.dart';
 import 'package:careermatebd/shared/services/app_check/app_check_service.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -41,12 +43,32 @@ abstract final class AiFailureMessages {
   static const String quota = "You've used all your AI actions.";
   static const String rateLimited =
       'Too many AI requests. Please wait a minute and try again.';
-  static const String tooLong = 'This text is too long.';
+
+  /// The server refused the whole request (HTTP 413).
+  static const String tooLong =
+      'This request is too large for the AI server '
+      '(max ${AiInputLimits.serverBodyLimitKb} KB in total). '
+      'Please shorten the pasted text and try again.';
+  static String jobPostTooLong(int length) => _tooLong(
+    'This job post is too long',
+    AiInputLimits.jobPostMaxChars,
+    length,
+  );
+  static String inputTextTooLong(int length) => _tooLong(
+    'This text is too long',
+    AiInputLimits.inputTextMaxChars,
+    length,
+  );
   static const String invalidInput = 'Please check your input and try again.';
   static const String login = 'Please sign in to use AI features.';
   static const String reauth =
       'For your security, please enter your password again.';
   static const String generic = 'AI generation failed. Please try again.';
+
+  static String _tooLong(String what, int max, int length) =>
+      '$what: max ${NumberFormatter.thousands(max)} characters, '
+      'yours is ${NumberFormatter.thousands(length)}. '
+      'Please cut about ${NumberFormatter.thousands(length - max)} characters.';
 }
 
 final aiServerDioProvider = Provider<Dio>((ref) {

@@ -7,6 +7,7 @@ import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart
 import 'package:careermatebd/features/cv_builder/domain/entities/project_info.dart';
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
 import 'package:careermatebd/shared/services/ai/ai_career_service.dart';
+import 'package:careermatebd/shared/services/ai/ai_input_limits.dart';
 import 'package:careermatebd/shared/services/ai/ai_request_payload.dart';
 import 'package:careermatebd/shared/services/ai/ai_response_parser.dart';
 import 'package:careermatebd/shared/services/ai/ai_server_client.dart';
@@ -320,6 +321,11 @@ class ServerAiCareerService implements AiCareerService {
     String jobPost = '',
     Map<String, dynamic>? metadata,
   }) async {
+    final tooLong = _tooLongFailure(jobPost: jobPost, inputText: inputText);
+    if (tooLong != null) {
+      return FailureResult(tooLong);
+    }
+
     final payload = AiRequestPayload.build(
       action: action,
       language: language,
@@ -354,5 +360,27 @@ class ServerAiCareerService implements AiCareerService {
         Failure(AiFailureMessages.generic, code: AiFailureCodes.failed),
       );
     }
+  }
+
+  /// Checked before any request (and so before any quota is used).
+  Failure? _tooLongFailure({
+    required String jobPost,
+    required String inputText,
+  }) {
+    final jobPostLength = jobPost.trim().length;
+    if (jobPostLength > AiInputLimits.jobPostMaxChars) {
+      return Failure(
+        AiFailureMessages.jobPostTooLong(jobPostLength),
+        code: AiFailureCodes.tooLong,
+      );
+    }
+    final inputLength = inputText.trim().length;
+    if (inputLength > AiInputLimits.inputTextMaxChars) {
+      return Failure(
+        AiFailureMessages.inputTextTooLong(inputLength),
+        code: AiFailureCodes.tooLong,
+      );
+    }
+    return null;
   }
 }
