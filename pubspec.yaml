@@ -54,6 +54,7 @@ dependencies:
   in_app_review: ^2.0.12
   device_info_plus: ^13.3.0
   crypto: ^3.0.8
+  firebase_app_check: ^0.4.9
 
 dev_dependencies:
   flutter_test:

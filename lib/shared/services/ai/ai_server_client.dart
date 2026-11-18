@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:careermatebd/core/config/env_config.dart';
 import 'package:careermatebd/core/errors/app_exception.dart';
 import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
+import 'package:careermatebd/shared/services/app_check/app_check_service.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,14 +45,18 @@ abstract final class AiFailureMessages {
 
 final aiServerDioProvider = Provider<Dio>((ref) {
   return Dio(
-    BaseOptions(
-      baseUrl: EnvConfig.aiApiBaseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 120),
-      contentType: Headers.jsonContentType,
-      responseType: ResponseType.json,
-    ),
-  );
+      BaseOptions(
+        baseUrl: EnvConfig.aiApiBaseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 120),
+        contentType: Headers.jsonContentType,
+        responseType: ResponseType.json,
+      ),
+    )
+    // Every request to our server carries the Firebase App Check token.
+    ..interceptors.add(
+      AppCheckInterceptor(ref.watch(appCheckTokenReaderProvider)),
+    );
 });
 
 final idTokenReaderProvider = Provider<IdTokenReader>((ref) {

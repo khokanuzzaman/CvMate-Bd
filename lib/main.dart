@@ -1,6 +1,7 @@
 import 'package:careermatebd/app/app.dart';
 import 'package:careermatebd/core/config/env_config.dart';
 import 'package:careermatebd/firebase_options.dart';
+import 'package:careermatebd/shared/services/app_check/app_check_service.dart';
 import 'package:careermatebd/shared/services/crash/crash_reporter.dart';
 import 'package:careermatebd/shared/services/entitlement/ai_entitlement_repository.dart';
 import 'package:careermatebd/shared/services/review/review_prompt_store.dart';
@@ -33,6 +34,7 @@ Future<void> main() async {
   await HiveReviewPromptStore.openBox();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await activateAppCheck();
 
   // Off until the telemetry bootstrap reads "Share usage analytics" (and
   // always off in debug builds unless ANALYTICS_DEBUG=true).
