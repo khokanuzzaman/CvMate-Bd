@@ -1,3 +1,4 @@
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/features/ats_checker/domain/usecases/ats_rule_engine.dart';
 import 'package:careermatebd/features/ats_checker/presentation/controllers/ats_ai_target.dart';
 import 'package:careermatebd/features/ats_checker/presentation/controllers/ats_checker_state.dart';
@@ -211,6 +212,11 @@ class AtsCheckerController extends Notifier<AtsCheckerState> {
       state = state.copyWith(
         errorMessage: 'Check the job match first to copy suggestions.',
       );
+      return state.errorMessage;
+    }
+
+    if (!report.keywordMatchSupported) {
+      state = state.copyWith(errorMessage: AppStrings.keywordMatchEnglishOnly);
       return state.errorMessage;
     }
 

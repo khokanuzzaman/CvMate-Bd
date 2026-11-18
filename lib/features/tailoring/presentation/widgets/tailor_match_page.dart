@@ -86,6 +86,16 @@ class _MatchBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!report.keywordMatchSupported) {
+      return const Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _NoScoreCard(),
+          SizedBox(height: AppSpacing.s18),
+          _TruthfulNote(),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -142,6 +152,42 @@ class _ScoreCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.s6),
                 Text(
                   matchBody(hasMissingKeywords: hasMissing),
+                  style: AppTextStyles.bodySm.copyWith(color: AppColors.muted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shown instead of a score for a job post the keyword matcher cannot read
+/// (mostly non-Latin script), which would otherwise show a false 100%.
+class _NoScoreCard extends StatelessWidget {
+  const _NoScoreCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.s20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.translate_rounded, color: AppColors.primary),
+          const SizedBox(width: AppSpacing.s14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppStrings.keywordMatchEnglishOnly,
+                  style: AppTextStyles.appBar,
+                ),
+                const SizedBox(height: AppSpacing.s6),
+                Text(
+                  AppStrings.keywordMatchEnglishOnlyBody,
                   style: AppTextStyles.bodySm.copyWith(color: AppColors.muted),
                 ),
               ],

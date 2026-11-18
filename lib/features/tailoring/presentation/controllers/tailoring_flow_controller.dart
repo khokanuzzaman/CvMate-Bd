@@ -107,7 +107,8 @@ class TailoringFlowController extends Notifier<TailoringPage> {
 
 /// Keyword coverage of the tailored CV (with the user's edits applied) against
 /// the job post, from the same offline ATS engine as the first analysis.
-/// Null until there is a tailoring result.
+/// Null until there is a tailoring result, and for a job post the keyword
+/// matcher cannot read (mostly non-Latin script).
 final tailoredMatchPercentProvider = Provider.autoDispose<int?>((ref) {
   final state = ref.watch(tailoringControllerProvider);
   if (state.result == null) {
@@ -119,8 +120,8 @@ final tailoredMatchPercentProvider = Provider.autoDispose<int?>((ref) {
   if (tailored == null) {
     return null;
   }
-  return ref
+  final report = ref
       .read(atsRuleEngineProvider)
-      .analyzeJobPost(profile: tailored, jobPostText: state.jobPostText.trim())
-      .matchPercentage;
+      .analyzeJobPost(profile: tailored, jobPostText: state.jobPostText.trim());
+  return report.keywordMatchSupported ? report.matchPercentage : null;
 });
