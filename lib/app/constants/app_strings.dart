@@ -29,7 +29,6 @@ abstract final class AppStrings {
   static const String authHaveAccount = 'Already have an account?';
   static const String authShowPassword = 'Show password';
   static const String authHidePassword = 'Hide password';
-  static const String authGoogleComingSoon = 'Google sign-in is coming soon';
 
   // Auth — login
   static const String loginTitle = 'Welcome back';
@@ -37,7 +36,6 @@ abstract final class AppStrings {
   static const String loginPasswordHint = '••••••••';
   static const String loginForgot = 'Forgot?';
   static const String loginSubmitting = 'Logging in...';
-  static const String loginGoogle = 'Continue with Google';
   static const String loginNewHere = 'New here?';
   static const String createAccount = 'Create account';
 
@@ -56,7 +54,6 @@ abstract final class AppStrings {
   static const String registerTermsRequired =
       'Please accept the Terms and Privacy Policy to continue.';
   static const String registerSubmitting = 'Creating account...';
-  static const String registerGoogle = 'Sign up with Google';
   static const String passwordStrengthLabel = 'Password strength';
   static const String passwordStrengthEmpty = 'not entered';
   static const String passwordStrengthWeak = 'weak';
