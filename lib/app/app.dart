@@ -5,7 +5,7 @@ import 'package:careermatebd/core/theme/cv_mate_theme.dart';
 import 'package:careermatebd/core/widgets/text_scale_clamp.dart';
 import 'package:careermatebd/features/cv_builder/data/cv_cloud_sync.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
-import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
+import 'package:careermatebd/shared/services/analytics/telemetry_bootstrap.dart';
 import 'package:careermatebd/shared/services/billing/billing_identity_sync.dart';
 import 'package:careermatebd/shared/services/entitlement/ai_entitlement_controller.dart';
 import 'package:flutter/material.dart';
@@ -18,8 +18,8 @@ class CareerMateApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Activate CV cloud backup/restore (guest session + Firestore reconcile).
     ref.watch(cvCloudSyncProvider);
-    // Log app_open once for the analytics funnel.
-    ref.watch(analyticsBootstrapProvider);
+    // Analytics + Crashlytics on/off (Settings > Privacy), app_open, plan.
+    ref.watch(telemetryBootstrapProvider);
     // Keep "AI actions left" current when the app returns to the foreground.
     ref.watch(aiEntitlementResumeRefreshProvider);
     // RevenueCat's app user id follows the Firebase uid.

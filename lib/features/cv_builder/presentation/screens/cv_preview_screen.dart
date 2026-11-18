@@ -16,6 +16,7 @@ import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_preview
 import 'package:careermatebd/features/cv_builder/presentation/widgets/preview_warnings_banner.dart';
 import 'package:careermatebd/features/subscription/presentation/export_gate.dart';
 import 'package:careermatebd/shared/services/pdf/cv_pdf_service.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +28,7 @@ import 'package:printing/printing.dart';
 class CvPreviewScreen extends ConsumerWidget {
   const CvPreviewScreen({super.key});
 
-  static const String _exportSource = 'cv_preview';
+  static const ExportSource _exportSource = ExportSource.cvPreview;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -191,7 +192,10 @@ class CvPreviewScreen extends ConsumerWidget {
       ref: ref,
       context: context,
       source: _exportSource,
-      exportType: kind.name,
+      format: switch (kind) {
+        _ExportKind.share => ExportFormat.share,
+        _ExportKind.print => ExportFormat.print,
+      },
       cvId: profile.id,
       export: () async {
         switch (kind) {

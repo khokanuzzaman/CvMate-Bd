@@ -11,6 +11,7 @@ import 'package:careermatebd/features/subscription/presentation/widgets/paywall_
 import 'package:careermatebd/features/subscription/presentation/widgets/paywall_plans.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
+import 'package:careermatebd/shared/services/review/review_prompter.dart';
 import 'package:careermatebd/shared/services/billing/billing_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,10 +42,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(analyticsServiceProvider)
-          .logEvent(
-            AnalyticsEvents.paywallViewed,
-            params: {AnalyticsEvents.paramSource: widget.source ?? 'unknown'},
-          );
+          .log(AnalyticsEvent.paywallView(PaywallSource.parse(widget.source)));
+      // No rating request right after the paywall.
+      ref.read(reviewPrompterProvider).recordSetback();
     });
   }
 

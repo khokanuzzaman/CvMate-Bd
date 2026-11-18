@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:careermatebd/features/ats_checker/domain/usecases/ats_rule_engine.dart';
 import 'package:careermatebd/features/ats_checker/presentation/controllers/ats_ai_target.dart';
 import 'package:careermatebd/features/ats_checker/presentation/controllers/ats_checker_state.dart';
@@ -51,6 +55,7 @@ class AtsCheckerController extends Notifier<AtsCheckerState> {
         clearErrorMessage: true,
       );
       state = _rebuildAnalysis(nextState);
+      _logCvRun();
     } catch (_) {
       state = state.copyWith(
         hasInitialized: true,
@@ -61,6 +66,19 @@ class AtsCheckerController extends Notifier<AtsCheckerState> {
   }
 
   Future<void> reload() => initialize(force: true);
+
+  /// The CV check runs when the screen opens and when another CV is picked.
+  void _logCvRun() {
+    if (state.report case final report?) {
+      _logRun(AtsCheckKind.cv, report.score);
+    }
+  }
+
+  void _logRun(AtsCheckKind kind, int score) => unawaited(
+    ref
+        .read(analyticsServiceProvider)
+        .log(AnalyticsEvent.atsCheckRun(kind, score)),
+  );
 
   void selectCv(String? cvId) {
     if (cvId == state.selectedCvId) {
@@ -74,6 +92,7 @@ class AtsCheckerController extends Notifier<AtsCheckerState> {
         clearErrorMessage: true,
       ),
     );
+    _logCvRun();
   }
 
   void updateJobPostText(String value) {
@@ -123,6 +142,7 @@ class AtsCheckerController extends Notifier<AtsCheckerState> {
       jobMatchReport: report,
       clearErrorMessage: true,
     );
+    _logRun(AtsCheckKind.jobMatch, report.matchPercentage);
   }
 
   void selectAiTarget(AtsAiTarget target) {

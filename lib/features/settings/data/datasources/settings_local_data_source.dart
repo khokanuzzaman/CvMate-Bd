@@ -32,6 +32,7 @@ class SettingsLocalDataSource {
           map['languagePreference'] as String? ?? 'english',
         ),
         aiConsent: map['aiConsent'] == true,
+        shareUsageAnalytics: map['shareUsageAnalytics'] != false,
       );
     } catch (_) {
       return const AppPreferences.defaults();
@@ -46,6 +47,7 @@ class SettingsLocalDataSource {
         'themeMode': _themeModeToCode(preferences.themeMode),
         'languagePreference': preferences.languagePreference.code,
         'aiConsent': preferences.aiConsent,
+        'shareUsageAnalytics': preferences.shareUsageAnalytics,
       }),
     );
   }

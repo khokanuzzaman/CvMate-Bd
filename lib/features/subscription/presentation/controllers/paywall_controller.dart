@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:careermatebd/shared/services/billing/billing_models.dart';
 import 'package:careermatebd/shared/services/billing/billing_service.dart';
+import 'package:careermatebd/shared/services/crash/crash_reporter.dart';
 import 'package:careermatebd/shared/services/entitlement/ai_entitlement.dart';
 import 'package:careermatebd/shared/services/entitlement/ai_entitlement_controller.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -84,6 +87,20 @@ class PaywallController extends Notifier<PaywallState> {
   }
 
   BillingService get _billing => ref.read(billingServiceProvider);
+  AnalyticsService get _analytics => ref.read(analyticsServiceProvider);
+
+  void _log(AnalyticsEvent event) => unawaited(_analytics.log(event));
+
+  void _nonFatal(String code) => unawaited(
+    ref.read(crashReporterProvider).recordNonFatal(CrashArea.billing, code),
+  );
+
+  static PurchasePackage _packageOf(BillingPackage package) =>
+      switch (package.plan) {
+        BillingPlan.monthly => PurchasePackage.monthly,
+        BillingPlan.yearly => PurchasePackage.yearly,
+        BillingPlan.oneCv => PurchasePackage.oneCv,
+      };
   AiEntitlementController get _entitlement =>
       ref.read(aiEntitlementProvider.notifier);
 
@@ -103,6 +120,7 @@ class PaywallController extends Notifier<PaywallState> {
             )
           : state.copyWith(offering: AsyncData(offering));
     } on BillingException catch (error, stack) {
+      _nonFatal('offering_failed');
       if (ref.mounted) {
         state = state.copyWith(offering: AsyncError(error, stack));
       }
@@ -123,7 +141,20 @@ class PaywallController extends Notifier<PaywallState> {
     }
     final before = await _entitlement.current();
     state = state.copyWith(phase: PaywallPhase.purchasing);
+    final analyticsPackage = _packageOf(package);
+    _log(AnalyticsEvent.purchaseStart(analyticsPackage));
     final outcome = await _billing.purchase(package, uid: uid);
+    _log(
+      AnalyticsEvent.purchaseResult(switch (outcome.status) {
+        PurchaseStatus.completed => PurchaseResult.success,
+        PurchaseStatus.cancelled => PurchaseResult.cancelled,
+        PurchaseStatus.pending => PurchaseResult.pending,
+        PurchaseStatus.failed => PurchaseResult.failed,
+      }, analyticsPackage),
+    );
+    if (outcome.status == PurchaseStatus.failed) {
+      _nonFatal('purchase_failed');
+    }
     if (!ref.mounted) {
       return;
     }
@@ -150,6 +181,17 @@ class PaywallController extends Notifier<PaywallState> {
     }
     state = state.copyWith(phase: PaywallPhase.restoring);
     final outcome = await _billing.restore(uid: uid);
+    _log(
+      AnalyticsEvent.restoreResult(switch (outcome.status) {
+        PurchaseStatus.completed when outcome.hasPro => RestoreResult.restored,
+        PurchaseStatus.completed => RestoreResult.nothingToRestore,
+        PurchaseStatus.cancelled => RestoreResult.cancelled,
+        PurchaseStatus.pending || PurchaseStatus.failed => RestoreResult.failed,
+      }),
+    );
+    if (outcome.status == PurchaseStatus.failed) {
+      _nonFatal('restore_failed');
+    }
     if (!ref.mounted) {
       return;
     }

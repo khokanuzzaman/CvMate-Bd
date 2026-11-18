@@ -8,6 +8,7 @@ import 'package:careermatebd/core/widgets/custom_loading_view.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/subscription/presentation/export_gate.dart';
 import 'package:careermatebd/shared/services/pdf/cv_pdf_service.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -121,9 +122,9 @@ class CvPdfPreviewScreen extends ConsumerWidget {
     await runGatedExport(
       ref: ref,
       context: context,
-      source: 'cv_pdf_preview',
+      source: ExportSource.cvPdfPreview,
       cvId: profile.id,
-      exportType: 'share',
+      format: ExportFormat.share,
       export: () async {
         final bytes = await pdfService.generateCvPdf(profile: profile);
         await Printing.sharePdf(bytes: bytes, filename: fileName);
@@ -142,9 +143,9 @@ class CvPdfPreviewScreen extends ConsumerWidget {
     await runGatedExport(
       ref: ref,
       context: context,
-      source: 'cv_pdf_preview',
+      source: ExportSource.cvPdfPreview,
       cvId: profile.id,
-      exportType: 'print',
+      format: ExportFormat.print,
       export: () => Printing.layoutPdf(
         name: fileName,
         onLayout: (format) =>
