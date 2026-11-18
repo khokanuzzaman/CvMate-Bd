@@ -10,6 +10,7 @@ import 'package:careermatebd/shared/services/ai/ai_career_service.dart';
 import 'package:careermatebd/shared/services/ai/ai_request_payload.dart';
 import 'package:careermatebd/shared/services/ai/ai_response_parser.dart';
 import 'package:careermatebd/shared/services/ai/ai_server_client.dart';
+import 'package:careermatebd/shared/services/ai/idempotency_key.dart';
 
 /// [AiCareerService] backed by the AI server (`POST /v1/ai/generate`, repo
 /// `cvmate-api`). The server checks the Firebase ID token, the AI quota and
@@ -331,7 +332,13 @@ class ServerAiCareerService implements AiCareerService {
     );
 
     try {
-      final response = await client.postJson(generatePath, payload);
+      // One key per logical request: the client retries a lost connection
+      // with it, and the server answers a retry without a second charge.
+      final response = await client.postJson(
+        generatePath,
+        payload,
+        idempotencyKey: newIdempotencyKey(),
+      );
       final remaining = response['remainingActions'];
       if (remaining is num) {
         onRemainingActions?.call(remaining.toInt());
