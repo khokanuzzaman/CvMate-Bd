@@ -451,6 +451,8 @@ abstract final class AppStrings {
       "skills. We'll pull the keywords automatically.";
   static const String tailorWorksForAnyRole =
       'Works for any role — nurse, accountant, driver, developer.';
+  static const String tailorAnyLanguage =
+      'Paste the job post in any language. The tailored CV is in English.';
   static const String tailorJobTitleLabel = 'Job title';
   static const String tailorJobTitleHint = 'e.g. React Developer';
   static const String tailorCompanyLabel = 'Company';
@@ -484,6 +486,7 @@ abstract final class AppStrings {
   static const String tailorTailoring = 'Tailoring your CV...';
 
   // Tailor 3 — result
+  static const String tailorEnglishOutputNote = 'Tailored CV is in English';
   static const String tailorResultTitle = 'Your tailored CV';
   static String tailorMatchBadge(int percent) => 'Match $percent%';
   static const String tailorSummaryLabel = 'Professional summary';
