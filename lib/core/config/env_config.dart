@@ -21,26 +21,25 @@ abstract final class EnvConfig {
 
   /// Whether this build answers AI features with the mock. Never in release:
   /// a release build always uses the AI server.
-  static bool get isMockAiActive => !kReleaseMode && useMockAi;
+  static bool get isMockAiActive =>
+      mockAiActive(isRelease: kReleaseMode, flag: useMockAi);
+
+  /// The rule behind [isMockAiActive]: release ignores the USE_MOCK_AI flag.
+  static bool mockAiActive({required bool isRelease, required bool flag}) =>
+      !isRelease && flag;
 
   /// Why this build must not start, or null when its AI setup is acceptable.
   ///
-  /// A **release** build must call the real AI server over HTTPS and must
-  /// never ship the canned mock answers (fake tailoring, cover letters and
-  /// interview questions) to users.
+  /// A **release** build must call the real AI server over HTTPS. The
+  /// USE_MOCK_AI flag is not checked here: release ignores it
+  /// ([isMockAiActive]), and the Android and iOS release builds already refuse
+  /// to build from a `.env` with USE_MOCK_AI=true.
   static String? aiConfigurationProblem({
     bool isRelease = kReleaseMode,
     String baseUrl = aiApiBaseUrl,
-    bool? mockAi,
   }) {
     if (!isRelease) {
       return null;
-    }
-    // Only an explicit USE_MOCK_AI=true is refused; a missing key is fine
-    // because release never uses the mock.
-    if (mockAi ?? _readBool('USE_MOCK_AI', defaultValue: false)) {
-      return 'This release build would use the mock AI. Remove '
-          'USE_MOCK_AI=true from .env so AI features use the AI server.';
     }
     final uri = Uri.tryParse(baseUrl.trim());
     if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
