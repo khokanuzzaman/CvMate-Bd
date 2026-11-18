@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:careermatebd/app/constants/app_constants.dart';
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
@@ -10,6 +12,8 @@ import 'package:careermatebd/core/widgets/pager_dots.dart';
 import 'package:careermatebd/features/auth/presentation/widgets/auth_switch_link.dart';
 import 'package:careermatebd/features/onboarding/presentation/controllers/onboarding_seen_controller.dart';
 import 'package:careermatebd/features/onboarding/presentation/widgets/onboarding_cv_illustration.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +21,13 @@ import 'package:go_router/go_router.dart';
 /// First-run value prop: tailored-CV illustration, headline, and entry points.
 /// Leaving it (Get started / Skip / Log in) records that onboarding was seen so
 /// the router skips it on later launches.
+/// Logs `onboarding_step` once each time the onboarding screen is shown.
+final _onboardingViewedProvider = Provider.autoDispose<void>((ref) {
+  unawaited(
+    ref.read(analyticsServiceProvider).log(AnalyticsEvent.onboardingStep(1)),
+  );
+});
+
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
 
@@ -25,6 +36,7 @@ class OnboardingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(_onboardingViewedProvider);
     final screenHeight = MediaQuery.sizeOf(context).height;
     final illustrationHeight = (screenHeight * 0.42).clamp(240.0, 380.0);
 
@@ -54,7 +66,8 @@ class OnboardingScreen extends ConsumerWidget {
                         Text(AppStrings.brandName, style: AppTextStyles.title),
                         const Spacer(),
                         TextButton(
-                          onPressed: () => _enterApp(context, ref),
+                          onPressed: () =>
+                              _enterApp(context, ref, OnboardingChoice.skip),
                           style: TextButton.styleFrom(
                             minimumSize: const Size(
                               AppSpacing.minTouchTarget,
@@ -102,7 +115,8 @@ class OnboardingScreen extends ConsumerWidget {
                     PrimaryButton(
                       label: AppStrings.onboardingGetStarted,
                       trailingIcon: Icons.arrow_forward_rounded,
-                      onPressed: () => _enterApp(context, ref),
+                      onPressed: () =>
+                          _enterApp(context, ref, OnboardingChoice.getStarted),
                     ),
                     const SizedBox(height: AppSpacing.s6),
                     AuthSwitchLink(
@@ -122,7 +136,12 @@ class OnboardingScreen extends ConsumerWidget {
 
   /// Get started / Skip: explore the app as a guest, like the previous
   /// "Explore first" entry point.
-  Future<void> _enterApp(BuildContext context, WidgetRef ref) async {
+  Future<void> _enterApp(
+    BuildContext context,
+    WidgetRef ref,
+    OnboardingChoice choice,
+  ) async {
+    _logComplete(ref, choice);
     await ref.read(onboardingSeenControllerProvider.notifier).markSeen();
     if (!context.mounted) {
       return;
@@ -131,10 +150,17 @@ class OnboardingScreen extends ConsumerWidget {
   }
 
   Future<void> _logIn(BuildContext context, WidgetRef ref) async {
+    _logComplete(ref, OnboardingChoice.logIn);
     await ref.read(onboardingSeenControllerProvider.notifier).markSeen();
     if (!context.mounted) {
       return;
     }
     context.push(RouteNames.loginPath);
   }
+
+  void _logComplete(WidgetRef ref, OnboardingChoice choice) => unawaited(
+    ref
+        .read(analyticsServiceProvider)
+        .log(AnalyticsEvent.onboardingComplete(choice)),
+  );
 }

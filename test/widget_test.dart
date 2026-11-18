@@ -132,6 +132,10 @@ class _FakeAuthRepository implements AuthRepository {
     return const Success<void>(null);
   }
 
+  @override
+  Future<Result<void>> reauthenticateWithPassword(String password) async =>
+      const Success<void>(null);
+
   Future<void> dispose() async {
     await _controller.close();
   }

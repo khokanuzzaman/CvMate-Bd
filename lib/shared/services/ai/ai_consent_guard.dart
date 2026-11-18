@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:careermatebd/app/router/router_ai_interaction_port.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The UI the AI service layer needs without holding a [BuildContext]:
@@ -20,6 +24,18 @@ final aiConsentGuardProvider = Provider<AiConsentGuard>((ref) {
         .read(appPreferencesControllerProvider.notifier)
         .updateAiConsent(enabled: true),
     askForConsent: () => ref.read(aiInteractionPortProvider).requestAiConsent(),
+    onAsked: () => unawaited(
+      ref.read(analyticsServiceProvider).log(AnalyticsEvent.aiConsentShown),
+    ),
+    onAnswered: (allowed) => unawaited(
+      ref
+          .read(analyticsServiceProvider)
+          .log(
+            AnalyticsEvent.aiConsentResult(
+              allowed ? ConsentResult.allowed : ConsentResult.notNow,
+            ),
+          ),
+    ),
   );
 });
 
@@ -32,11 +48,17 @@ class AiConsentGuard {
     required this.hasConsent,
     required this.grantConsent,
     required this.askForConsent,
+    this.onAsked,
+    this.onAnswered,
   });
 
   final Future<bool> Function() hasConsent;
   final Future<void> Function() grantConsent;
   final Future<bool> Function() askForConsent;
+
+  /// Analytics: the sheet was shown, and what the user chose.
+  final void Function()? onAsked;
+  final void Function(bool allowed)? onAnswered;
 
   Future<bool>? _pending;
 
@@ -56,7 +78,9 @@ class AiConsentGuard {
   }
 
   Future<bool> _ask() async {
+    onAsked?.call();
     final allowed = await _safely(askForConsent);
+    onAnswered?.call(allowed);
     if (allowed) {
       await grantConsent();
     }

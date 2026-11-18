@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:careermatebd/core/config/env_config.dart';
 import 'package:careermatebd/core/errors/app_exception.dart';
 import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
+import 'package:careermatebd/shared/services/app_check/app_check_service.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,34 +20,49 @@ abstract final class AiFailureCodes {
   /// Too many AI requests in a minute: a snackbar is enough.
   static const String rateLimited = 'ai_rate_limited';
   static const String unavailable = 'ai_unavailable';
+
+  /// No network connection (DNS or connect failed).
+  static const String offline = 'ai_offline';
   static const String tooLong = 'ai_payload_too_large';
   static const String invalidInput = 'ai_invalid_input';
   static const String authRequired = 'ai_auth_required';
+
+  /// The server wants a recent sign-in (account deletion): ask for the
+  /// password, re-authenticate, then call again.
+  static const String reauthRequired = 'ai_reauth_required';
   static const String consentRequired = 'ai_consent_required';
   static const String failed = 'ai_failed';
 }
 
 abstract final class AiFailureMessages {
   static const String busy = 'AI is busy, please try again.';
+  static const String offline =
+      'You are offline. Check your connection and try again.';
   static const String quota = "You've used all your AI actions.";
   static const String rateLimited =
       'Too many AI requests. Please wait a minute and try again.';
   static const String tooLong = 'This text is too long.';
   static const String invalidInput = 'Please check your input and try again.';
   static const String login = 'Please sign in to use AI features.';
+  static const String reauth =
+      'For your security, please enter your password again.';
   static const String generic = 'AI generation failed. Please try again.';
 }
 
 final aiServerDioProvider = Provider<Dio>((ref) {
   return Dio(
-    BaseOptions(
-      baseUrl: EnvConfig.aiApiBaseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 120),
-      contentType: Headers.jsonContentType,
-      responseType: ResponseType.json,
-    ),
-  );
+      BaseOptions(
+        baseUrl: EnvConfig.aiApiBaseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 120),
+        contentType: Headers.jsonContentType,
+        responseType: ResponseType.json,
+      ),
+    )
+    // Every request to our server carries the Firebase App Check token.
+    ..interceptors.add(
+      AppCheckInterceptor(ref.watch(appCheckTokenReaderProvider)),
+    );
 });
 
 final idTokenReaderProvider = Provider<IdTokenReader>((ref) {
@@ -89,6 +105,18 @@ class AiServerClient {
   ) {
     return _send(
       (options) => dio.post<Object?>(path, data: body, options: options),
+    );
+  }
+
+  /// DELETE with an empty JSON object (the server rejects an empty body sent
+  /// as JSON).
+  Future<Map<String, dynamic>> deleteJson(String path) {
+    return _send(
+      (options) => dio.delete<Object?>(
+        path,
+        data: const <String, dynamic>{},
+        options: options,
+      ),
     );
   }
 
@@ -147,8 +175,15 @@ class AiServerClient {
 
   AppException _mapError(DioException error) {
     final response = error.response;
+    if (response == null && error.type == DioExceptionType.connectionError) {
+      // No network, or DNS / connect failed.
+      return const AppException(
+        AiFailureMessages.offline,
+        code: AiFailureCodes.offline,
+      );
+    }
     if (response == null) {
-      // Offline, DNS, TLS, connect / receive timeout.
+      // TLS, connect / receive timeout.
       return const AppException(
         AiFailureMessages.busy,
         code: AiFailureCodes.unavailable,
@@ -157,6 +192,11 @@ class AiServerClient {
 
     final serverCode = _serverErrorCode(response.data);
     switch (response.statusCode) {
+      case 401 when serverCode == 'reauth_required':
+        return const AppException(
+          AiFailureMessages.reauth,
+          code: AiFailureCodes.reauthRequired,
+        );
       case 401:
         return const AppException(
           AiFailureMessages.login,

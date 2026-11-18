@@ -26,12 +26,14 @@ class AppPreferences {
     required this.themeMode,
     required this.languagePreference,
     this.aiConsent = false,
+    this.shareUsageAnalytics = true,
   });
 
   const AppPreferences.defaults()
     : themeMode = ThemeMode.system,
       languagePreference = AppLanguagePreference.english,
-      aiConsent = false;
+      aiConsent = false,
+      shareUsageAnalytics = true;
 
   final ThemeMode themeMode;
   final AppLanguagePreference languagePreference;
@@ -40,15 +42,21 @@ class AppPreferences {
   /// and Anthropic (App Store guideline 5.1.2). Off until they choose.
   final bool aiConsent;
 
+  /// "Share usage analytics": Firebase Analytics and Crashlytics. On by
+  /// default (no content is ever sent); the user can turn it off any time.
+  final bool shareUsageAnalytics;
+
   AppPreferences copyWith({
     ThemeMode? themeMode,
     AppLanguagePreference? languagePreference,
     bool? aiConsent,
+    bool? shareUsageAnalytics,
   }) {
     return AppPreferences(
       themeMode: themeMode ?? this.themeMode,
       languagePreference: languagePreference ?? this.languagePreference,
       aiConsent: aiConsent ?? this.aiConsent,
+      shareUsageAnalytics: shareUsageAnalytics ?? this.shareUsageAnalytics,
     );
   }
 }

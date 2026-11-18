@@ -685,6 +685,34 @@ abstract final class AppStrings {
       'One-time payment of $price, charged to your $account. Unlocks export '
       'of one CV and adds 5 AI actions. No subscription, nothing renews.';
 
+  // Account deletion (Settings)
+  static const String deleteAccount = 'Delete account';
+  static const String deleteAccountDeleting = 'Deleting…';
+  static const String deleteAccountTitle = 'Delete your account?';
+  static const String deleteAccountBody =
+      'This permanently deletes your CvMate account: your CV backup, your '
+      'plan and AI history on our server, and all CvMate data on this '
+      "device. It can't be undone.";
+  static String deleteAccountSubscriptionNote({required bool apple}) =>
+      'Deleting your account does not cancel a subscription. If you have '
+      'CvMate Pro, cancel it first in your '
+      '${apple ? 'Apple ID' : 'Google Play'} settings.';
+  static const String deleteAccountManageSubscriptions =
+      'Manage subscriptions';
+  static const String deleteLocalDataTitle = 'Delete CvMate data?';
+  static const String deleteLocalDataBody =
+      "You're not signed in, so there's no account to delete. This removes "
+      "all CvMate data from this device. It can't be undone.";
+  static const String deleteAccountConfirm = 'Delete';
+  static const String deleteAccountCancel = 'Cancel';
+  static const String deleteAccountPasswordTitle = 'Confirm your password';
+  static const String deleteAccountPasswordBody =
+      'For your security, enter your password to delete your account.';
+  static const String deleteAccountPasswordLabel = 'Password';
+  static const String deleteAccountDone = 'Your account was deleted.';
+  static const String deleteLocalDataDone = 'CvMate data was removed from '
+      'this device.';
+
   // ATS check
   static const String atsTitle = 'ATS check';
   static const String atsCheckedNow = 'Checked just now';
@@ -929,4 +957,41 @@ abstract final class AppStrings {
       'Off: AI actions ask for permission first and send nothing until you '
       'allow them.';
   static String aiActionsLeft(int count) => 'AI actions left: $count';
+
+  // Privacy, rating and feedback (Settings)
+  static const String privacySection = 'Privacy';
+  static const String shareUsageAnalytics = 'Share usage analytics';
+  static const String shareUsageAnalyticsNote =
+      'Anonymous app usage and crash reports help us fix problems. Never your '
+      'CV, job posts or messages. Turning this off stops it right away.';
+  static const String rateCvMate = 'Rate CvMate';
+  static const String rateCvMateFailed = 'Could not open the App Store.';
+  static const String feedbackEntry = 'Report a problem / Send feedback';
+  static const String feedbackTitle = 'Report a problem';
+  static const String feedbackIntro =
+      'Tell us what went wrong or what we could do better. We read every '
+      'message.';
+  static const String feedbackCategoryLabel = 'What is it about?';
+  static const String feedbackCategoryBug = 'Bug';
+  static const String feedbackCategoryAi = 'AI result';
+  static const String feedbackCategoryPayment = 'Payment';
+  static const String feedbackCategoryOther = 'Other';
+  static const String feedbackMessageLabel = 'Your message';
+  static const String feedbackMessageHint =
+      'What happened, and what did you expect?';
+  static const String feedbackMessageEmpty = 'Please write a short message.';
+  static const String feedbackAttachDiagnostics = 'Attach diagnostics';
+  static const String feedbackAttachDiagnosticsNote =
+      'App version, iOS version, device model and the names of your last 20 '
+      'actions in the app. Never your CVs or messages.';
+  static const String feedbackAllowReply =
+      'You may reply to me at my sign-in email';
+  static const String feedbackSend = 'Send';
+  static const String feedbackSending = 'Sending…';
+  static const String feedbackSendFailed =
+      'Could not send your message. Please try again.';
+  static const String feedbackThanksTitle = 'Thank you!';
+  static const String feedbackThanksBody =
+      'Your message reached us. It helps make CvMate better.';
+  static const String feedbackDone = 'Done';
 }

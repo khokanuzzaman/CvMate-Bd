@@ -6,12 +6,16 @@ import 'package:careermatebd/core/widgets/custom_app_bar.dart';
 import 'package:careermatebd/core/widgets/custom_button.dart';
 import 'package:careermatebd/core/widgets/custom_card.dart';
 import 'package:careermatebd/core/widgets/custom_error_view.dart';
+import 'package:careermatebd/features/account_deletion/data/account_deletion_service.dart';
+import 'package:careermatebd/features/account_deletion/presentation/controllers/account_deletion_controller.dart';
+import 'package:careermatebd/features/account_deletion/presentation/widgets/delete_account_dialogs.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/forgot_password_controller.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/logout_controller.dart';
 import 'package:careermatebd/features/settings/domain/entities/app_preferences.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/settings_overview_controller.dart';
+import 'package:careermatebd/shared/services/review/review_prompter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +30,7 @@ class SettingsScreen extends ConsumerWidget {
     final overview = ref.watch(settingsOverviewControllerProvider);
     final logoutState = ref.watch(logoutControllerProvider);
     final forgotPasswordState = ref.watch(forgotPasswordControllerProvider);
+    final deletionState = ref.watch(accountDeletionControllerProvider);
 
     return Scaffold(
       appBar: const CustomAppBar(title: AppStrings.settings),
@@ -69,6 +74,31 @@ class SettingsScreen extends ConsumerWidget {
                       isError: true,
                     ),
                   ],
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                      onPressed: deletionState.isDeleting
+                          ? null
+                          : () => _deleteAccount(context, ref),
+                      icon: const Icon(Icons.delete_forever_outlined),
+                      label: Text(
+                        deletionState.isDeleting
+                            ? AppStrings.deleteAccountDeleting
+                            : AppStrings.deleteAccount,
+                      ),
+                    ),
+                  ),
+                  if (deletionState.errorMessage != null) ...[
+                    const SizedBox(height: 8),
+                    _InlineMessage(
+                      message: deletionState.errorMessage!,
+                      isError: true,
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   _SectionTitle(title: 'App Preferences'),
                   _PreferencesSection(
@@ -92,6 +122,9 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _SectionTitle(title: 'AI Settings'),
                   _AiSettingsSection(),
+                  const SizedBox(height: 24),
+                  _SectionTitle(title: AppStrings.privacySection),
+                  _PrivacySection(),
                   const SizedBox(height: 24),
                   _SectionTitle(title: 'Data Management'),
                   overview.when(
@@ -154,12 +187,8 @@ class SettingsScreen extends ConsumerWidget {
                       body:
                           'Support placeholder\n\nAdd your future support email or help center before release. For now, keep user-facing support messaging honest and simple.',
                     ),
-                    onReportIssue: () => _showInfoDialog(
-                      context,
-                      title: 'Report an issue',
-                      body:
-                          'Issue reporting placeholder\n\nBefore release, connect this action to a proper support email, issue tracker, or form.',
-                    ),
+                    onFeedback: () => context.push(RouteNames.feedbackPath),
+                    onRate: () => _rateApp(context, ref),
                   ),
                 ],
               ),
@@ -168,6 +197,57 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Confirm → delete (asking for the password if the server wants a recent
+  /// sign-in) → back to onboarding. The steps live in
+  /// [AccountDeletionController]; this only drives the dialogs.
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    final hasAccount = ref.read(currentAuthUserProvider) != null;
+    if (!await confirmAccountDeletion(context, hasAccount: hasAccount) ||
+        !context.mounted) {
+      return;
+    }
+    final controller = ref.read(accountDeletionControllerProvider.notifier);
+    var outcome = await controller.delete();
+    if (outcome == AccountDeletionOutcome.needsPassword && context.mounted) {
+      final password = await askPasswordForDeletion(context);
+      if (password == null || !context.mounted) {
+        return;
+      }
+      outcome = await controller.delete(password: password);
+    }
+    if (outcome != AccountDeletionOutcome.deleted || !context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            hasAccount
+                ? AppStrings.deleteAccountDone
+                : AppStrings.deleteLocalDataDone,
+          ),
+        ),
+      );
+    context.go(RouteNames.onboardingPath);
+  }
+
+  /// Opens CvMate's App Store page (the user's own tap, so no rating rules).
+  Future<void> _rateApp(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(reviewPrompterProvider).openStoreListing();
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text(AppStrings.rateCvMateFailed)),
+        );
+    }
   }
 
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
@@ -673,10 +753,15 @@ class _LegalSection extends StatelessWidget {
 }
 
 class _SupportSection extends StatelessWidget {
-  const _SupportSection({required this.onSupport, required this.onReportIssue});
+  const _SupportSection({
+    required this.onSupport,
+    required this.onFeedback,
+    required this.onRate,
+  });
 
   final VoidCallback onSupport;
-  final VoidCallback onReportIssue;
+  final VoidCallback onFeedback;
+  final VoidCallback onRate;
 
   @override
   Widget build(BuildContext context) {
@@ -693,11 +778,54 @@ class _SupportSection extends StatelessWidget {
           const Divider(height: 1),
           ListTile(
             leading: const Icon(Icons.bug_report_outlined),
-            title: const Text('Report an issue'),
+            title: const Text(AppStrings.feedbackEntry),
             trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: onReportIssue,
+            onTap: onFeedback,
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.star_outline_rounded),
+            title: const Text(AppStrings.rateCvMate),
+            trailing: const Icon(Icons.open_in_new_rounded),
+            onTap: onRate,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Settings > Privacy > Share usage analytics. Takes effect at once: the
+/// telemetry bootstrap listens to the preference.
+class _PrivacySection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final share =
+        ref
+            .watch(appPreferencesControllerProvider)
+            .asData
+            ?.value
+            .shareUsageAnalytics ??
+        true;
+
+    return CustomCard(
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        secondary: const Icon(Icons.insights_outlined),
+        title: const Text(AppStrings.shareUsageAnalytics),
+        subtitle: const Text(AppStrings.shareUsageAnalyticsNote),
+        value: share,
+        onChanged: (enabled) async {
+          final message = await ref
+              .read(appPreferencesControllerProvider.notifier)
+              .updateShareUsageAnalytics(enabled: enabled);
+          if (!context.mounted || message == null) {
+            return;
+          }
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        },
       ),
     );
   }
