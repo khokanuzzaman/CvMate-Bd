@@ -187,11 +187,14 @@ Settings > **Report a problem / Send feedback**:
 
 - [ ] **Signed in:** Settings > **Delete account**. The confirmation shows the
       subscription note and the *Manage subscriptions* link.
-  - [ ] The app asks for your password if the sign-in is old.
+  - [ ] With a sign-in older than 5 minutes the server answers
+        `reauth_required` and the app asks for your password; nothing is
+        deleted before you enter it. A fresh sign-in is not asked.
   - [ ] You land on onboarding.
   - [ ] Logging in with the old email fails: the user is gone.
   - [ ] Server: the plan, unlocks and feedback are deleted, and later requests
         with that uid get 401.
+  - [ ] Firestore: `users/<uid>` and its `cvs` are gone (Firebase console).
 - [ ] **Guest:** Delete account removes the local data only, and you land on
       onboarding.
 - [ ] After deletion, DebugView shows a new app instance.
@@ -325,10 +328,16 @@ Every parameter is an enum.
     deletion into the server's `DELETE /v1/me` handler, using the Admin SDK.
     The app then makes one call. Apple's guideline 5.1.1(v) needs deletion to
     always work, whatever the state of the client rules or App Check.
+    *Fix in review:* cvmate-api `DELETE /v1/me` now does all three steps with
+    the Admin SDK (needs the project's service-account key on the server,
+    see its DEPLOY.md). The app makes the one call, then signs out and wipes
+    the device. The server asks for a sign-in from the last 5 minutes
+    (`reauth_required`); the app then asks for the password and retries once.
 11. **A failed deletion leaves a half-deleted account.** The server data was
     gone (401 on every request) while the user stayed signed in with a
     Firebase account. Retrying finishes the job. Finding 10 removes this
-    state.
+    state. *Fix in review:* if a server step fails the app stays signed in
+    with its device data and shows a retry message; the retry finishes.
 
 #### Run before every release
 

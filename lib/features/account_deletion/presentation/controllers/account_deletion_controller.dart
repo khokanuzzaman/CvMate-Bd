@@ -4,7 +4,6 @@ import 'package:careermatebd/features/account_deletion/data/account_deletion_ser
 import 'package:careermatebd/features/account_deletion/data/local_data_wipe.dart';
 import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
-import 'package:careermatebd/features/cv_builder/data/datasources/cv_remote_data_source.dart';
 import 'package:careermatebd/shared/services/ai/ai_server_client.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
@@ -12,16 +11,15 @@ import 'package:careermatebd/shared/services/billing/billing_service.dart';
 import 'package:careermatebd/shared/services/crash/crash_reporter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The server path that deletes this user's data (cvmate-api).
+/// The server path that deletes this user's account: server data, Firestore
+/// backup and Firebase Auth user (cvmate-api).
 const String deleteMePath = '/v1/me';
 
 final accountDeletionServiceProvider = Provider<AccountDeletionService>((ref) {
   return AccountDeletionService(
     auth: ref.watch(authRepositoryProvider),
-    deleteServerData: () =>
+    deleteAccountOnServer: () =>
         ref.read(aiServerClientProvider).deleteJson(deleteMePath),
-    deleteCloudData: (uid) =>
-        ref.read(cvRemoteDataSourceProvider).deleteAllForUser(uid),
     billing: ref.watch(billingServiceProvider),
     wipeLocalData: () => wipeLocalCvMateData(ref),
   );
@@ -41,7 +39,8 @@ final accountDeletionControllerProvider =
 
 /// Runs [AccountDeletionService] for the Settings screen and keeps its
 /// loading / error state. The screen asks for confirmation and, when the
-/// result is [AccountDeletionOutcome.needsPassword], for the password.
+/// server wants a recent sign-in ([AccountDeletionOutcome.needsPassword]),
+/// for the password.
 class AccountDeletionController extends Notifier<AccountDeletionState> {
   @override
   AccountDeletionState build() => const AccountDeletionState();

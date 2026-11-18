@@ -1,3 +1,4 @@
+import 'package:careermatebd/core/errors/app_exception.dart';
 import 'package:careermatebd/core/utils/result.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
@@ -122,6 +123,29 @@ void main() {
     expect(_code(denied), AiFailureCodes.authRequired);
   });
 
+  test('401 reauth_required (account deletion) maps to its own code', () async {
+    final server = FakeAiServer([
+      FakeAiReply(401, aiErrorBody('reauth_required')),
+      FakeAiReply(401, aiErrorBody('reauth_required')),
+    ]);
+    final client = AiServerClient(
+      dio: server.dio(),
+      readIdToken: ({bool forceRefresh = false}) async => 'token',
+    );
+
+    await expectLater(
+      client.deleteJson('/v1/me'),
+      throwsA(
+        isA<AppException>().having(
+          (error) => error.code,
+          'code',
+          AiFailureCodes.reauthRequired,
+        ),
+      ),
+    );
+    expect(server.requests.first.method, 'DELETE');
+  });
+
   test('maps 402, 429, 503 and network errors to app failure codes', () async {
     final cases = {
       FakeAiReply(402, aiErrorBody('ai_quota')): AiFailureCodes.quotaExceeded,
@@ -129,7 +153,8 @@ void main() {
       FakeAiReply(503, aiErrorBody('budget_exceeded')):
           AiFailureCodes.unavailable,
       const FakeAiReply.offline(): AiFailureCodes.offline,
-      FakeAiReply(413, aiErrorBody('payload_too_large')): AiFailureCodes.tooLong,
+      FakeAiReply(413, aiErrorBody('payload_too_large')):
+          AiFailureCodes.tooLong,
     };
 
     for (final entry in cases.entries) {
@@ -153,5 +178,7 @@ void main() {
 String? _code(Result<Object?> result) =>
     result.when(success: (_) => 'success', failure: (failure) => failure.code);
 
-String _message(Result<Object?> result) =>
-    result.when(success: (_) => 'success', failure: (failure) => failure.message);
+String _message(Result<Object?> result) => result.when(
+  success: (_) => 'success',
+  failure: (failure) => failure.message,
+);

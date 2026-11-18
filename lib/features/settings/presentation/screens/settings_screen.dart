@@ -199,7 +199,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  /// Confirm → delete (asking for the password if Firebase needs a recent
+  /// Confirm → delete (asking for the password if the server wants a recent
   /// sign-in) → back to onboarding. The steps live in
   /// [AccountDeletionController]; this only drives the dialogs.
   Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
