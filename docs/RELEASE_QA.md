@@ -343,3 +343,112 @@ Every parameter is an enum.
       unless you have decided to enforce them.
 - [ ] Sign in on a test build, create a CV and check that it appears under
       `users/<uid>/cvs` in the Firestore console.
+
+### 18 Nov 2026: real-AI run (Claude live on api.khokan.me)
+
+**Setup**
+- iPhone 17 Pro simulator, iOS 26.5, Debug build of PR #27, started from Xcode
+  (local StoreKit for the Pro purchase). `USE_MOCK_AI=false`, so the Mock AI
+  tile is gone and every action calls the server.
+- Fresh throwaway account (password typed by the owner) and a fictional CV:
+  one job with three weak bullets, one degree, one project (Flutter, Hive),
+  four skills, and an English job post (Junior Flutter Developer, Dubai).
+- A temporary debug log in `server_ai_career_service.dart` recorded the action,
+  time, model, token counts and actions left for each call. It was never
+  committed.
+- Cost uses the server's price table in `src/ai/pricing.ts`: Haiku $0.10 /
+  $0.50 and Sonnet $2 / $10 per million input / output tokens.
+
+#### Every AI action, once each
+
+| Action | Lang | Model | Time | Tokens in / out | Cost (USD) | Actions left | Result |
+|---|---|---|---|---|---|---|---|
+| Experience bullet | EN | Haiku | 4.3 s | 930 / 169 | 0.00018 | 3 → 2 | PASS. No invented facts; "responsive" is a mild embellishment |
+| Professional summary | BN in, BN out | Haiku | 14.3 s | 2,064 / 2,913 | 0.00166 | 2 → 1 | PASS for quality; FAIL for cost: hit the 1,500-token cap and was retried |
+| Tailor CV to job post | EN | Sonnet | 5.7 s | 1,811 / 376 | 0.00738 | 1 → 0 | PASS. Did not add the job's Riverpod, Bloc, Firestore or Crashlytics; match 38% → 50% |
+| Cover letter | EN | Sonnet | 9.3 s | 1,688 / 880 | 0.01218 | 100 → 99 | PASS for content; FAIL: sign-off is "[Your Full Name] [Phone Number] \| [Email Address]" |
+| Interview questions (technical) | EN | Haiku | 12.1 s | 1,200 / 1,860 | 0.00105 | 98 | PASS. Questions come from the CV; sample answers add plausible details |
+| Career objective, Confident tone | EN | Haiku | 5.2 s | 880 / 661 | 0.00042 | 97 | PASS. Truthful, tone respected |
+| Skills suggestion | EN | Haiku | 4.8 s | 860 / 295 | 0.00023 | 96 | PASS. Each skill comes with a "confirm it is true" note |
+| Project description | EN | Haiku | 3.8 s | 1,141 / 175 | 0.00020 | 95 | PASS (only after an app restart, see finding 12) |
+| Job application email | EN | Haiku | 8.6 s | 1,456 / 1,446 | 0.00087 | 94 | PASS for content; FAIL: subject ends with "[Your Full Name]" |
+| LinkedIn message | BN | Haiku | 15.1 s | 2,920 / 3,183 | 0.00188 | 93 | PASS for quality; FAIL for cost: hit the cap and was retried |
+
+Job post analysis, CV–job match and ATS suggestions exist on the server but
+no screen calls them. The ATS check and match screens use the local rule
+engine, which costs nothing.
+
+#### Average cost per action type
+
+| Type | Calls | Average | Range |
+|---|---|---|---|
+| Haiku, English (bullet, objective, skills, project, interview, email) | 6 | $0.00049 | $0.00018–$0.00105 |
+| Haiku, Bangla (summary, LinkedIn) | 2 | $0.00177 | $0.00166–$0.00188 |
+| Sonnet (tailor, cover letter) | 2 | $0.00978 | $0.00738–$0.01218 |
+| All 10 calls | 10 | $0.00261 | total $0.02605 |
+
+Bangla Haiku calls cost about 3.6 times as much as English ones, mostly
+because of the cut-off and retry. Fix 1 below should bring them down to one
+call.
+
+#### Quota, errors and the paywall
+
+| Check | Result |
+|---|---|
+| Counter drops by exactly 1 per successful action, on the server and on screen ("AI actions left") | PASS |
+| Free user: 4th action (cover letter) | PASS. The server answered `ai_quota_exceeded` in 1.0 s, no model call, and the paywall opened with "You've used all your AI actions". The heading still says "You've used your free export" (finding 1) |
+| Pro after the Xcode StoreKit yearly trial | PASS. Server allowance 100, so 99 left after the next action. The webhook took about 4 minutes again |
+| Very long job post (135,200 characters) | PASS for quota: 413 `ai_payload_too_large` in 1.1 s, nothing reserved, 93 left. FAIL for the message: only "This text is too long." with no limit |
+| Connection drop in the middle of a request | NOT RUN. The simulator has no airplane mode and the Mac's Wi-Fi is the owner's to switch. By design the server finishes, logs usage and keeps the action, because its refund rule only covers provider-side failures. Fix 4 below covers this |
+| Server `costUsd` from the logs and the Console usage page under the cvmate workspace | NOT RUN: needs SSH or a Console sign-in. The costs above use the same formula the server logs |
+
+#### Findings (real-AI run)
+
+12. **AI Improve works on an old copy of the CV.** `AiImproveController` is
+    not auto-dispose. `initialize()` returns early once it has run, and
+    `selectCv()` returns early for the same CV. So the screen keeps the CV as
+    it was the first time it was opened in that app session. Here it said
+    "Add at least one project" for a CV that had one, and its AI calls used
+    the old data. Restarting the app fixed it.
+13. **Tailoring is always English.** `tailoring_controller.dart` passes
+    `AiOutputLanguage.english` to both tailoring and its cover letter, so a
+    Bangla user cannot tailor in Bangla.
+14. **Bangla hits the token cap.** Both Bangla calls used about twice the
+    input tokens (two attempts) and 2,900–3,200 output tokens: the first
+    attempt was cut at 1,500 and retried. Fix 1.
+15. **Bracket placeholders in documents.** The cover letter sign-off and the
+    job email subject contain "[Your Full Name]" and similar. The server
+    never sends the name or contact details to the model (privacy
+    whitelist), so the app must add them. Fix 2.
+16. **"This text is too long." gives no limit.** Fix 3.
+17. **A dropped connection burns an action.** Fix 4.
+18. **"Mock AI" in user-facing text.** The Skills Suggestion helper says
+    "This context helps the mock AI suggest more…".
+19. **Local match keywords.** The local engine lists "Hybrid" (a work
+    arrangement) and "Integrate REST Apis" as missing keywords, although REST
+    API is already a skill on the CV.
+20. **Skill suggestions are all pre-ticked**, including ones the CV does not
+    show (for example State Management). One tap adds unverified skills.
+21. **Android build was broken since the analytics PR.** Crashlytics Gradle
+    plugin 3.0.6 needs Google Services 4.4.1 or newer, but
+    `android/settings.gradle.kts` pinned 4.3.15. Bumping it to 4.4.2 builds;
+    the app ran on a Pixel 6a.
+
+#### Fixes in progress (separate PRs, not merged or deployed)
+
+1. Language-aware `max_tokens` (cvmate-api#8). Bangla gets 2.5 times the
+   English budget, capped at 8,192: 1,500 → 3,750, cover letter 2,048 →
+   5,120, and tailoring and interview 4,096 → 8,192. Re-measure both Bangla
+   cases after deploy. Follow-up: a Bangla tailoring call that is still cut
+   off retries at 16,384 tokens, which may not finish within the 90 s timeout.
+2. No bracket placeholders: the server prompt and guard strip them
+   (cvmate-api#10). The app fills in the name, phone and email from the CV
+   and asks for the name first if the CV has none (CvMate-Bd#33). Both have
+   guard tests.
+3. The too-long message states the limit and how much to cut (CvMate-Bd#31),
+   for example "max 12,000 characters, yours is 135,200. Please cut about
+   123,200 characters." The check runs before any request.
+4. Idempotency key per AI request: the server caches the result for 10
+   minutes (cvmate-api#9), and the app retries with the same key after 2, 5
+   and 10 s (CvMate-Bd#32). Deploy the server first. The cache is in memory,
+   so a server restart between attempts charges again.
