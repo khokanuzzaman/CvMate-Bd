@@ -15,8 +15,11 @@ import 'package:careermatebd/app/router/router_ai_interaction_port.dart';
 import 'package:careermatebd/shared/services/ai/ai_consent_guard.dart';
 import 'package:careermatebd/shared/services/ai/ai_server_client.dart';
 import 'package:careermatebd/shared/services/ai/guarded_ai_career_service.dart';
+import 'package:careermatebd/shared/services/ai/pending_ai_request.dart';
 import 'package:careermatebd/shared/services/ai/server_ai_career_service.dart';
+import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
 import 'package:careermatebd/shared/services/entitlement/ai_entitlement_controller.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final aiPromptBuilderProvider = Provider<AiPromptBuilder>((ref) {
@@ -41,6 +44,11 @@ final serverAiCareerServiceProvider = Provider<ServerAiCareerService>((ref) {
     onRemainingActions: (remaining) => unawaited(
       ref.read(aiEntitlementProvider.notifier).applyRemaining(remaining),
     ),
+    pendingStore: ref.watch(pendingAiRequestStoreProvider),
+    // Read at call time, so building the provider never touches Firebase.
+    readUid: () => Firebase.apps.isEmpty
+        ? null
+        : ref.read(firebaseAuthProvider).currentUser?.uid,
   );
 });
 
@@ -1247,7 +1255,10 @@ class MockAiCareerService implements AiCareerService {
           for (final skill in existingSkills)
             if (!matchingSkills.contains(skill)) skill,
         ];
-        final emphasizedSkills = <String>[...matchingSkills, ...remainingSkills];
+        final emphasizedSkills = <String>[
+          ...matchingSkills,
+          ...remainingSkills,
+        ];
         final resolvedSkills = emphasizedSkills.isEmpty
             ? keywords.take(5).toList()
             : emphasizedSkills;

@@ -11,6 +11,7 @@ import 'package:careermatebd/shared/services/ai/ai_request_payload.dart';
 import 'package:careermatebd/shared/services/ai/ai_response_parser.dart';
 import 'package:careermatebd/shared/services/ai/ai_server_client.dart';
 import 'package:careermatebd/shared/services/ai/idempotency_key.dart';
+import 'package:careermatebd/shared/services/ai/pending_ai_request.dart';
 
 /// [AiCareerService] backed by the AI server (`POST /v1/ai/generate`, repo
 /// `cvmate-api`). The server checks the Firebase ID token, the AI quota and
@@ -21,12 +22,23 @@ class ServerAiCareerService implements AiCareerService {
     required this.client,
     required this.responseParser,
     this.onRemainingActions,
+    this.pendingStore,
+    this.readUid,
+    this.clock = DateTime.now,
   });
 
   static const String generatePath = '/v1/ai/generate';
 
   final AiServerClient client;
   final AiResponseParser responseParser;
+
+  /// Keeps the last request's `Idempotency-Key` on the device until it is
+  /// answered (see [PendingAiRequest]). Null: the key lives only in memory.
+  final PendingAiRequestStore? pendingStore;
+
+  /// The signed-in user's uid (null when signed out).
+  final String? Function()? readUid;
+  final DateTime Function() clock;
 
   /// Called with the AI actions left after every answered call (0 when the
   /// quota ran out), so the UI counter stays current without another request.
@@ -332,13 +344,7 @@ class ServerAiCareerService implements AiCareerService {
     );
 
     try {
-      // One key per logical request: the client retries a lost connection
-      // with it, and the server answers a retry without a second charge.
-      final response = await client.postJson(
-        generatePath,
-        payload,
-        idempotencyKey: newIdempotencyKey(),
-      );
+      final response = await _post(action, payload);
       final remaining = response['remainingActions'];
       if (remaining is num) {
         onRemainingActions?.call(remaining.toInt());
@@ -361,5 +367,145 @@ class ServerAiCareerService implements AiCareerService {
         Failure(AiFailureMessages.generic, code: AiFailureCodes.failed),
       );
     }
+  }
+
+  /// Sends [payload] with an `Idempotency-Key`. The key is stored first, so
+  /// the same request sent again within [PendingAiRequest.ttl] (after a lost
+  /// connection or an app restart) reuses it and is not charged twice.
+  Future<Map<String, dynamic>> _post(
+    String action,
+    Map<String, dynamic> payload,
+  ) async {
+    final store = pendingStore;
+    final uid = readUid?.call();
+    if (store == null || uid == null) {
+      return client.postJson(
+        generatePath,
+        payload,
+        idempotencyKey: newIdempotencyKey(),
+      );
+    }
+
+    final bodyHash = PendingAiRequest.hashBody(payload);
+    final now = clock();
+    var entry = await _load(store);
+    if (entry != null &&
+        (entry.isExpired(now) ||
+            !entry.matches(uid: uid, bodyHash: bodyHash))) {
+      entry = null;
+    }
+    final fetched = entry?.response;
+    if (fetched != null) {
+      // Fetched after a restart and not used yet: free, no second request.
+      await _clear(store);
+      return Map<String, dynamic>.of(fetched)..remove('remainingActions');
+    }
+
+    entry ??= PendingAiRequest(
+      key: newIdempotencyKey(),
+      uid: uid,
+      action: action,
+      bodyHash: bodyHash,
+      body: payload,
+      createdAt: now,
+    );
+    await _save(store, entry);
+    try {
+      final response = await client.postJson(
+        generatePath,
+        payload,
+        idempotencyKey: entry.key,
+      );
+      await _clear(store);
+      return response;
+    } on AppException catch (error) {
+      if (!_mayStillRun(error)) {
+        await _clear(store); // The server answered: nothing to replay.
+      }
+      rethrow;
+    }
+  }
+
+  /// After a restart: fetches the answer to the request the app sent but
+  /// never saw, with its original key, so the server replays it instead of
+  /// charging again. Returns the entry with its [PendingAiRequest.response],
+  /// or null when there is nothing to show.
+  Future<PendingAiRequest?> recoverPending() async {
+    final store = pendingStore;
+    final uid = readUid?.call();
+    if (store == null || uid == null) {
+      return null;
+    }
+    final entry = await _load(store);
+    if (entry == null) {
+      return null;
+    }
+    if (entry.isExpired(clock()) || entry.uid != uid) {
+      await _clear(store);
+      return null;
+    }
+    if (entry.response != null) {
+      return entry;
+    }
+    try {
+      final response = await client.postJson(
+        generatePath,
+        entry.body,
+        idempotencyKey: entry.key,
+      );
+      final remaining = response['remainingActions'];
+      if (remaining is num) {
+        onRemainingActions?.call(remaining.toInt());
+      }
+      if (response['success'] != true || response['content'] == null) {
+        await _clear(store);
+        return null;
+      }
+      final ready = entry.withResponse(response);
+      await _save(store, ready);
+      return ready;
+    } on AppException catch (error) {
+      if (!_mayStillRun(error)) {
+        await _clear(store);
+      }
+      return null;
+    }
+  }
+
+  /// Forgets the stored request with [key] once the user has seen its
+  /// result. A newer request stored since then is kept.
+  Future<void> dismissPending(String key) async {
+    final store = pendingStore;
+    if (store != null && (await _load(store))?.key == key) {
+      await _clear(store);
+    }
+  }
+
+  /// True when no answer arrived, so the server may still hold a result.
+  static bool _mayStillRun(AppException error) =>
+      error.code == AiFailureCodes.unavailable;
+
+  // Storage problems never block an AI call: the key then lives in memory.
+  static Future<PendingAiRequest?> _load(PendingAiRequestStore store) async {
+    try {
+      return await store.load();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> _save(
+    PendingAiRequestStore store,
+    PendingAiRequest entry,
+  ) async {
+    try {
+      await store.save(entry);
+    } catch (_) {}
+  }
+
+  static Future<void> _clear(PendingAiRequestStore store) async {
+    try {
+      await store.clear();
+    } catch (_) {}
   }
 }
