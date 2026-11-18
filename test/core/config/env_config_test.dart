@@ -3,25 +3,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('EnvConfig.aiConfigurationProblem', () {
-    test('a release build that asks for the mock AI is refused', () {
-      final problem = EnvConfig.aiConfigurationProblem(
-        isRelease: true,
-        mockAi: true,
-      );
-
-      expect(problem, isNotNull);
-      expect(problem, contains('USE_MOCK_AI'));
+  group('EnvConfig.mockAiActive', () {
+    test('a release build ignores USE_MOCK_AI=true; debug honours it', () {
+      expect(EnvConfig.mockAiActive(isRelease: true, flag: true), isFalse);
+      expect(EnvConfig.mockAiActive(isRelease: false, flag: true), isTrue);
     });
+  });
 
+  group('EnvConfig.aiConfigurationProblem', () {
     test('a release build without an HTTPS AI server is refused', () {
       for (final url in ['', 'http://api.khokan.me', 'not a url']) {
         expect(
-          EnvConfig.aiConfigurationProblem(
-            isRelease: true,
-            baseUrl: url,
-            mockAi: false,
-          ),
+          EnvConfig.aiConfigurationProblem(isRelease: true, baseUrl: url),
           contains('AI_API_BASE_URL'),
           reason: url,
         );
@@ -33,15 +26,14 @@ void main() {
         EnvConfig.aiConfigurationProblem(
           isRelease: true,
           baseUrl: 'https://api.khokan.me',
-          mockAi: false,
         ),
         isNull,
       );
     });
 
-    test('debug and profile builds may use the mock', () {
+    test('debug and profile builds are not checked', () {
       expect(
-        EnvConfig.aiConfigurationProblem(isRelease: false, mockAi: true),
+        EnvConfig.aiConfigurationProblem(isRelease: false, baseUrl: ''),
         isNull,
       );
     });
