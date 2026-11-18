@@ -6,6 +6,7 @@ import 'package:careermatebd/features/cv_builder/data/datasources/cv_remote_data
 import 'package:careermatebd/features/cv_builder/data/dtos/cv_profile_dto.dart';
 import 'package:careermatebd/firebase_options.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_sink.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -131,17 +132,31 @@ class _OfflineCvRemote extends CvRemoteDataSource {
   Future<List<CvProfileDto>> fetchAll(String uid) async => const [];
 }
 
-class _SilentAnalytics extends AnalyticsService {
-  const _SilentAnalytics();
+class _SilentAnalyticsSink implements AnalyticsSink {
+  const _SilentAnalyticsSink();
 
   @override
-  Future<void> logEvent(String name, {Map<String, Object>? params}) async {}
+  Future<void> logEvent(String name, Map<String, Object> params) async {}
+
+  @override
+  Future<void> logScreenView(String screenName) async {}
+
+  @override
+  Future<void> setUserProperty(String name, String? value) async {}
+
+  @override
+  Future<void> setCollectionEnabled(bool enabled) async {}
+
+  @override
+  Future<void> reset() async {}
 }
 
 /// Providers every QA run replaces. Add per-test overrides on top.
 List<Override> qaBaseOverrides() => [
   cvRemoteDataSourceProvider.overrideWithValue(_OfflineCvRemote()),
-  analyticsServiceProvider.overrideWithValue(const _SilentAnalytics()),
+  analyticsServiceProvider.overrideWithValue(
+    AnalyticsService(sink: const _SilentAnalyticsSink()),
+  ),
 ];
 
 /// Wipes local state (signed-in user, Hive boxes) so each flow starts as a

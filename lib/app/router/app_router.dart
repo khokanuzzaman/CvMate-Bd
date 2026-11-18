@@ -31,6 +31,9 @@ import 'package:careermatebd/features/settings/presentation/screens/settings_scr
 import 'package:careermatebd/features/splash/presentation/screens/splash_screen.dart';
 import 'package:careermatebd/features/subscription/presentation/screens/paywall_screen.dart';
 import 'package:careermatebd/features/tailoring/presentation/screens/tailoring_screen.dart';
+import 'package:careermatebd/features/feedback/presentation/screens/feedback_screen.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_route_observer.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,6 +62,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: RouteNames.splashPath,
+    observers: [AnalyticsRouteObserver(ref.read(analyticsServiceProvider))],
     redirect: (context, state) {
       final location = state.matchedLocation;
       final isSplashRoute = location == RouteNames.splashPath;
@@ -222,6 +226,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           name: RouteNames.componentGallery,
           builder: (context, state) => const ComponentGalleryScreen(),
         ),
+      GoRoute(
+        path: RouteNames.feedbackPath,
+        name: RouteNames.feedback,
+        builder: (context, state) => const FeedbackScreen(),
+      ),
       GoRoute(
         path: RouteNames.paywallPath,
         name: RouteNames.paywall,

@@ -33,6 +33,23 @@ class CvBuilderController extends Notifier<CvBuilderState> {
 
   Timer? _autosaveTimer;
 
+  /// A new draft whose `cv_created` waits for its market style (picked on
+  /// the next screen); logged by [applyStyle] or, without it, [nextStep].
+  bool _createdEventPending = false;
+
+  /// Builder steps already logged as `cv_section_completed` for this draft.
+  final Set<CvBuilderStep> _completedSteps = {};
+
+  void _log(AnalyticsEvent event) =>
+      unawaited(ref.read(analyticsServiceProvider).log(event));
+
+  void _logCreatedIfPending() {
+    if (_createdEventPending) {
+      _createdEventPending = false;
+      _log(AnalyticsEvent.cvCreated(state.draft.style));
+    }
+  }
+
   @override
   CvBuilderState build() {
     ref.onDispose(() => _autosaveTimer?.cancel());
@@ -60,9 +77,8 @@ class CvBuilderController extends Notifier<CvBuilderState> {
           .read(cvRepositoryProvider)
           .createEmptyCv(title: title);
       ref.invalidate(cvLibraryControllerProvider);
-      unawaited(
-        ref.read(analyticsServiceProvider).logEvent(AnalyticsEvents.cvCreated),
-      );
+      _createdEventPending = true;
+      _completedSteps.clear();
       state = state.copyWith(
         draft: profile,
         currentStepIndex: 0,
@@ -85,6 +101,10 @@ class CvBuilderController extends Notifier<CvBuilderState> {
 
   Future<void> loadDraft(String id, {int stepIndex = 0}) async {
     _cancelAutosave();
+    if (!state.hasActiveDraft || state.draft.id != id) {
+      _logCreatedIfPending();
+      _completedSteps.clear();
+    }
 
     if (state.hasActiveDraft && state.draft.id == id) {
       state = state.copyWith(
@@ -172,6 +192,11 @@ class CvBuilderController extends Notifier<CvBuilderState> {
     if (error != null) {
       state = state.copyWith(showValidationErrors: true);
       return error;
+    }
+
+    _logCreatedIfPending();
+    if (_completedSteps.add(state.currentStep)) {
+      _log(AnalyticsEvent.cvSectionCompleted(state.currentStep));
     }
 
     if (!state.isLastStep) {
@@ -272,6 +297,7 @@ class CvBuilderController extends Notifier<CvBuilderState> {
 
   void selectTemplate(CvTemplate template) {
     _updateDraft(state.draft.copyWith(template: template));
+    _log(AnalyticsEvent.templateSelected(template));
   }
 
   void addEducation(EducationInfo educationInfo) {
@@ -641,6 +667,7 @@ class CvBuilderController extends Notifier<CvBuilderState> {
         shownFields: style.defaultFields,
       ),
     );
+    _logCreatedIfPending();
   }
 
   /// Switches one field on or off without touching the others.

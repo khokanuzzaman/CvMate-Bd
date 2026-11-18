@@ -13,6 +13,15 @@ abstract final class EnvConfig {
   /// quota rules and provider key.
   static const String aiAppId = 'cvmate';
 
+  /// `--dart-define=ANALYTICS_DEBUG=true` lets a debug build send analytics
+  /// and crash reports (Firebase DebugView, a test crash). Off by default.
+  static const bool analyticsDebug = bool.fromEnvironment('ANALYTICS_DEBUG');
+
+  /// Whether this build may send analytics and crash reports at all: release
+  /// builds, and debug builds run with [analyticsDebug]. The user's
+  /// "Share usage analytics" switch applies on top.
+  static bool get telemetryAllowedInBuild => kReleaseMode || analyticsDebug;
+
   /// Debug builds only: `USE_MOCK_AI=true` in `.env` answers every AI feature
   /// with canned output instead of calling the server (the `.env.example`
   /// default; also when the key is missing, e.g. in unit and widget tests).

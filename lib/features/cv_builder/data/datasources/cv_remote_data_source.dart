@@ -36,6 +36,21 @@ class CvRemoteDataSource {
     return _cvCollection(uid).doc(id).delete();
   }
 
+  /// Deletes every CV backup of [uid] and the `users/{uid}` document
+  /// (account deletion). Batches stay under Firestore's 500-write limit.
+  Future<void> deleteAllForUser(String uid) async {
+    final docs = (await _cvCollection(uid).get()).docs;
+    const chunk = 400;
+    for (var start = 0; start < docs.length; start += chunk) {
+      final batch = _firestore.batch();
+      for (final doc in docs.skip(start).take(chunk)) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+    await _firestore.collection('users').doc(uid).delete();
+  }
+
   Future<List<CvProfileDto>> fetchAll(String uid) async {
     final snapshot = await _cvCollection(uid).get();
     return snapshot.docs.map((doc) => CvProfileDto.fromMap(doc.data())).toList();

@@ -34,4 +34,21 @@ abstract class AuthRepository {
   });
 
   Future<Result<void>> signOut();
+
+  /// Whether deleting the account needs a fresh sign-in first: Firebase
+  /// refuses `delete()` when the last sign-in is more than a few minutes old.
+  /// Always false for guests (anonymous users).
+  bool get needsRecentLogin;
+
+  /// Signs the current email user in again with [password] (before a
+  /// sensitive action such as deleting the account).
+  Future<Result<void>> reauthenticateWithPassword(String password);
+
+  /// Deletes the current Firebase Auth user. A failure with code
+  /// [AuthErrorCodes.requiresRecentLogin] means: re-authenticate, then retry.
+  Future<Result<void>> deleteCurrentUser();
+}
+
+abstract final class AuthErrorCodes {
+  static const String requiresRecentLogin = 'requires-recent-login';
 }

@@ -13,8 +13,6 @@ import 'package:careermatebd/features/tailoring/presentation/controllers/tailori
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_state.dart';
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
 import 'package:careermatebd/shared/services/ai/mock_ai_career_service.dart';
-import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
-import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final tailoringControllerProvider =
@@ -157,8 +155,6 @@ class TailoringController extends Notifier<TailoringState> {
       matchReport: report,
       clearFailure: true,
     );
-    final analytics = ref.read(analyticsServiceProvider);
-    unawaited(analytics.logEvent(AnalyticsEvents.tailoringStarted));
 
     final result = await ref
         .read(aiCareerServiceProvider)
@@ -192,13 +188,6 @@ class TailoringController extends Notifier<TailoringState> {
           clearSavedCvId: true,
           clearFailure: true,
         );
-        unawaited(
-          analytics.logEvent(
-            AnalyticsEvents.aiActionUsed,
-            params: {AnalyticsEvents.paramAction: 'tailor_cv'},
-          ),
-        );
-        unawaited(analytics.logEvent(AnalyticsEvents.tailoringCompleted));
       },
       failure: (failure) {
         state = state.copyWith(stage: TailoringStage.error, failure: failure);
@@ -251,12 +240,6 @@ class TailoringController extends Notifier<TailoringState> {
           stage: TailoringStage.ready,
           result: tailoring,
           clearFailure: true,
-        );
-        unawaited(
-          ref.read(analyticsServiceProvider).logEvent(
-            AnalyticsEvents.aiActionUsed,
-            params: {AnalyticsEvents.paramAction: 'cover_letter'},
-          ),
         );
       },
       failure: (failure) {
