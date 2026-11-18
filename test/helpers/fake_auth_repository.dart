@@ -75,6 +75,21 @@ class FakeAuthRepository implements AuthRepository {
     return const Success<void>(null);
   }
 
+  /// The password [reauthenticateWithPassword] accepts.
+  String acceptedPassword = 'secret12';
+  final List<String> reauthPasswords = [];
+
+  @override
+  Future<Result<void>> reauthenticateWithPassword(String password) async {
+    reauthPasswords.add(password);
+    if (password != acceptedPassword) {
+      return const FailureResult<void>(
+        Failure('Incorrect password. Please try again.', code: 'wrong-password'),
+      );
+    }
+    return const Success<void>(null);
+  }
+
   Future<void> dispose() => _controller.close();
 
   Result<AuthUser> _authenticate({

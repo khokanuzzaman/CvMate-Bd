@@ -13,4 +13,15 @@ abstract final class AppLinks {
     'PRIVACY_POLICY_URL',
     defaultValue: 'https://api.khokan.me/cvmate/privacy',
   );
+
+  /// CvMate's App Store id (Settings > Rate CvMate opens its page).
+  static const String appStoreId = '6835302052';
+
+  /// Where an Apple ID's subscriptions are managed or cancelled.
+  static const String appleSubscriptions =
+      'https://apps.apple.com/account/subscriptions';
+
+  /// Where a Google Play account's subscriptions are managed or cancelled.
+  static const String googlePlaySubscriptions =
+      'https://play.google.com/store/account/subscriptions';
 }

@@ -8,6 +8,7 @@ import 'package:careermatebd/features/subscription/presentation/screens/paywall_
 import 'package:careermatebd/features/tailoring/presentation/screens/tailoring_screen.dart';
 import 'package:careermatebd/shared/services/ai/mock_ai_career_service.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_sink.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,21 +62,49 @@ class FakeCoverLetterRepository implements CoverLetterRepository {
   Future<void> clearAllDrafts() async => drafts.clear();
 }
 
-/// Records analytics events instead of sending them.
+/// Records analytics events instead of sending them. Every event still
+/// goes through [AnalyticsService.log], so an event with a free-text or
+/// unknown parameter fails the test (see [AnalyticsSchema]).
 class RecordingAnalytics extends AnalyticsService {
-  RecordingAnalytics();
+  RecordingAnalytics() : this._(RecordingAnalyticsSink());
 
-  final List<(String, Map<String, Object>?)> events = [];
+  RecordingAnalytics._(this.sink) : super(sink: sink, enabled: true);
 
-  Iterable<Map<String, Object>?> paramsFor(String name) => [
+  final RecordingAnalyticsSink sink;
+
+  List<(String, Map<String, Object>)> get events => sink.events;
+
+  Iterable<Map<String, Object>> paramsFor(String name) => [
     for (final (eventName, params) in events)
       if (eventName == name) params,
   ];
+}
+
+class RecordingAnalyticsSink implements AnalyticsSink {
+  final List<(String, Map<String, Object>)> events = [];
+  final List<String> screens = [];
+  final Map<String, String?> userProperties = {};
+  final List<bool> collection = [];
+  int resets = 0;
 
   @override
-  Future<void> logEvent(String name, {Map<String, Object>? params}) async {
-    events.add((name, params));
-  }
+  Future<void> logEvent(String name, Map<String, Object> params) async =>
+      events.add((name, params));
+
+  @override
+  Future<void> logScreenView(String screenName) async =>
+      screens.add(screenName);
+
+  @override
+  Future<void> setUserProperty(String name, String? value) async =>
+      userProperties[name] = value;
+
+  @override
+  Future<void> setCollectionEnabled(bool enabled) async =>
+      collection.add(enabled);
+
+  @override
+  Future<void> reset() async => resets++;
 }
 
 class CoreFlowApp {

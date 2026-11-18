@@ -483,7 +483,8 @@ class ServerAiCareerService implements AiCareerService {
 
   /// True when no answer arrived, so the server may still hold a result.
   static bool _mayStillRun(AppException error) =>
-      error.code == AiFailureCodes.unavailable;
+      error.code == AiFailureCodes.unavailable ||
+      error.code == AiFailureCodes.offline;
 
   // Storage problems never block an AI call: the key then lives in memory.
   static Future<PendingAiRequest?> _load(PendingAiRequestStore store) async {

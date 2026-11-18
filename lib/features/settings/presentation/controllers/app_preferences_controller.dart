@@ -67,4 +67,23 @@ class AppPreferencesController extends AsyncNotifier<AppPreferences> {
       return 'Could not save the AI setting.';
     }
   }
+
+  /// Settings > Privacy > Share usage analytics. Applied at once by the
+  /// telemetry bootstrap, which listens to this provider.
+  Future<String?> updateShareUsageAnalytics({required bool enabled}) async {
+    final current = state.asData?.value ?? await future;
+    final next = current.copyWith(shareUsageAnalytics: enabled);
+    state = AsyncData(next);
+
+    try {
+      final saved = await ref
+          .read(settingsRepositoryProvider)
+          .savePreferences(next);
+      state = AsyncData(saved);
+      return null;
+    } catch (_) {
+      state = AsyncData(current);
+      return 'Could not save the analytics setting.';
+    }
+  }
 }

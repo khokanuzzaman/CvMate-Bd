@@ -342,9 +342,11 @@ void main() {
 
       expect(shared.single.method, 'sharePdf');
       expect(store.record.freeExportsUsed, 1);
-      expect(app.analytics.paramsFor('cv_exported').single, {
+      expect(app.analytics.paramsFor('export_result').single, {
         'source': 'tailoring',
-        'type': 'share',
+        'format': 'share',
+        'result': 'ok',
+        'gate': 'free',
       });
     });
 

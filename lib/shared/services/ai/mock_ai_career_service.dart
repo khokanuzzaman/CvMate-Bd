@@ -14,6 +14,7 @@ import 'package:careermatebd/shared/services/ai/ai_response_parser.dart';
 import 'package:careermatebd/app/router/router_ai_interaction_port.dart';
 import 'package:careermatebd/shared/services/ai/ai_consent_guard.dart';
 import 'package:careermatebd/shared/services/ai/ai_server_client.dart';
+import 'package:careermatebd/shared/services/ai/ai_telemetry.dart';
 import 'package:careermatebd/shared/services/ai/guarded_ai_career_service.dart';
 import 'package:careermatebd/shared/services/ai/pending_ai_request.dart';
 import 'package:careermatebd/shared/services/ai/server_ai_career_service.dart';
@@ -65,7 +66,12 @@ final aiCareerServiceProvider = Provider<AiCareerService>((ref) {
 
   if (EnvConfig.isMockAiActive) {
     // Canned answers on the device: nothing is sent, so no consent needed.
-    return ref.watch(mockAiCareerServiceProvider);
+    return GuardedAiCareerService(
+      inner: ref.watch(mockAiCareerServiceProvider),
+      consentGuard: null,
+      port: ref.watch(aiInteractionPortProvider),
+      telemetry: ref.watch(aiTelemetryProvider),
+    );
   }
 
   return guardedServerAiCareerService(ref);
@@ -78,6 +84,7 @@ AiCareerService guardedServerAiCareerService(Ref ref) {
     inner: ref.watch(serverAiCareerServiceProvider),
     consentGuard: ref.watch(aiConsentGuardProvider),
     port: ref.watch(aiInteractionPortProvider),
+    telemetry: ref.watch(aiTelemetryProvider),
   );
 }
 

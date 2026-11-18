@@ -214,10 +214,10 @@ void main() {
     }
   });
 
-  testWidgets('logs paywall_viewed with where it came from', (tester) async {
+  testWidgets('logs paywall_view with where it came from', (tester) async {
     final app = await _open(tester);
 
-    expect(app.analytics.paramsFor('paywall_viewed').single, {
+    expect(app.analytics.paramsFor('paywall_view').single, {
       'source': 'cv_preview',
     });
   });

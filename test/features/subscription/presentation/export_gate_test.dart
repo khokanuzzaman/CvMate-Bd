@@ -4,6 +4,7 @@ import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/features/subscription/presentation/controllers/paywall_controller.dart';
 import 'package:careermatebd/features/subscription/presentation/export_gate.dart';
 import 'package:careermatebd/features/subscription/presentation/screens/paywall_screen.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_params.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:careermatebd/shared/services/billing/billing_service.dart';
 import 'package:careermatebd/shared/services/billing/fake_billing_service.dart';
@@ -45,8 +46,8 @@ void main() {
                   onPressed: () => runGatedExport(
                     ref: ref,
                     context: context,
-                    source: 'test',
-                    exportType: 'share',
+                    source: ExportSource.cvPreview,
+                    format: ExportFormat.share,
                     cvId: 'cv-1',
                     export: () async => exports++,
                   ),
@@ -63,6 +64,7 @@ void main() {
       ],
     );
     addTearDown(router.dispose);
+    final analytics = RecordingAnalytics();
     tester.view.physicalSize = const Size(390, 1400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -73,7 +75,7 @@ void main() {
           entitlementStoreProvider.overrideWithValue(store),
           billingServiceProvider.overrideWithValue(FakeBillingService()),
           purchaserUidProvider.overrideWithValue('u1'),
-          analyticsServiceProvider.overrideWithValue(RecordingAnalytics()),
+          analyticsServiceProvider.overrideWithValue(analytics),
           ...fakeEntitlementOverrides(entitlement),
         ],
         child: MaterialApp.router(routerConfig: router),
@@ -95,5 +97,11 @@ void main() {
     expect(entitlement.claims, ['cv-1']);
     expect(exports, 1);
     expect(store.saveCount, 0, reason: 'an unlocked CV does not count');
+    expect(analytics.paramsFor('export_result').single, {
+      'source': 'cv_preview',
+      'format': 'share',
+      'result': 'ok',
+      'gate': 'purchased',
+    });
   });
 }

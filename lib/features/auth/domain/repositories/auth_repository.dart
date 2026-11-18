@@ -34,4 +34,9 @@ abstract class AuthRepository {
   });
 
   Future<Result<void>> signOut();
+
+  /// Signs the current email user in again with [password] (before a
+  /// sensitive action such as deleting the account; the server asks for it
+  /// with `reauth_required`).
+  Future<Result<void>> reauthenticateWithPassword(String password);
 }
