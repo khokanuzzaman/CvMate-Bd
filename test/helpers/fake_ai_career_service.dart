@@ -9,6 +9,8 @@ import 'package:careermatebd/shared/services/ai/ai_career_service.dart';
 /// calls it received. Anything else is not expected and throws.
 class FakeAiCareerService implements AiCareerService {
   int tailorCalls = 0;
+  String? lastTailorJobPost;
+  AiOutputLanguage? lastTailorLanguage;
   int coverLetterCalls = 0;
   AiTone? lastCoverLetterTone;
   String? lastCoverLetterCompany;
@@ -42,6 +44,8 @@ class FakeAiCareerService implements AiCareerService {
     AiTone tone = AiTone.professional,
   }) async {
     tailorCalls++;
+    lastTailorJobPost = jobPostText;
+    lastTailorLanguage = language;
     if (tailorFailure != null) {
       return FailureResult(tailorFailure!);
     }
