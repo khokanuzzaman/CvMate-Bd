@@ -4,6 +4,7 @@ import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/widgets/custom_loading_view.dart';
 import 'package:careermatebd/features/cover_letter/domain/entities/cover_letter_draft.dart';
 import 'package:careermatebd/features/cover_letter/presentation/controllers/cover_letter_controller.dart';
+import 'package:careermatebd/features/cover_letter/presentation/widgets/candidate_name_dialog.dart';
 import 'package:careermatebd/features/cover_letter/presentation/widgets/cover_letter_letter_view.dart';
 import 'package:careermatebd/features/cover_letter/presentation/widgets/cover_letter_setup_view.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
@@ -121,7 +122,11 @@ class _CoverLetterScreenState extends ConsumerState<CoverLetterScreen> {
         }),
         onNewLetter: _newLetter,
         onToneChanged: _controller.selectTone,
-        onRegenerate: _controller.generateContent,
+        onRegenerate: () async {
+          if (await _ensureCandidateName()) {
+            await _controller.generateContent();
+          }
+        },
         onExport: _export,
       );
     }
@@ -155,6 +160,9 @@ class _CoverLetterScreenState extends ConsumerState<CoverLetterScreen> {
       },
       onDeleteDraft: (draft) => _confirmDelete(context, draft),
       onGenerate: () async {
+        if (!await _ensureCandidateName() || !mounted) {
+          return;
+        }
         setState(() {
           _showSetup = false;
           _focusCompany = false;
@@ -165,6 +173,20 @@ class _CoverLetterScreenState extends ConsumerState<CoverLetterScreen> {
         _snack(ref.read(coverLetterControllerProvider).errorMessage);
       },
     );
+  }
+
+  /// Asks for the user's name when the CV has none, so the letter is signed
+  /// with it. Returns false when the user cancels.
+  Future<bool> _ensureCandidateName() async {
+    if (!_controller.needsCandidateName) {
+      return true;
+    }
+    final name = await showCandidateNameDialog(context);
+    if (name == null || name.isEmpty) {
+      return false;
+    }
+    _controller.updateCandidateName(name);
+    return true;
   }
 
   /// "New letter": start from a blank form. The last letter stays on screen

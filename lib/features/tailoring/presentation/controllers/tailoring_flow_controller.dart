@@ -68,8 +68,8 @@ class TailoringFlowController extends Notifier<TailoringPage> {
 
   /// Hands the job context to the cover-letter feature (company, title, post and
   /// the tailored CV) so its screen opens already aligned to this
-  /// job. Generation starts straight away when a company name is known;
-  /// otherwise the screen opens on its form so the user can add one.
+  /// job. Generation starts straight away when a company name (and the
+  /// candidate's name) is known; otherwise the screen opens on its form.
   Future<void> prepareCoverLetter() async {
     final tailoring = ref.read(tailoringControllerProvider);
     final cv = tailoring.selectedCv;
@@ -99,7 +99,8 @@ class TailoringFlowController extends Notifier<TailoringPage> {
       ref.read(tailoringControllerProvider.notifier).buildTailoredCv(),
     );
 
-    if (company.isNotEmpty) {
+    // Without a name on the CV, the screen asks for it on Generate.
+    if (company.isNotEmpty && !letters.needsCandidateName) {
       unawaited(letters.generateContent());
     }
   }

@@ -593,6 +593,11 @@ abstract final class AppStrings {
   static const String coverLetterGenerate = 'Generate';
   static const String coverLetterSubjectLabel = 'Subject line';
   static const String coverLetterSubjectHint = 'Application for the role';
+  static const String coverLetterNameTitle = 'Your full name';
+  static const String coverLetterNameBody =
+      'Your CV has no name yet. Add it so the letter is signed with it.';
+  static const String coverLetterNameLabel = 'Full name';
+  static const String coverLetterNameContinue = 'Continue';
 
   // Paywall
   static const String paywallClose = 'Close';
