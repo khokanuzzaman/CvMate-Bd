@@ -29,7 +29,6 @@ abstract final class AppStrings {
   static const String authHaveAccount = 'Already have an account?';
   static const String authShowPassword = 'Show password';
   static const String authHidePassword = 'Hide password';
-  static const String authGoogleComingSoon = 'Google sign-in is coming soon';
 
   // Auth — login
   static const String loginTitle = 'Welcome back';
@@ -37,7 +36,6 @@ abstract final class AppStrings {
   static const String loginPasswordHint = '••••••••';
   static const String loginForgot = 'Forgot?';
   static const String loginSubmitting = 'Logging in...';
-  static const String loginGoogle = 'Continue with Google';
   static const String loginNewHere = 'New here?';
   static const String createAccount = 'Create account';
 
@@ -56,7 +54,6 @@ abstract final class AppStrings {
   static const String registerTermsRequired =
       'Please accept the Terms and Privacy Policy to continue.';
   static const String registerSubmitting = 'Creating account...';
-  static const String registerGoogle = 'Sign up with Google';
   static const String passwordStrengthLabel = 'Password strength';
   static const String passwordStrengthEmpty = 'not entered';
   static const String passwordStrengthWeak = 'weak';
@@ -451,6 +448,8 @@ abstract final class AppStrings {
       "skills. We'll pull the keywords automatically.";
   static const String tailorWorksForAnyRole =
       'Works for any role — nurse, accountant, driver, developer.';
+  static const String tailorAnyLanguage =
+      'Paste the job post in any language. The tailored CV is in English.';
   static const String tailorJobTitleLabel = 'Job title';
   static const String tailorJobTitleHint = 'e.g. React Developer';
   static const String tailorCompanyLabel = 'Company';
@@ -473,6 +472,11 @@ abstract final class AppStrings {
       'Add the missing keywords below and your score jumps toward 90%.';
   static const String tailorMatchBodyCovered =
       'Your CV already covers the keywords in this job post.';
+  static const String keywordMatchEnglishOnly =
+      'Keyword match works for English job posts';
+  static const String keywordMatchEnglishOnlyBody =
+      'This post is mostly in another language, so there is no match score. '
+      'You can still tailor your CV: the AI reads the post in any language.';
   static const String tailorMatched = 'Matched';
   static const String tailorMissing = 'Missing — add these';
   static const String tailorTruthfulPrefix =
@@ -484,6 +488,7 @@ abstract final class AppStrings {
   static const String tailorTailoring = 'Tailoring your CV...';
 
   // Tailor 3 — result
+  static const String tailorEnglishOutputNote = 'Tailored CV is in English';
   static const String tailorResultTitle = 'Your tailored CV';
   static String tailorMatchBadge(int percent) => 'Match $percent%';
   static const String tailorSummaryLabel = 'Professional summary';
@@ -596,6 +601,11 @@ abstract final class AppStrings {
   static const String coverLetterGenerate = 'Generate';
   static const String coverLetterSubjectLabel = 'Subject line';
   static const String coverLetterSubjectHint = 'Application for the role';
+  static const String coverLetterNameTitle = 'Your full name';
+  static const String coverLetterNameBody =
+      'Your CV has no name yet. Add it so the letter is signed with it.';
+  static const String coverLetterNameLabel = 'Full name';
+  static const String coverLetterNameContinue = 'Continue';
 
   // Paywall
   static const String paywallClose = 'Close';

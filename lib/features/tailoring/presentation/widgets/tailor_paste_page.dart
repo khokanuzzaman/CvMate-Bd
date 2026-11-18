@@ -110,27 +110,14 @@ class _TailorPastePageState extends ConsumerState<TailorPastePage> {
               onChanged: (value) => notifier.updateJobPost(jobPostText: value),
             ),
             const SizedBox(height: AppSpacing.s10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(top: 2),
-                  child: Icon(
-                    Icons.info_outline_rounded,
-                    size: 18,
-                    color: AppColors.muted2,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s8),
-                Expanded(
-                  child: Text(
-                    AppStrings.tailorWorksForAnyRole,
-                    style: AppTextStyles.bodySm.copyWith(
-                      color: AppColors.muted,
-                    ),
-                  ),
-                ),
-              ],
+            const _InfoLine(
+              icon: Icons.info_outline_rounded,
+              text: AppStrings.tailorWorksForAnyRole,
+            ),
+            const SizedBox(height: AppSpacing.s6),
+            const _InfoLine(
+              icon: Icons.translate_rounded,
+              text: AppStrings.tailorAnyLanguage,
             ),
             const SizedBox(height: AppSpacing.s16),
             Row(
@@ -219,6 +206,33 @@ class _OptionalField extends StatelessWidget {
           fillColor: AppColors.surface,
           textCapitalization: TextCapitalization.words,
           onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoLine extends StatelessWidget {
+  const _InfoLine({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(icon, size: 18, color: AppColors.muted2),
+        ),
+        const SizedBox(width: AppSpacing.s8),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTextStyles.bodySm.copyWith(color: AppColors.muted),
+          ),
         ),
       ],
     );

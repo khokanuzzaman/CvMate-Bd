@@ -176,6 +176,28 @@ void main() {
   });
 
   test(
+    'an over-limit job post fails fast with the limit and no request',
+    () async {
+      final server = FakeAiServer([
+        FakeAiReply(200, aiSuccessBody('tailorCvForJob', const {})),
+      ]);
+
+      final result = await serviceFor(
+        server,
+      ).tailorCvForJob(profile: _cv(), jobPostText: 'a' * 135200);
+
+      expect(_code(result), AiFailureCodes.tooLong);
+      expect(
+        _message(result),
+        'This job post is too long: max 12,000 characters, yours is 135,200. '
+        'Please cut about 123,200 characters.',
+      );
+      expect(server.requests, isEmpty);
+      expect(tokenRefreshes, isEmpty, reason: 'no token read, no quota used');
+    },
+  );
+
+  test(
     'a dropped connection is retried with the same idempotency key',
     () async {
       final server = FakeAiServer([

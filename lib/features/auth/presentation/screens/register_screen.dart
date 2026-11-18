@@ -8,11 +8,9 @@ import 'package:careermatebd/core/utils/validators.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/app_text_field.dart';
 import 'package:careermatebd/core/widgets/app_top_bar.dart';
-import 'package:careermatebd/core/widgets/social_auth_button.dart';
 import 'package:careermatebd/features/auth/domain/password_strength.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/register_controller.dart';
 import 'package:careermatebd/features/auth/presentation/widgets/auth_error_banner.dart';
-import 'package:careermatebd/features/auth/presentation/widgets/auth_or_divider.dart';
 import 'package:careermatebd/features/auth/presentation/widgets/auth_page_layout.dart';
 import 'package:careermatebd/features/auth/presentation/widgets/auth_switch_link.dart';
 import 'package:careermatebd/features/auth/presentation/widgets/password_strength_meter.dart';
@@ -156,15 +154,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ? AppStrings.registerSubmitting
                       : AppStrings.createAccount,
                   onPressed: state.isLoading ? null : _submit,
-                ),
-                const SizedBox(height: AppSpacing.s20),
-                const AuthOrDivider(),
-                const SizedBox(height: AppSpacing.s20),
-                // TODO(google-sign-in): wire once AuthRepository supports it.
-                const SocialAuthButton(
-                  label: AppStrings.registerGoogle,
-                  onPressed: null,
-                  disabledHint: AppStrings.authGoogleComingSoon,
                 ),
               ],
             ),

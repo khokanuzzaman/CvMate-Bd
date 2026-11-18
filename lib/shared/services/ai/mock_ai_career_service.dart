@@ -58,7 +58,8 @@ final serverAiCareerServiceProvider = Provider<ServerAiCareerService>((ref) {
 /// `USE_MOCK_AI=true`.
 final aiCareerServiceProvider = Provider<AiCareerService>((ref) {
   // Defense in depth for entry points other than `main()`: never hand a
-  // release build the mock or a non-HTTPS server.
+  // release build a non-HTTPS server (release never gets the mock: see
+  // EnvConfig.isMockAiActive).
   final problem = EnvConfig.aiConfigurationProblem();
   if (problem != null) {
     throw StateError(problem);

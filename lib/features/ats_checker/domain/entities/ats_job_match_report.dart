@@ -9,6 +9,7 @@ class AtsJobMatchReport {
     required this.suggestedSkillsToAdd,
     required this.suggestedSectionsToImprove,
     required this.issues,
+    this.keywordMatchSupported = true,
   });
 
   final int matchPercentage;
@@ -18,4 +19,9 @@ class AtsJobMatchReport {
   final List<String> suggestedSkillsToAdd;
   final List<String> suggestedSectionsToImprove;
   final List<AtsCheckIssue> issues;
+
+  /// False when the job post is mostly in a non-Latin script (e.g. Bangla):
+  /// the keyword matcher only understands English words, so
+  /// [matchPercentage] means nothing and must not be shown.
+  final bool keywordMatchSupported;
 }

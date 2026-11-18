@@ -12,6 +12,7 @@ import 'package:careermatebd/features/tailoring/domain/entities/tailoring_result
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_stage.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_state.dart';
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
+import 'package:careermatebd/shared/services/ai/document_draft_personalizer.dart';
 import 'package:careermatebd/shared/services/ai/mock_ai_career_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -233,8 +234,14 @@ class TailoringController extends Notifier<TailoringState> {
 
     result.when(
       success: (document) {
+        // The server never sends the name to the model; sign it here.
+        final signed = personalizeDocumentDraft(
+          document,
+          info: cv.personalInfo,
+          kind: AiDocumentKind.coverLetter,
+        );
         final tailoring = (state.result ?? TailoringResult.empty()).copyWith(
-          coverLetter: document.body,
+          coverLetter: signed.body,
         );
         state = state.copyWith(
           stage: TailoringStage.ready,

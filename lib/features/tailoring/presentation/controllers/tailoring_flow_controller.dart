@@ -68,8 +68,8 @@ class TailoringFlowController extends Notifier<TailoringPage> {
 
   /// Hands the job context to the cover-letter feature (company, title, post and
   /// the tailored CV) so its screen opens already aligned to this
-  /// job. Generation starts straight away when a company name is known;
-  /// otherwise the screen opens on its form so the user can add one.
+  /// job. Generation starts straight away when a company name (and the
+  /// candidate's name) is known; otherwise the screen opens on its form.
   Future<void> prepareCoverLetter() async {
     final tailoring = ref.read(tailoringControllerProvider);
     final cv = tailoring.selectedCv;
@@ -99,7 +99,8 @@ class TailoringFlowController extends Notifier<TailoringPage> {
       ref.read(tailoringControllerProvider.notifier).buildTailoredCv(),
     );
 
-    if (company.isNotEmpty) {
+    // Without a name on the CV, the screen asks for it on Generate.
+    if (company.isNotEmpty && !letters.needsCandidateName) {
       unawaited(letters.generateContent());
     }
   }
@@ -107,7 +108,8 @@ class TailoringFlowController extends Notifier<TailoringPage> {
 
 /// Keyword coverage of the tailored CV (with the user's edits applied) against
 /// the job post, from the same offline ATS engine as the first analysis.
-/// Null until there is a tailoring result.
+/// Null until there is a tailoring result, and for a job post the keyword
+/// matcher cannot read (mostly non-Latin script).
 final tailoredMatchPercentProvider = Provider.autoDispose<int?>((ref) {
   final state = ref.watch(tailoringControllerProvider);
   if (state.result == null) {
@@ -119,8 +121,8 @@ final tailoredMatchPercentProvider = Provider.autoDispose<int?>((ref) {
   if (tailored == null) {
     return null;
   }
-  return ref
+  final report = ref
       .read(atsRuleEngineProvider)
-      .analyzeJobPost(profile: tailored, jobPostText: state.jobPostText.trim())
-      .matchPercentage;
+      .analyzeJobPost(profile: tailored, jobPostText: state.jobPostText.trim());
+  return report.keywordMatchSupported ? report.matchPercentage : null;
 });

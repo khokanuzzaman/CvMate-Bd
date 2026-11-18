@@ -62,6 +62,8 @@ class TailorResultPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const _EnglishOutputNote(),
+                  const SizedBox(height: AppSpacing.s12),
                   if (result.tailoredSummary.trim().isNotEmpty) ...[
                     TailoredSummaryCard(summary: result.tailoredSummary),
                     const SizedBox(height: AppSpacing.s14),
@@ -159,6 +161,28 @@ class _MatchBadge extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Tailoring always answers in English (the CV goes to employers), even
+/// when the job post was pasted in Bangla.
+class _EnglishOutputNote extends StatelessWidget {
+  const _EnglishOutputNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(Icons.translate_rounded, size: 18, color: AppColors.muted2),
+        const SizedBox(width: AppSpacing.s8),
+        Expanded(
+          child: Text(
+            AppStrings.tailorEnglishOutputNote,
+            style: AppTextStyles.bodySm.copyWith(color: AppColors.muted),
+          ),
+        ),
+      ],
     );
   }
 }
