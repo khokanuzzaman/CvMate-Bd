@@ -249,6 +249,20 @@ class AtsRuleEngine {
     required String jobPostText,
   }) {
     final extractedKeywords = _extractJobKeywords(jobPostText);
+    if (isMostlyNonLatin(jobPostText)) {
+      // No score: the matcher would only see the few English words in it
+      // and report a false 100%. The keywords still guide AI tailoring.
+      return AtsJobMatchReport(
+        matchPercentage: 0,
+        extractedKeywords: extractedKeywords,
+        matchedKeywords: const [],
+        missingKeywords: const [],
+        suggestedSkillsToAdd: const [],
+        suggestedSectionsToImprove: const [],
+        issues: const [],
+        keywordMatchSupported: false,
+      );
+    }
     if (extractedKeywords.isEmpty) {
       return const AtsJobMatchReport(
         matchPercentage: 0,
@@ -344,6 +358,21 @@ class AtsRuleEngine {
       suggestedSectionsToImprove: suggestedSectionsToImprove,
       issues: issues,
     );
+  }
+
+  static final RegExp _letter = RegExp(r'\p{L}', unicode: true);
+  static final RegExp _latinLetter = RegExp(r'\p{Script=Latin}', unicode: true);
+
+  /// True when more than half of the letters in [text] are not Latin script
+  /// (Bangla, Arabic, Devanagari...). Digits, punctuation and spaces don't
+  /// count, so an English post with a few Bangla words stays Latin.
+  static bool isMostlyNonLatin(String text) {
+    final letters = _letter.allMatches(text).length;
+    if (letters == 0) {
+      return false;
+    }
+    final latin = _latinLetter.allMatches(text).length;
+    return latin * 2 < letters;
   }
 
   int _buildScore(List<AtsCheckIssue> issues) {

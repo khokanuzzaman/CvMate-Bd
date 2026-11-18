@@ -7,6 +7,7 @@ import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart
 import 'package:careermatebd/features/cv_builder/domain/entities/personal_info.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
+import 'package:careermatebd/shared/services/ai/document_draft_personalizer.dart';
 import 'package:careermatebd/shared/services/ai/mock_ai_career_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -221,6 +222,19 @@ class CoverLetterController extends Notifier<CoverLetterState> {
     state = state.copyWith(subjectLine: value, clearErrorMessage: true);
   }
 
+  /// The user's name for a CV that has none (asked before generating).
+  void updateCandidateName(String value) {
+    state = state.copyWith(
+      candidateName: value.trim(),
+      clearErrorMessage: true,
+    );
+  }
+
+  /// True when the letter would be written without a name to sign it with:
+  /// the CV (or manual profile) has no full name and none was typed yet.
+  bool get needsCandidateName =>
+      _buildGenerationProfile().personalInfo.fullName.trim().isEmpty;
+
   void updateGeneratedContent(String value) {
     if (value == state.generatedContent) {
       return;
@@ -239,6 +253,7 @@ class CoverLetterController extends Notifier<CoverLetterState> {
     state = state.copyWith(isGenerating: true, clearErrorMessage: true);
     final aiService = ref.read(aiCareerServiceProvider);
     final profile = _buildGenerationProfile();
+    final kind = _documentKind(state.outputType);
 
     final result = await switch (state.outputType) {
       CoverLetterOutputType.formalCoverLetter => aiService.generateCoverLetter(
@@ -289,10 +304,16 @@ class CoverLetterController extends Notifier<CoverLetterState> {
 
     result.when(
       success: (data) {
+        // The server never sends the name to the model; sign it here.
+        final draft = personalizeDocumentDraft(
+          data,
+          info: profile.personalInfo,
+          kind: kind,
+        );
         state = state.copyWith(
           isGenerating: false,
-          subjectLine: data.subjectLine,
-          generatedContent: data.body,
+          subjectLine: draft.subjectLine,
+          generatedContent: draft.body,
           clearErrorMessage: true,
         );
       },
@@ -425,11 +446,35 @@ class CoverLetterController extends Notifier<CoverLetterState> {
     if (state.selectedCv == null && _effectiveCandidateSummary().isEmpty) {
       return 'Select a CV or enter a candidate summary first.';
     }
+    if (needsCandidateName) {
+      return 'Add your full name first.';
+    }
 
     return null;
   }
 
+  /// The profile to write from, with the typed name filled in when the CV
+  /// has none.
   CvProfile _buildGenerationProfile() {
+    final profile = _sourceProfile();
+    final typedName = state.candidateName.trim();
+    if (profile.personalInfo.fullName.trim().isNotEmpty || typedName.isEmpty) {
+      return profile;
+    }
+    return profile.copyWith(
+      personalInfo: profile.personalInfo.copyWith(fullName: typedName),
+    );
+  }
+
+  AiDocumentKind _documentKind(CoverLetterOutputType type) => switch (type) {
+    CoverLetterOutputType.formalCoverLetter ||
+    CoverLetterOutputType.shortCoverLetter => AiDocumentKind.coverLetter,
+    CoverLetterOutputType.jobApplicationEmail =>
+      AiDocumentKind.jobApplicationEmail,
+    CoverLetterOutputType.linkedInMessage => AiDocumentKind.linkedInMessage,
+  };
+
+  CvProfile _sourceProfile() {
     final tailored = state.tailoredProfile;
     if (tailored != null) {
       return tailored;

@@ -27,6 +27,7 @@ class CoverLetterState {
     required this.generatedContent,
     required this.errorMessage,
     this.tailoredProfile,
+    this.candidateName = '',
   });
 
   factory CoverLetterState.initial() => CoverLetterState(
@@ -76,6 +77,9 @@ class CoverLetterState {
   /// CV or a manual summary.
   final CvProfile? tailoredProfile;
 
+  /// The name the user typed when the CV has none. Used to sign the letter.
+  final String candidateName;
+
   CvProfile? get selectedCv {
     final id = selectedCvId;
     if (id == null) {
@@ -119,6 +123,7 @@ class CoverLetterState {
     String? errorMessage,
     bool clearErrorMessage = false,
     Object? tailoredProfile = _coverLetterStateUnset,
+    String? candidateName,
   }) {
     return CoverLetterState(
       hasInitialized: hasInitialized ?? this.hasInitialized,
@@ -152,6 +157,7 @@ class CoverLetterState {
       tailoredProfile: identical(tailoredProfile, _coverLetterStateUnset)
           ? this.tailoredProfile
           : tailoredProfile as CvProfile?,
+      candidateName: candidateName ?? this.candidateName,
     );
   }
 }

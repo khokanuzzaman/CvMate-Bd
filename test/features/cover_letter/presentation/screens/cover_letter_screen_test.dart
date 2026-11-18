@@ -136,6 +136,39 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 5));
     });
 
+    testWidgets('asks for the name when the CV has none and signs with it', (
+      tester,
+    ) async {
+      final app = await pumpCoreFlow(
+        tester,
+        repository: FakeCvRepository([designCv(blankPersonal: true)]),
+        surface: const Size(390, 1700),
+      );
+      unawaited(app.router.push(RouteNames.coverLetterPath));
+      await tester.pumpAndSettle();
+
+      await _generate(tester);
+      expect(find.text(AppStrings.coverLetterNameTitle), findsOneWidget);
+      expect(app.ai.coverLetterCalls, 0, reason: 'asked before generating');
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'Rahim Uddin',
+      );
+      await tester.pumpAndSettle();
+      await _tap(tester, find.text(AppStrings.coverLetterNameContinue));
+
+      expect(app.ai.coverLetterCalls, 1);
+      final content = app.container
+          .read(coverLetterControllerProvider)
+          .generatedContent;
+      expect(content, endsWith('Sincerely,\nRahim Uddin'));
+      expect(content, isNot(contains('[')));
+    });
+
     testWidgets('lists recent drafts, opens one, and deletes one', (
       tester,
     ) async {
@@ -182,8 +215,13 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Dear Hiring Manager,'), findsOneWidget);
+      // The AI's "[Your name]" fill-in is replaced with the CV's name.
       expect(
         find.textContaining('[Your name]', findRichText: true),
+        findsNothing,
+      );
+      expect(
+        find.textContaining('Sincerely,\nAyesha Rahman', findRichText: true),
         findsOneWidget,
       );
       expect(find.text(AppStrings.coverLetterEdit), findsOneWidget);

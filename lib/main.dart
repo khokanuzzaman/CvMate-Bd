@@ -18,8 +18,8 @@ Future<void> main() async {
   // public RevenueCat SDK key; never secret keys.
   await dotenv.load(fileName: '.env', isOptional: true);
 
-  // Fail loudly rather than ship canned mock AI output, or no AI server, in a
-  // release build.
+  // Fail loudly rather than ship a release build with no HTTPS AI server.
+  // (Release ignores USE_MOCK_AI, and the release builds refuse it anyway.)
   final aiProblem = EnvConfig.aiConfigurationProblem();
   if (aiProblem != null) {
     throw StateError(aiProblem);
