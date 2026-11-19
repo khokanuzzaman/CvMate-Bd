@@ -13,7 +13,8 @@ Build: ____  iPhone / iOS: ____  Date: ____  Tester: ____
       `--split-debug-info`, Dart symbols uploaded, `.env` with
       `USE_MOCK_AI=false`).
 - [ ] Server: `curl -s https://api.khokan.me/healthz` shows `ok: true` and the
-      commit you expect.
+      commit you expect, with cvmate-api#14 deployed (database
+      `user_version` 8).
 - [ ] **Sandbox Apple ID:** on the iPhone, open Settings > App Store >
       Sandbox Account and sign in with a sandbox tester from App Store Connect
       (Users and Access > Sandbox). Your real Apple ID stays signed in for
@@ -44,11 +45,14 @@ Use a **second** new account that is not Pro.
       free; export **a second CV** to reach the paywall. It must say
       "You've used your free export" (PR #53).
 - [ ] Choose **Just this CV — $3.99**, confirm in the sandbox sheet.
-- [ ] One-time purchases are **not** covered by purchase sync (subscriptions
-      only); the unlock and the +5 AI actions arrive with the
-      `NON_RENEWING_PURCHASE` webhook. Note how long it takes. If the app
-      says "Payment received. Activating can take a minute", wait, then
-      export again: the share sheet opens and *AI actions left* went up by 5.
+- [ ] Within about **5 seconds** the app says "Purchase complete", the
+      export continues and the share sheet opens; *AI actions left* went up
+      by 5. This comes from purchase sync reading the one-time purchase
+      (cvmate-api#14), not from the webhook.
+- [ ] Server log: `entitlement_sync` with `oneTimeGranted: 1`, then the
+      `NON_RENEWING_PURCHASE` webhook a little later with outcome
+      `one_time_already_granted`: granted **once**. Profile still shows
+      *AI actions left* up by exactly 5, not 10.
 - [ ] Export the **same** CV again: no paywall. Export a **different** CV:
       the paywall again (the unlock is for one CV only).
 
