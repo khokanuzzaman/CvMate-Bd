@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_style.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
@@ -35,8 +36,8 @@ class CvPdfService {
     final document = pw.Document(
       compress: compress,
       title: profile.displayTitle,
-      author: 'CareerMate BD',
-      creator: 'CareerMate BD',
+      author: AppStrings.brandName,
+      creator: AppStrings.brandName,
       subject: 'ATS-friendly CV export',
     );
 

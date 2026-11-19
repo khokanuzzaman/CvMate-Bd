@@ -1,4 +1,5 @@
 import 'package:careermatebd/app/constants/app_constants.dart';
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/utils/date_formatter.dart';
 import 'package:careermatebd/core/widgets/custom_app_bar.dart';
@@ -8,6 +9,7 @@ import 'package:careermatebd/core/widgets/custom_empty_state.dart';
 import 'package:careermatebd/core/widgets/custom_error_view.dart';
 import 'package:careermatebd/core/widgets/custom_loading_view.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
+import 'package:careermatebd/features/cv_builder/data/cv_cloud_sync.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
@@ -229,13 +231,18 @@ class CvListScreen extends ConsumerWidget {
     WidgetRef ref,
     CvProfile cv,
   ) async {
+    // A signed-in delete is mirrored to the cloud backup too.
+    final backedUp =
+        ref.read(cloudBackupStatusProvider) == CloudBackupStatus.on;
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Delete CV'),
           content: Text(
-            'Delete "${cv.displayTitle}" from local storage? This action cannot be undone.',
+            backedUp
+                ? AppStrings.cvDeleteBodyWithBackup(cv.displayTitle)
+                : AppStrings.cvDeleteBodyLocal(cv.displayTitle),
           ),
           actions: [
             TextButton(

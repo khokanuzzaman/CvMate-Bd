@@ -209,7 +209,7 @@ class AtsCheckerController extends Notifier<AtsCheckerState> {
       clearErrorMessage: true,
     );
 
-    final aiService = ref.read(aiCareerServiceProvider);
+    final aiService = ref.read(atsAiCareerServiceProvider);
     final result = switch (state.aiTarget) {
       AtsAiTarget.professionalSummary => aiService.generateProfessionalSummary(
         profile: selectedCv,

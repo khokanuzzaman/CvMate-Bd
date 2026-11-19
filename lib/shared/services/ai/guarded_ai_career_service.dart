@@ -22,7 +22,21 @@ class GuardedAiCareerService implements AiCareerService {
     required this.consentGuard,
     required this.port,
     required this.telemetry,
+    this.actionAliases = const {},
   });
+
+  /// The same service, logging some actions under another name (for
+  /// example the ATS screen's summary as [AiAction.atsSummary]). Consent,
+  /// quota and the request itself are unchanged.
+  GuardedAiCareerService withActionAliases(Map<AiAction, AiAction> aliases) {
+    return GuardedAiCareerService(
+      inner: inner,
+      consentGuard: consentGuard,
+      port: port,
+      telemetry: telemetry,
+      actionAliases: aliases,
+    );
+  }
 
   static const String consentDeclinedMessage =
       'AI features are off. You can turn them on in Settings.';
@@ -32,10 +46,14 @@ class GuardedAiCareerService implements AiCareerService {
   final AiInteractionPort port;
   final AiTelemetry telemetry;
 
+  /// Analytics names to use instead of the method's own action.
+  final Map<AiAction, AiAction> actionAliases;
+
   Future<Result<T>> _guarded<T>(
-    AiAction action,
+    AiAction method,
     Future<Result<T>> Function() call,
   ) async {
+    final action = actionAliases[method] ?? method;
     final guard = consentGuard;
     if (guard != null && !await guard.ensureConsent()) {
       return const FailureResult(
