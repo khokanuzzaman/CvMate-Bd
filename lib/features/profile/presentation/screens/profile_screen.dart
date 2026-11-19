@@ -11,13 +11,9 @@ import 'package:careermatebd/features/auth/presentation/controllers/logout_contr
 import 'package:careermatebd/features/cv_builder/data/cv_cloud_sync.dart';
 import 'package:careermatebd/features/profile/presentation/controllers/profile_providers.dart';
 import 'package:careermatebd/features/profile/presentation/widgets/go_pro_banner.dart';
-import 'package:careermatebd/features/profile/presentation/widgets/language_sheet.dart';
 import 'package:careermatebd/features/profile/presentation/widgets/profile_account_card.dart';
 import 'package:careermatebd/features/profile/presentation/widgets/profile_dialogs.dart';
 import 'package:careermatebd/features/profile/presentation/widgets/settings_group.dart';
-import 'package:careermatebd/features/profile/presentation/widgets/theme_selector.dart';
-import 'package:careermatebd/features/settings/domain/entities/app_preferences.dart';
-import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
 import 'package:careermatebd/features/subscription/presentation/widgets/ai_actions_left_label.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,35 +25,10 @@ import 'package:go_router/go_router.dart';
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
-  Future<void> _pickLanguage(BuildContext context, WidgetRef ref) async {
-    final current =
-        ref.read(appPreferencesControllerProvider).asData?.value ??
-        const AppPreferences.defaults();
-    final picked = await showLanguageSheet(
-      context,
-      selected: current.languagePreference,
-    );
-    if (picked == null || !context.mounted) {
-      return;
-    }
-    final message = await ref
-        .read(appPreferencesControllerProvider.notifier)
-        .updateLanguagePreference(picked);
-    if (!context.mounted || message == null) {
-      return;
-    }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentAuthUserProvider);
     final isPro = ref.watch(profileIsProProvider);
-    final preferences =
-        ref.watch(appPreferencesControllerProvider).asData?.value ??
-        const AppPreferences.defaults();
     final backup = ref.watch(cloudBackupStatusProvider);
     final version = ref.watch(appVersionLabelProvider).asData?.value;
     final loggingOut = ref.watch(logoutControllerProvider).isLoading;
@@ -87,36 +58,6 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: AppSpacing.s20),
-            const SectionLabel(AppStrings.profilePreferences),
-            const SizedBox(height: AppSpacing.s8),
-            SettingsGroup(
-              children: [
-                SettingsRow(
-                  label: AppStrings.profileAppLanguage,
-                  trailing: SettingsRow.value(
-                    preferences.languagePreference.label,
-                  ),
-                  onTap: () => _pickLanguage(context, ref),
-                ),
-                SettingsRow(
-                  label: AppStrings.profileTheme,
-                  trailing: ThemeSelector(
-                    onLight: () => ref
-                        .read(appPreferencesControllerProvider.notifier)
-                        .updateThemeMode(ThemeMode.light),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.s6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
-              child: Text(
-                AppStrings.themeComingSoon,
-                style: AppTextStyles.hint,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s16),
             const SectionLabel(AppStrings.profileAccount),
             const SizedBox(height: AppSpacing.s8),
             SettingsGroup(

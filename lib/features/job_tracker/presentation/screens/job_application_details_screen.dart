@@ -1,3 +1,4 @@
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
@@ -408,7 +409,7 @@ class _KeyInfoCard extends StatelessWidget {
             value: date(application.interviewDate),
           ),
           _InfoRow(
-            label: 'Follow-up reminder',
+            label: AppStrings.trackerFollowUpPlanRow,
             value: date(application.followUpDate),
           ),
           _InfoRow(
@@ -492,7 +493,7 @@ class _NotesCard extends StatelessWidget {
             hasNotes
                 ? application.notes
                 : 'No notes yet. Add recruiter messages, interview '
-                      'instructions or follow-up reminders in the application '
+                      'instructions or follow-up notes in the application '
                       'form.',
             style: AppTextStyles.body.copyWith(
               color: hasNotes ? AppColors.ink : AppColors.muted,

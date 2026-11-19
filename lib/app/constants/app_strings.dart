@@ -885,6 +885,10 @@ abstract final class AppStrings {
       'Interview $when · Prep now';
   static const String trackerToday = 'today';
   static const String trackerTomorrow = 'tomorrow';
+  // A date the user picks to follow up; the app shows it in the tracker but
+  // sends no notification (reminders are v1.1), so the labels say "plan".
+  static const String trackerFollowUpPlanLabel = 'Plan to follow up on';
+  static const String trackerFollowUpPlanRow = 'Follow up on';
   static const String trackerHintFollowUpDue =
       'Follow-up due · Send a follow-up';
   static String trackerHintApplied(int days) {

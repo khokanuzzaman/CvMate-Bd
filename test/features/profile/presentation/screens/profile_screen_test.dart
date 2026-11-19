@@ -4,7 +4,6 @@ import 'package:careermatebd/core/widgets/bottom_nav_bar.dart';
 import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
 import 'package:careermatebd/features/profile/presentation/screens/profile_screen.dart';
 import 'package:careermatebd/features/settings/data/repositories/settings_repository_impl.dart';
-import 'package:careermatebd/features/settings/domain/entities/app_preferences.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/settings_overview_controller.dart';
 import 'package:careermatebd/shared/services/entitlement/ai_entitlement.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_store.dart';
@@ -77,25 +76,6 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
-  testWidgets('the Theme row stays readable at 2x text', (tester) async {
-    tester.platformDispatcher.textScaleFactorTestValue = 2.0;
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await _open(tester);
-
-    // At 2x the page is taller than the surface; scroll the row into view.
-    await tester.scrollUntilVisible(
-      find.text(AppStrings.profileTheme),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    // The label used to be squeezed to one letter per line ("Th / e / m").
-    expect(
-      tester.getSize(find.text(AppStrings.profileTheme)).height,
-      lessThan(60),
-    );
-    expect(tester.takeException(), isNull);
-  });
-
   group('account', () {
     testWidgets('shows the name, email and Free plan', (tester) async {
       await _open(tester);
@@ -195,57 +175,14 @@ void main() {
   });
 
   group('preferences', () {
-    testWidgets('App language shows the saved preference', (tester) async {
+    testWidgets('v1 has no theme or app-language rows (light only, '
+        'English UI)', (tester) async {
       await _open(tester);
 
-      expect(find.text(AppStrings.profileAppLanguage), findsOneWidget);
-      expect(find.text('English'), findsOneWidget);
-    });
-
-    testWidgets('picking a language saves it', (tester) async {
-      final app = await _open(tester);
-
-      await _tap(tester, find.text(AppStrings.profileAppLanguage));
-      expect(find.text(AppStrings.profileLanguageNote), findsOneWidget);
-      await _tap(tester, find.text('Bangla'));
-
-      expect(
-        app.settings.preferences.languagePreference,
-        AppLanguagePreference.bangla,
-      );
-      expect(find.text('Bangla'), findsOneWidget);
-      expect(find.text('Language preference saved.'), findsOneWidget);
-    });
-
-    testWidgets('dismissing the language sheet changes nothing', (
-      tester,
-    ) async {
-      final app = await _open(tester);
-
-      await _tap(tester, find.text(AppStrings.profileAppLanguage));
-      await tester.tapAt(const Offset(10, 10));
-      await tester.pumpAndSettle();
-
-      expect(app.settings.saveCount, 0);
-      expect(find.text('English'), findsOneWidget);
-    });
-
-    testWidgets('Light is selected; Dark and Auto are coming soon', (
-      tester,
-    ) async {
-      final app = await _open(tester);
-
-      expect(find.text(AppStrings.themeLight), findsOneWidget);
-      expect(find.text(AppStrings.themeDark), findsOneWidget);
-      expect(find.text(AppStrings.themeAuto), findsOneWidget);
-      expect(find.text(AppStrings.themeComingSoon), findsOneWidget);
-
-      await _tap(tester, find.text(AppStrings.themeDark));
-      await _tap(tester, find.text(AppStrings.themeAuto));
-      expect(app.settings.saveCount, 0);
-
-      await _tap(tester, find.text(AppStrings.themeLight));
-      expect(app.settings.preferences.themeMode, ThemeMode.light);
+      expect(find.text(AppStrings.profileTheme), findsNothing);
+      expect(find.text(AppStrings.themeDark), findsNothing);
+      expect(find.text(AppStrings.themeComingSoon), findsNothing);
+      expect(find.text(AppStrings.profileAppLanguage), findsNothing);
     });
 
     testWidgets('there is no reminders toggle (no such preference exists)', (

@@ -12,7 +12,6 @@ import 'package:careermatebd/features/account_deletion/presentation/widgets/dele
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/forgot_password_controller.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/logout_controller.dart';
-import 'package:careermatebd/features/settings/domain/entities/app_preferences.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/settings_overview_controller.dart';
 import 'package:careermatebd/shared/services/review/review_prompter.dart';
@@ -26,7 +25,6 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentAuthUserProvider);
-    final preferences = ref.watch(appPreferencesControllerProvider);
     final overview = ref.watch(settingsOverviewControllerProvider);
     final logoutState = ref.watch(logoutControllerProvider);
     final forgotPasswordState = ref.watch(forgotPasswordControllerProvider);
@@ -99,26 +97,6 @@ class SettingsScreen extends ConsumerWidget {
                       isError: true,
                     ),
                   ],
-                  const SizedBox(height: 24),
-                  _SectionTitle(title: 'App Preferences'),
-                  _PreferencesSection(
-                    preferences:
-                        preferences.asData?.value ??
-                        const AppPreferences.defaults(),
-                    onThemeChanged: (themeMode) => _showActionMessage(
-                      context,
-                      ref
-                          .read(appPreferencesControllerProvider.notifier)
-                          .updateThemeMode(themeMode),
-                    ),
-                    onLanguageChanged: (languagePreference) =>
-                        _showActionMessage(
-                          context,
-                          ref
-                              .read(appPreferencesControllerProvider.notifier)
-                              .updateLanguagePreference(languagePreference),
-                        ),
-                  ),
                   const SizedBox(height: 24),
                   _SectionTitle(title: 'AI Settings'),
                   _AiSettingsSection(),
@@ -355,20 +333,6 @@ class SettingsScreen extends ConsumerWidget {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Future<void> _showActionMessage(
-    BuildContext context,
-    Future<String?> action,
-  ) async {
-    final message = await action;
-    if (!context.mounted || message == null || message.trim().isEmpty) {
-      return;
-    }
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
   Future<void> _showInfoDialog(
     BuildContext context, {
     required String title,
@@ -482,73 +446,6 @@ class _AccountSection extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _PreferencesSection extends StatelessWidget {
-  const _PreferencesSection({
-    required this.preferences,
-    required this.onThemeChanged,
-    required this.onLanguageChanged,
-  });
-
-  final AppPreferences preferences;
-  final ValueChanged<ThemeMode> onThemeChanged;
-  final ValueChanged<AppLanguagePreference> onLanguageChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return CustomCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Theme mode', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final themeMode in ThemeMode.values)
-                ChoiceChip(
-                  label: Text(_themeModeLabel(themeMode)),
-                  selected: preferences.themeMode == themeMode,
-                  onSelected: (_) => onThemeChanged(themeMode),
-                ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Text('Language preference', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 6),
-          Text(
-            'UI localization is still a placeholder. This saves your preferred language for future use.',
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final language in AppLanguagePreference.values)
-                ChoiceChip(
-                  label: Text(language.label),
-                  selected: preferences.languagePreference == language,
-                  onSelected: (_) => onLanguageChanged(language),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _themeModeLabel(ThemeMode value) {
-    return switch (value) {
-      ThemeMode.system => 'System',
-      ThemeMode.light => 'Light',
-      ThemeMode.dark => 'Dark',
-    };
   }
 }
 
