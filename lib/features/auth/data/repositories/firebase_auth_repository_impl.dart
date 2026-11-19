@@ -59,13 +59,15 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   Future<Result<AuthUser>> createUserWithEmailAndPassword({
     required String email,
     required String password,
+    String? displayName,
   }) async {
     try {
       final credential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
-      final user = _mapUser(credential.user);
+      await _saveDisplayName(credential.user, displayName);
+      final user = _mapUser(_firebaseAuth.currentUser ?? credential.user);
       if (user == null) {
         return const FailureResult<AuthUser>(
           Failure('Could not create your account right now. Please try again.'),
@@ -81,6 +83,22 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         Failure('Something went wrong. Please try again.'),
       );
     }
+  }
+
+  /// Best effort: the account exists either way, and the name can be read
+  /// from the CV later.
+  static Future<void> _saveDisplayName(
+    fb_auth.User? user,
+    String? displayName,
+  ) async {
+    final name = displayName?.trim() ?? '';
+    if (user == null || name.isEmpty) {
+      return;
+    }
+    try {
+      await user.updateDisplayName(name);
+      await user.reload();
+    } catch (_) {}
   }
 
   @override
@@ -126,7 +144,9 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       final user = _mapUser(linked.user);
       if (user == null) {
         return const FailureResult<AuthUser>(
-          Failure('Could not upgrade your account right now. Please try again.'),
+          Failure(
+            'Could not upgrade your account right now. Please try again.',
+          ),
         );
       }
       return Success(user);
