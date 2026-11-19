@@ -3,6 +3,21 @@ import 'package:careermatebd/features/ats_checker/domain/entities/ats_job_match_
 import 'package:careermatebd/features/ats_checker/presentation/controllers/ats_ai_target.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 
+/// Where the job post used for matching came from.
+enum AtsJobPostSource {
+  /// No job post, and the user has not cleared one here.
+  none,
+
+  /// Taken from Tailor; follows Tailor's post on the next visit.
+  tailor,
+
+  /// Typed or pasted on this screen; kept as is.
+  typed,
+
+  /// Cleared on this screen; Tailor's post is not taken again.
+  cleared,
+}
+
 class AtsCheckerState {
   const AtsCheckerState({
     required this.hasInitialized,
@@ -13,6 +28,7 @@ class AtsCheckerState {
     required this.availableCvs,
     required this.selectedCvId,
     required this.jobPostText,
+    this.jobPostSource = AtsJobPostSource.none,
     required this.report,
     required this.jobMatchReport,
     required this.aiTarget,
@@ -44,6 +60,7 @@ class AtsCheckerState {
   final List<CvProfile> availableCvs;
   final String? selectedCvId;
   final String jobPostText;
+  final AtsJobPostSource jobPostSource;
   final AtsCheckReport? report;
   final AtsJobMatchReport? jobMatchReport;
   final AtsAiTarget aiTarget;
@@ -78,6 +95,7 @@ class AtsCheckerState {
     String? selectedCvId,
     bool clearSelectedCvId = false,
     String? jobPostText,
+    AtsJobPostSource? jobPostSource,
     AtsCheckReport? report,
     bool clearReport = false,
     AtsJobMatchReport? jobMatchReport,
@@ -99,6 +117,7 @@ class AtsCheckerState {
           ? null
           : selectedCvId ?? this.selectedCvId,
       jobPostText: jobPostText ?? this.jobPostText,
+      jobPostSource: jobPostSource ?? this.jobPostSource,
       report: clearReport ? null : report ?? this.report,
       jobMatchReport: clearJobMatchReport
           ? null

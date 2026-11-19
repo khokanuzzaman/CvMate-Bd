@@ -13,7 +13,7 @@ import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_controller.dart';
 import 'package:careermatebd/features/tailoring/presentation/screens/tailoring_screen.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/clipboard_mock.dart';
@@ -301,6 +301,39 @@ void main() {
       expect(find.text('No detected skills are ready to add.'), findsOneWidget);
       expect(repository.saveCount, 0);
     });
+  });
+
+  testWidgets('the job post card shows the post in use; Change replaces it '
+      'and Clear stops using it', (tester) async {
+    const jobPost =
+        'Frontend Developer: React, TypeScript, Firebase and REST APIs.';
+    final copied = mockClipboard(tester);
+    await _open(tester);
+    expect(find.text(AppStrings.atsJobPostNone), findsOneWidget);
+
+    await tester.tap(find.text(AppStrings.atsJobPostAdd));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.byType(EditableText),
+      ),
+      jobPost,
+    );
+    await tester.tap(find.text(AppStrings.atsJobPostSave));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.atsJobPostAddedHere), findsOneWidget);
+    expect(find.text(jobPost), findsOneWidget);
+
+    await tester.tap(find.text(AppStrings.atsJobPostClear));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.atsJobPostNone), findsOneWidget);
+    await tester.tap(find.byTooltip(AppStrings.tailorMoreOptions));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(AppStrings.atsMenuCopySuggestions));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.atsNeedsJobPost), findsOneWidget);
+    expect(copied, isEmpty);
   });
 
   group('Improve with AI (⋮ menu)', () {
