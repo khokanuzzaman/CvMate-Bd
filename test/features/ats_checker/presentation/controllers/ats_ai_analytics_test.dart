@@ -1,6 +1,9 @@
 import 'package:careermatebd/features/ats_checker/presentation/controllers/ats_ai_target.dart';
 import 'package:careermatebd/features/ats_checker/presentation/controllers/ats_checker_controller.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
+import 'package:careermatebd/core/utils/result.dart';
+import 'package:careermatebd/shared/models/ai/ai_models.dart';
+import 'package:careermatebd/shared/services/ai/ai_career_service.dart';
 import 'package:careermatebd/shared/services/ai/ai_consent_guard.dart';
 import 'package:careermatebd/shared/services/ai/ai_telemetry.dart';
 import 'package:careermatebd/shared/services/ai/guarded_ai_career_service.dart';
@@ -11,7 +14,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/core_flow_harness.dart';
 import '../../../../helpers/design_cv.dart';
-import '../../../../helpers/fake_ai_career_service.dart';
 import '../../../../helpers/fake_cv_repository.dart';
 
 class _NoopPort implements AiInteractionPort {
@@ -20,6 +22,40 @@ class _NoopPort implements AiInteractionPort {
 
   @override
   void openPaywall(String source) {}
+}
+
+/// Answers the two text actions; anything else is not used here.
+class _TextAi implements AiCareerService {
+  static Future<Result<AiTextSuggestion>> _ok() async => const Success(
+    AiTextSuggestion(
+      title: 't',
+      originalText: '',
+      suggestedText: 'Suggested text.',
+      guidancePoints: [],
+      language: AiOutputLanguage.english,
+    ),
+  );
+
+  @override
+  Future<Result<AiTextSuggestion>> generateProfessionalSummary({
+    required profile,
+    AiOutputLanguage language = AiOutputLanguage.english,
+    AiTone tone = AiTone.professional,
+    String jobTitle = '',
+    String jobPostText = '',
+  }) => _ok();
+
+  @override
+  Future<Result<AiTextSuggestion>> generateCareerObjective({
+    required profile,
+    AiOutputLanguage language = AiOutputLanguage.english,
+    AiTone tone = AiTone.professional,
+    String jobTitle = '',
+    String jobPostText = '',
+  }) => _ok();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -32,7 +68,7 @@ void main() {
         analyticsServiceProvider.overrideWithValue(analytics),
         aiCareerServiceProvider.overrideWith(
           (ref) => GuardedAiCareerService(
-            inner: FakeAiCareerService(),
+            inner: _TextAi(),
             consentGuard: null,
             port: _NoopPort(),
             telemetry: ref.watch(aiTelemetryProvider),
