@@ -248,6 +248,7 @@ v1 side of each instead.
 | Tracker reminders | "Plan to follow up on" is a date the tracker shows; the app sends no notification. | Local notifications for follow-up and interview dates, with a permission prompt and a setting. |
 | Server-side export counter | The one free export is counted on the device (Hive), so clearing app data or reinstalling resets it. | Count exports on the server with the AI entitlement, so the free export is per account. |
 | DOCX export | PDF only (share or print). | A DOCX export, in the same templates where practical. |
+| Android adaptive icon | Android uses the legacy square launcher icon (`mipmap/ic_launcher`) made from `assets/branding/app_icon_1024.png`. | An adaptive icon (separate foreground and background, safe zone) before the Android launch: add `adaptive_icon_*` to `flutter_launcher_icons.yaml`. |
 
 ## Results
 
