@@ -105,7 +105,12 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _Header(compact: compact),
+                    _Header(
+                      compact: compact,
+                      fromExportGate: PaywallSource.parse(
+                        widget.source,
+                      ).isExportGate,
+                    ),
                     _Benefits(compact: compact),
                     PaywallPlans(
                       offering: state.offering,
@@ -172,9 +177,12 @@ class _CloseButton extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.compact});
+  const _Header({required this.compact, required this.fromExportGate});
 
   final bool compact;
+
+  /// "You've used your free export" is only true when an export was blocked.
+  final bool fromExportGate;
 
   @override
   Widget build(BuildContext context) {
@@ -208,23 +216,30 @@ class _Header extends StatelessWidget {
           style: compact ? AppTextStyles.h2 : AppTextStyles.h1,
         ),
         SizedBox(height: compact ? AppSpacing.s8 : AppSpacing.s12),
-        Text.rich(
-          TextSpan(
-            style: body,
-            children: [
-              const TextSpan(text: AppStrings.paywallBodyPrefix),
-              TextSpan(
-                text: AppStrings.paywallBodyEmphasis,
-                style: body.copyWith(
-                  color: AppColors.ink,
-                  fontWeight: FontWeight.w700,
+        if (fromExportGate)
+          Text.rich(
+            TextSpan(
+              style: body,
+              children: [
+                const TextSpan(text: AppStrings.paywallBodyPrefix),
+                TextSpan(
+                  text: AppStrings.paywallBodyEmphasis,
+                  style: body.copyWith(
+                    color: AppColors.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const TextSpan(text: AppStrings.paywallBodySuffix),
-            ],
+                const TextSpan(text: AppStrings.paywallBodySuffix),
+              ],
+            ),
+            textAlign: TextAlign.center,
+          )
+        else
+          Text(
+            AppStrings.paywallBodyNeutral,
+            textAlign: TextAlign.center,
+            style: body,
           ),
-          textAlign: TextAlign.center,
-        ),
         SizedBox(height: compact ? AppSpacing.s12 : AppSpacing.s22),
       ],
     );
