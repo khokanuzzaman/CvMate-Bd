@@ -10,6 +10,7 @@ import 'package:careermatebd/core/widgets/bottom_nav_bar.dart';
 import 'package:careermatebd/core/widgets/custom_empty_state.dart';
 import 'package:careermatebd/core/widgets/custom_error_view.dart';
 import 'package:careermatebd/core/widgets/custom_loading_view.dart';
+import 'package:careermatebd/features/interview_prep/presentation/controllers/interview_prep_controller.dart';
 import 'package:careermatebd/features/job_tracker/domain/entities/job_application.dart';
 import 'package:careermatebd/features/job_tracker/presentation/controllers/job_tracker_controller.dart';
 import 'package:careermatebd/features/job_tracker/presentation/widgets/job_application_card.dart';
@@ -246,7 +247,16 @@ class _Content extends ConsumerWidget {
             JobApplicationCard(
               application: application,
               onTap: () => onOpen(application.id),
-              onPrep: () => context.push(RouteNames.interviewPrepPath),
+              onPrep: () {
+                ref
+                    .read(interviewPrepControllerProvider.notifier)
+                    .prepareForJob(
+                      jobTitle: application.jobTitle,
+                      companyName: application.companyName,
+                      cvId: application.cvId,
+                    );
+                context.push(RouteNames.interviewPrepPath);
+              },
             ),
             const SizedBox(height: AppSpacing.s12),
           ],
