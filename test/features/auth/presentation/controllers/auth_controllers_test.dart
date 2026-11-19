@@ -120,6 +120,7 @@ class _FakeAuthRepository implements AuthRepository {
   Future<Result<AuthUser>> createUserWithEmailAndPassword({
     required String email,
     required String password,
+    String? displayName,
   }) async {
     createdUsers.add(email);
     final user = AuthUser(uid: 'created-user', email: email);

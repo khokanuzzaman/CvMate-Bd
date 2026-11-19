@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_form_state.dart';
+import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +22,7 @@ class RegisterController extends Notifier<AuthFormState> {
     required String email,
     required String password,
     required String confirmPassword,
+    String? displayName,
   }) async {
     if (password.trim() != confirmPassword.trim()) {
       state = state.copyWith(
@@ -39,10 +41,16 @@ class RegisterController extends Notifier<AuthFormState> {
 
     final result = await ref
         .read(authRepositoryProvider)
-        .createUserWithEmailAndPassword(email: email, password: password);
+        .createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+          displayName: displayName,
+        );
 
     return result.when(
       success: (_) {
+        // The name is saved after the sign-in event, so read the user again.
+        ref.invalidate(currentAuthUserProvider);
         unawaited(
           ref
               .read(analyticsServiceProvider)

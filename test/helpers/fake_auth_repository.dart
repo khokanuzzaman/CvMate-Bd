@@ -21,6 +21,7 @@ class FakeAuthRepository implements AuthRepository {
 
   final List<String> signInEmails = [];
   final List<String> createdEmails = [];
+  final List<String?> createdDisplayNames = [];
   final List<String> resetEmails = [];
 
   /// When non-null, password reset returns a failure with this message.
@@ -49,9 +50,15 @@ class FakeAuthRepository implements AuthRepository {
   Future<Result<AuthUser>> createUserWithEmailAndPassword({
     required String email,
     required String password,
+    String? displayName,
   }) async {
     createdEmails.add(email);
-    return _authenticate(uid: 'created-user', email: email);
+    createdDisplayNames.add(displayName);
+    return _authenticate(
+      uid: 'created-user',
+      email: email,
+      name: displayName ?? this.displayName,
+    );
   }
 
   @override
@@ -107,6 +114,7 @@ class FakeAuthRepository implements AuthRepository {
   Result<AuthUser> _authenticate({
     required String uid,
     required String email,
+    String? name,
     bool isAnonymous = false,
   }) {
     final message = failWith;
@@ -117,7 +125,7 @@ class FakeAuthRepository implements AuthRepository {
     final user = AuthUser(
       uid: uid,
       email: email,
-      displayName: displayName,
+      displayName: name ?? displayName,
       isAnonymous: isAnonymous,
     );
     _currentUser = user;

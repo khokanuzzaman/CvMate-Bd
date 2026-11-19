@@ -1,9 +1,34 @@
+import 'package:careermatebd/app/constants/app_links.dart';
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/logout_controller.dart';
+import 'package:careermatebd/shared/services/links/url_opener.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+/// Opens the published Terms of Use.
+Future<void> openTermsOfUse(BuildContext context, WidgetRef ref) =>
+    _openLegalPage(context, ref, AppLinks.termsOfUse);
+
+/// Opens the published Privacy Policy.
+Future<void> openPrivacyPolicy(BuildContext context, WidgetRef ref) =>
+    _openLegalPage(context, ref, AppLinks.privacyPolicy);
+
+/// Opens [url] in the browser. With no URL configured, or when it cannot be
+/// opened (no browser, offline), the in-app text is shown instead.
+Future<void> _openLegalPage(
+  BuildContext context,
+  WidgetRef ref,
+  String url,
+) async {
+  final uri = Uri.tryParse(url.trim());
+  final opened =
+      uri != null && uri.hasScheme && await ref.read(urlOpenerProvider)(uri);
+  if (!opened && context.mounted) {
+    await showPrivacyTermsDialog(context);
+  }
+}
 
 /// Shows the privacy policy and terms (the same texts Settings shows).
 Future<void> showPrivacyTermsDialog(BuildContext context) {

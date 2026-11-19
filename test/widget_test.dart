@@ -95,6 +95,7 @@ class _FakeAuthRepository implements AuthRepository {
   Future<Result<AuthUser>> createUserWithEmailAndPassword({
     required String email,
     required String password,
+    String? displayName,
   }) async {
     return Success(AuthUser(uid: 'test-user', email: email));
   }
