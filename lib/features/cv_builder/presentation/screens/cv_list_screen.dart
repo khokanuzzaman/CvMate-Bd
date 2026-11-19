@@ -7,10 +7,12 @@ import 'package:careermatebd/core/widgets/custom_card.dart';
 import 'package:careermatebd/core/widgets/custom_empty_state.dart';
 import 'package:careermatebd/core/widgets/custom_error_view.dart';
 import 'package:careermatebd/core/widgets/custom_loading_view.dart';
+import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_library_controller.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/guest_backup_hint.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,6 +25,7 @@ class CvListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cvLibrary = ref.watch(cvLibraryControllerProvider);
+    final isGuest = ref.watch(currentAuthUserProvider) == null;
     final builderState = ref.watch(cvBuilderControllerProvider);
     final activeDraftId = builderState.hasActiveDraft
         ? builderState.draft.id
@@ -50,6 +53,10 @@ class CvListScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (isGuest) ...[
+                      const GuestBackupHint(),
+                      const SizedBox(height: 16),
+                    ],
                     CustomCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

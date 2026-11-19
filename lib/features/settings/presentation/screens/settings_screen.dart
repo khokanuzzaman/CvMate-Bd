@@ -12,9 +12,11 @@ import 'package:careermatebd/features/account_deletion/presentation/widgets/dele
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/forgot_password_controller.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/logout_controller.dart';
+import 'package:careermatebd/features/cv_builder/data/cv_cloud_sync.dart';
 import 'package:careermatebd/features/settings/domain/entities/app_preferences.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/settings_overview_controller.dart';
+import 'package:careermatebd/features/settings/presentation/widgets/clear_data_dialog.dart';
 import 'package:careermatebd/shared/services/review/review_prompter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -317,35 +319,18 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmClearData(BuildContext context, WidgetRef ref) async {
-    final shouldClear = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Clear all local data'),
-          content: const Text(
-            'This will permanently remove saved CVs, cover letter drafts, job applications, and interview prep sessions from this device.\n\nTheme and language preferences will stay.\n\nThis action cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Clear data'),
-            ),
-          ],
-        );
-      },
+    final choice = await showClearDataDialog(
+      context,
+      hasCloudBackup:
+          ref.read(cloudBackupStatusProvider) == CloudBackupStatus.on,
     );
-
-    if (shouldClear != true) {
+    if (choice == null || !context.mounted) {
       return;
     }
 
     final message = await ref
         .read(settingsOverviewControllerProvider.notifier)
-        .clearAllLocalCareerData();
+        .clearAllLocalCareerData(includeCloudBackup: choice.includeCloudBackup);
     if (!context.mounted || message == null) {
       return;
     }

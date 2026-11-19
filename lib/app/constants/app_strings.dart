@@ -919,7 +919,7 @@ abstract final class AppStrings {
   static const String profileCloudBackup = 'Cloud backup';
   static const String profileCloudOn = 'On';
   static const String profileCloudOff = 'Off';
-  static const String profileCloudOnNote = 'CVs only';
+  static const String profileCloudOnNote = 'CVs backed up';
   static const String profileCloudOffNote = 'Sign in to back up your CVs';
   static const String profileComingSoon = 'Coming soon';
   static const String profilePrivacyTerms = 'Privacy & terms';
@@ -928,6 +928,33 @@ abstract final class AppStrings {
   static const String profileLogIn = 'Log in';
   static const String profileCreateAccount = 'Create account';
   static String profileVersion(String version) => 'CvMate $version';
+  static const String guestBackupHint =
+      'Your CVs are saved only on this device. Sign in to back them up.';
+  static const String guestBackupSignIn = 'Sign in';
+
+  // Settings: clear all data
+  static const String clearDataTitle = 'Clear all local data';
+  static const String clearDataBody =
+      'This permanently removes saved CVs, cover letter drafts, job '
+      'applications and interview prep sessions from this device. Theme and '
+      'language preferences stay.\n\nThis cannot be undone.';
+  static const String clearDataAlsoCloud = 'Also delete my CV cloud backup';
+  static const String clearDataCloudKeptNote =
+      'Your CVs stay in your cloud backup and download to this device again '
+      'the next time the app syncs.';
+  static const String clearDataCloudDeletedNote =
+      'Your CV backup is deleted from the cloud too, so nothing comes back.';
+  static const String clearDataCancel = 'Cancel';
+  static const String clearDataConfirm = 'Clear data';
+  static const String clearDataDone =
+      'Local career data cleared. Theme and language preferences were kept.';
+  static const String clearDataDoneWithCloud =
+      'Local career data and your CV cloud backup were deleted.';
+  static const String clearDataFailed = 'Could not clear local data right now.';
+  static const String clearDataCloudFailed =
+      'Could not delete your cloud backup, so nothing was cleared. Check your '
+      'connection and try again.';
+
   static const String logOutTitle = 'Log out';
   static const String logOutBody =
       'Log out now? Your local CVs and drafts will remain on this device.';

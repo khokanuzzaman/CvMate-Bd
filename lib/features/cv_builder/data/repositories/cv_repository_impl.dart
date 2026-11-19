@@ -74,6 +74,19 @@ class CvRepositoryImpl implements CvRepository {
     return _localDataSource.clearAllCvs();
   }
 
+  /// Deletes the signed-in user's CV backup in Firestore and waits for it, so
+  /// a following local clear is not undone by the next sync. Returns false
+  /// when nobody is signed in (there is no backup). Throws when Firestore
+  /// fails, so the caller can keep the local data.
+  Future<bool> deleteCloudBackup() async {
+    final uid = _uid;
+    if (uid == null) {
+      return false;
+    }
+    await _remoteDataSource.deleteAllCvs(uid);
+    return true;
+  }
+
   @override
   Future<CvProfile> duplicateCv(String id) async {
     final source = await getCvById(id);
