@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
@@ -13,6 +14,7 @@ import 'package:careermatebd/features/cv_builder/domain/entities/project_info.da
 import 'package:careermatebd/features/cv_builder/domain/entities/skill_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/training_info.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_pdf_pages_view.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_record.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +22,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/builder_harness.dart';
 import '../../../../helpers/fake_cv_repository.dart';
+import '../../../../helpers/poppler.dart';
+import '../../../../helpers/preview_pages.dart';
+import '../../../../helpers/screenshot_harness.dart';
 
 CvProfile _fullProfile() {
   return CvProfile.empty().copyWith(
@@ -134,6 +139,13 @@ void _mockPrintingPlugin(
   );
 }
 
+/// The selectable text of [pdf], as a viewer or an ATS reads it.
+String _pdfText(Uint8List pdf) {
+  final dir = Directory.systemTemp.createTempSync('cv_preview_text');
+  addTearDown(() => dir.deleteSync(recursive: true));
+  return Poppler.text(File('${dir.path}/cv.pdf')..writeAsBytesSync(pdf));
+}
+
 Future<void> _openMenu(WidgetTester tester) async {
   await tester.tap(find.byTooltip(AppStrings.previewMoreOptions));
   await tester.pumpAndSettle();
@@ -148,66 +160,74 @@ Future<void> _letRealAsyncRun(WidgetTester tester) async {
 }
 
 void main() {
+  // The preview's PDF is built on real async work; the app fonts must load
+  // from test/fonts meanwhile, not from the network.
+  setUpAll(loadTestFonts);
+
   group('paper preview', () {
-    testWidgets('renders the whole CV as a paper with its sections', (
-      tester,
-    ) async {
-      await pumpBuilderApp(
-        tester,
-        repository: FakeCvRepository([_fullProfile()]),
-        initialLocation: RouteNames.cvPreviewPath,
-        loadDraftId: 'cv-1',
-      );
+    testWidgets(
+      'shows the pages of the PDF that Export builds',
+      skip: !Poppler.canRaster,
+      (tester) async {
+        final container = await pumpBuilderApp(
+          tester,
+          repository: FakeCvRepository([_fullProfile()]),
+          initialLocation: RouteNames.cvPreviewPath,
+          loadDraftId: 'cv-1',
+        );
+        final preview = await waitForPreviewPages(tester, container);
 
-      expect(find.text('Ayesha Rahman'), findsOneWidget);
-      expect(find.text('Frontend Developer'), findsWidgets);
-      expect(
-        find.text(
-          'Dhaka, BD · 01712345678 · ayesha@email.com · https://linkedin.com/in/ayesha',
-        ),
-        findsOneWidget,
-      );
-      for (final title in [
-        'SUMMARY',
-        'OBJECTIVE',
-        'EXPERIENCE',
-        'SKILLS',
-        'EDUCATION',
-        'PROJECTS',
-        'TRAINING / CERTIFICATIONS',
-        'LANGUAGES',
-      ]) {
-        expect(find.text(title), findsOneWidget, reason: title);
-      }
-      expect(find.text('Frontend Developer — Acme Ltd.'), findsOneWidget);
-      expect(find.text('2022 — Now'), findsOneWidget);
-      expect(find.text('• Rebuilt key screens'), findsOneWidget);
-      expect(find.text('React'), findsOneWidget);
-      expect(find.text('BSc in Computer Science'), findsOneWidget);
-      expect(find.text('2018 — 2022'), findsOneWidget);
-      expect(find.text('Bangla · Native'), findsOneWidget);
-    });
+        final shown = shownPreviewPages(tester);
+        expect(shown, isNotEmpty);
+        expect(shown, preview.pages, reason: 'every page is on screen');
+        expect(
+          find.bySemanticsLabel(AppStrings.previewPageLabel(1, shown.length)),
+          findsOneWidget,
+        );
 
-    testWidgets('omits sections that have no content instead of placeholders', (
-      tester,
-    ) async {
-      await pumpBuilderApp(
-        tester,
-        repository: FakeCvRepository([
-          CvProfile.empty().copyWith(
-            id: 'cv-1',
-            personalInfo: const PersonalInfo(fullName: 'Ayesha Rahman'),
-          ),
-        ]),
-        initialLocation: RouteNames.cvPreviewPath,
-        loadDraftId: 'cv-1',
-      );
+        final text = _pdfText(preview.pdf);
+        expect(text, contains('Ayesha Rahman'));
+        expect(text, contains('Frontend Developer'));
+        for (final title in [
+          'Summary',
+          'Objective',
+          'Experience',
+          'Skills',
+          'Education',
+          'Projects',
+          'Training',
+          'Languages',
+        ]) {
+          expect(text, contains(title), reason: title);
+        }
+        expect(text, contains('Rebuilt key screens'));
+      },
+    );
 
-      expect(find.text('Ayesha Rahman'), findsOneWidget);
-      for (final title in ['SUMMARY', 'EXPERIENCE', 'SKILLS', 'EDUCATION']) {
-        expect(find.text(title), findsNothing, reason: title);
-      }
-    });
+    testWidgets(
+      'the PDF in the preview leaves out sections that have no content',
+      skip: !Poppler.canRaster,
+      (tester) async {
+        final container = await pumpBuilderApp(
+          tester,
+          repository: FakeCvRepository([
+            CvProfile.empty().copyWith(
+              id: 'cv-1',
+              personalInfo: const PersonalInfo(fullName: 'Ayesha Rahman'),
+            ),
+          ]),
+          initialLocation: RouteNames.cvPreviewPath,
+          loadDraftId: 'cv-1',
+        );
+        final preview = await waitForPreviewPages(tester, container);
+
+        final text = _pdfText(preview.pdf).toLowerCase();
+        expect(text, contains('ayesha rahman'));
+        for (final title in ['summary', 'experience', 'skills', 'education']) {
+          expect(text, isNot(contains(title)), reason: title);
+        }
+      },
+    );
 
     testWidgets('shows the template pill and opens the picker from it', (
       tester,
@@ -406,7 +426,7 @@ void main() {
       expect(find.textContaining('No experience added yet'), findsNothing);
       expect(
         tester.getTopLeft(summary(4)).dy,
-        lessThan(tester.getTopLeft(find.text('Ayesha Rahman')).dy),
+        lessThan(tester.getTopLeft(find.byType(CvPdfPagesView)).dy),
       );
 
       // Tap to expand into the list.

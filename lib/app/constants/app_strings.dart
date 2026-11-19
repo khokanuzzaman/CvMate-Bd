@@ -245,6 +245,12 @@ abstract final class AppStrings {
   static const String previewMoreOptions = 'More options';
   static const String previewPrint = 'Print';
   static const String previewLoading = 'Loading your CV preview...';
+  static const String previewRendering = 'Building your PDF preview...';
+  static const String previewRenderFailedTitle = "Couldn't show the preview";
+  static const String previewRenderFailedBody =
+      'Your CV is saved. Try again, or export the PDF to view it.';
+  static String previewPageLabel(int page, int count) =>
+      'CV page $page of $count';
   static const String previewNoDraftBody =
       'Open a saved CV or create a new one before previewing.';
   static const String previewOpenCvList = 'Open CV list';
@@ -712,8 +718,7 @@ abstract final class AppStrings {
       'Deleting your account does not cancel a subscription. If you have '
       'CvMate Pro, cancel it first in your '
       '${apple ? 'Apple ID' : 'Google Play'} settings.';
-  static const String deleteAccountManageSubscriptions =
-      'Manage subscriptions';
+  static const String deleteAccountManageSubscriptions = 'Manage subscriptions';
   static const String deleteLocalDataTitle = 'Delete CvMate data?';
   static const String deleteLocalDataBody =
       "You're not signed in, so there's no account to delete. This removes "
@@ -725,7 +730,8 @@ abstract final class AppStrings {
       'For your security, enter your password to delete your account.';
   static const String deleteAccountPasswordLabel = 'Password';
   static const String deleteAccountDone = 'Your account was deleted.';
-  static const String deleteLocalDataDone = 'CvMate data was removed from '
+  static const String deleteLocalDataDone =
+      'CvMate data was removed from '
       'this device.';
 
   // ATS check
