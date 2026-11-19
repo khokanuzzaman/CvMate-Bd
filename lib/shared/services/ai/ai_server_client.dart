@@ -109,24 +109,48 @@ final aiServerClientProvider = Provider<AiServerClient>((ref) {
 /// error into an [AppException] with an [AiFailureCodes] code and a message
 /// that is safe to show.
 ///
+/// A request sent with an `Idempotency-Key` is also retried, with the same
+/// key, when the connection is lost before an answer arrives (offline,
+/// reset, timeout): the server then replays the first run's result instead of
+/// charging another AI action. HTTP error answers are never retried this way.
+///
 /// Never logs the token, the request body (CV text, job posts) or the answer.
 class AiServerClient {
   const AiServerClient({
     required this.dio,
     required this.readIdToken,
     this.appId = EnvConfig.aiAppId,
+    this.retryDelays = defaultRetryDelays,
+    this.maxRetryWindow = const Duration(minutes: 3),
   });
+
+  /// Waits before each retry after a lost connection (3 retries).
+  static const List<Duration> defaultRetryDelays = [
+    Duration(seconds: 2),
+    Duration(seconds: 5),
+    Duration(seconds: 10),
+  ];
 
   final Dio dio;
   final IdTokenReader readIdToken;
   final String appId;
+  final List<Duration> retryDelays;
 
+  /// No retry starts once this much time has passed since the first attempt,
+  /// so the overall wait stays bounded even when attempts time out.
+  final Duration maxRetryWindow;
+
+  /// POSTs [body]. With an [idempotencyKey] (8–128 chars of
+  /// `[A-Za-z0-9_-]`) it is sent as `Idempotency-Key`, and a lost connection
+  /// is retried with that same key.
   Future<Map<String, dynamic>> postJson(
     String path,
-    Map<String, dynamic> body,
-  ) {
+    Map<String, dynamic> body, {
+    String? idempotencyKey,
+  }) {
     return _send(
       (options) => dio.post<Object?>(path, data: body, options: options),
+      idempotencyKey: idempotencyKey,
     );
   }
 
@@ -147,10 +171,22 @@ class AiServerClient {
   }
 
   Future<Map<String, dynamic>> _send(
-    Future<Response<Object?>> Function(Options options) request,
-  ) async {
+    Future<Response<Object?>> Function(Options options) request, {
+    String? idempotencyKey,
+  }) async {
+    Future<Response<Object?>> attempt({required bool forceRefresh}) async {
+      final options = await _options(
+        forceRefresh: forceRefresh,
+        idempotencyKey: idempotencyKey,
+      );
+      if (idempotencyKey == null) {
+        return request(options);
+      }
+      return _retryOnConnectionLoss(() => request(options));
+    }
+
     try {
-      return _asMap(await request(await _options(forceRefresh: false)));
+      return _asMap(await attempt(forceRefresh: false));
     } on DioException catch (error) {
       if (error.response?.statusCode != 401) {
         throw _mapError(error);
@@ -158,13 +194,55 @@ class AiServerClient {
     }
     // The token may have expired between reading and sending: refresh once.
     try {
-      return _asMap(await request(await _options(forceRefresh: true)));
+      return _asMap(await attempt(forceRefresh: true));
     } on DioException catch (error) {
       throw _mapError(error);
     }
   }
 
-  Future<Options> _options({required bool forceRefresh}) async {
+  Future<Response<Object?>> _retryOnConnectionLoss(
+    Future<Response<Object?>> Function() request,
+  ) async {
+    final elapsed = Stopwatch()..start();
+    for (var retry = 0; ; retry++) {
+      try {
+        return await request();
+      } on DioException catch (error) {
+        final canRetry =
+            isConnectionLoss(error) &&
+            retry < retryDelays.length &&
+            elapsed.elapsed + retryDelays[retry] <= maxRetryWindow;
+        if (!canRetry) {
+          rethrow;
+        }
+      }
+      await Future<void>.delayed(retryDelays[retry]);
+    }
+  }
+
+  /// True when no answer arrived at all (offline, reset, timeout), so the
+  /// server may still have run the request. False for any HTTP answer and
+  /// for cancels or bad certificates.
+  static bool isConnectionLoss(DioException error) {
+    if (error.response != null) {
+      return false;
+    }
+    return switch (error.type) {
+      DioExceptionType.connectionError ||
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout => true,
+      // A reset mid-request (SocketException / HttpException on mobile).
+      // dart:io is not imported (web build), so any I/O exception counts.
+      DioExceptionType.unknown => error.error is Exception,
+      _ => false,
+    };
+  }
+
+  Future<Options> _options({
+    required bool forceRefresh,
+    String? idempotencyKey,
+  }) async {
     final token = await readIdToken(forceRefresh: forceRefresh);
     if (token == null || token.isEmpty) {
       throw const AppException(
@@ -173,7 +251,11 @@ class AiServerClient {
       );
     }
     return Options(
-      headers: {'X-App-Id': appId, 'Authorization': 'Bearer $token'},
+      headers: {
+        'X-App-Id': appId,
+        'Authorization': 'Bearer $token',
+        'Idempotency-Key': ?idempotencyKey,
+      },
     );
   }
 

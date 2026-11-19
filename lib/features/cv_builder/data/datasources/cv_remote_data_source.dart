@@ -37,8 +37,15 @@ class CvRemoteDataSource {
   }
 
   /// Deletes every CV backup of [uid] and the `users/{uid}` document
-  /// (account deletion). Batches stay under Firestore's 500-write limit.
+  /// (account deletion).
   Future<void> deleteAllForUser(String uid) async {
+    await deleteAllCvs(uid);
+    await _firestore.collection('users').doc(uid).delete();
+  }
+
+  /// Deletes every CV backup of [uid] ("Clear all data" with the cloud
+  /// backup). Batches stay under Firestore's 500-write limit.
+  Future<void> deleteAllCvs(String uid) async {
     final docs = (await _cvCollection(uid).get()).docs;
     const chunk = 400;
     for (var start = 0; start < docs.length; start += chunk) {
@@ -48,11 +55,12 @@ class CvRemoteDataSource {
       }
       await batch.commit();
     }
-    await _firestore.collection('users').doc(uid).delete();
   }
 
   Future<List<CvProfileDto>> fetchAll(String uid) async {
     final snapshot = await _cvCollection(uid).get();
-    return snapshot.docs.map((doc) => CvProfileDto.fromMap(doc.data())).toList();
+    return snapshot.docs
+        .map((doc) => CvProfileDto.fromMap(doc.data()))
+        .toList();
   }
 }

@@ -145,6 +145,25 @@ void main() {
     expect(local.map((cv) => cv.id), ['c'], reason: 'local untouched when offline');
   });
 
+  test('deleting the cloud backup before a local clear means the next sync '
+      'brings nothing back; signed out there is no backup to delete', () async {
+    final remote = _FakeRemote();
+    final repo = buildRepository(remote: remote, auth: _FakeAuth('u1'));
+    await repo.saveCv(_cv(id: 'a', title: 'Alpha', updatedAt: DateTime(2024, 5)));
+    await _flushMirror();
+    expect(remote.store['u1']?.keys, ['a']);
+
+    expect(await repo.deleteCloudBackup(), isTrue);
+    await repo.clearAllCvs();
+    await repo.pullAndReconcile();
+
+    expect(await repo.getAllCvs(), isEmpty);
+    expect(remote.store['u1'], isNull);
+
+    final signedOut = buildRepository(remote: remote, auth: _FakeAuth(null));
+    expect(await signedOut.deleteCloudBackup(), isFalse);
+  });
+
   test('anonymous → account upgrade keeps the user CVs (same uid)', () async {
     final remote = _FakeRemote();
     final auth = _FakeAuth('u1', isAnonymous: true);
@@ -179,6 +198,9 @@ class _FakeRemote implements CvRemoteDataSource {
 
   @override
   Future<void> deleteAllForUser(String uid) async => store.remove(uid);
+
+  @override
+  Future<void> deleteAllCvs(String uid) async => store.remove(uid);
 
   @override
   Future<void> upsert(String uid, CvProfileDto dto) async {

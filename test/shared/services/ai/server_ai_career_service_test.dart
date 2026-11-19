@@ -43,6 +43,7 @@ void main() {
     return ServerAiCareerService(
       client: AiServerClient(
         dio: server.dio(),
+        retryDelays: const [Duration.zero, Duration.zero, Duration.zero],
         readIdToken: ({bool forceRefresh = false}) async {
           tokenRefreshes.add(forceRefresh);
           return forceRefresh ? 'fresh-token' : 'old-token';
@@ -195,6 +196,59 @@ void main() {
       expect(tokenRefreshes, isEmpty, reason: 'no token read, no quota used');
     },
   );
+
+  test(
+    'a dropped connection is retried with the same idempotency key',
+    () async {
+      final server = FakeAiServer([
+        const FakeAiReply.offline(),
+        FakeAiReply(
+          200,
+          aiSuccessBody('generateProfessionalSummary', _summary),
+        ),
+      ]);
+      final service = serviceFor(server);
+
+      final result = await service.generateProfessionalSummary(profile: _cv());
+
+      expect(result, isA<Success<Object?>>());
+      expect(server.requests, hasLength(2));
+      final keys = [
+        for (final request in server.requests)
+          request.headers['Idempotency-Key'],
+      ];
+      expect(keys.first, matches(RegExp(r'^[0-9a-f]{32}$')));
+      expect(keys.last, keys.first, reason: 'the retry reuses the key');
+      expect(remaining, [2]);
+
+      await service.generateProfessionalSummary(profile: _cv());
+      expect(
+        server.requests.last.headers['Idempotency-Key'],
+        isNot(keys.first),
+        reason: 'a new request gets a new key',
+      );
+    },
+  );
+
+  test('HTTP errors are not retried; a lost connection gives up after 3 '
+      'retries', () async {
+    for (final reply in [
+      FakeAiReply(503, aiErrorBody('ai_unavailable')),
+      FakeAiReply(500, aiErrorBody('internal')),
+    ]) {
+      final server = FakeAiServer([reply]);
+      await serviceFor(server).generateProfessionalSummary(profile: _cv());
+      expect(server.requests, hasLength(1), reason: '${reply.status}');
+    }
+
+    final offline = FakeAiServer([const FakeAiReply.offline()]);
+    final result = await serviceFor(
+      offline,
+    ).generateProfessionalSummary(profile: _cv());
+    expect(offline.requests, hasLength(4));
+    expect(_code(result), AiFailureCodes.offline);
+    expect(_message(result), AiFailureMessages.offline);
+  });
 }
 
 String? _code(Result<Object?> result) =>

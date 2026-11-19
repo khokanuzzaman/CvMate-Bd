@@ -44,7 +44,7 @@ extension CvBuilderStepX on CvBuilderStep {
       'Mention Bangla, English, or other working languages clearly.',
     CvBuilderStep.template => 'Choose a clean CV layout before final review.',
     CvBuilderStep.preview =>
-      'Review the full CV structure before export is added later.',
+      'Review the full CV, then download it as a PDF.',
   };
 
   bool get isPreview => this == CvBuilderStep.preview;

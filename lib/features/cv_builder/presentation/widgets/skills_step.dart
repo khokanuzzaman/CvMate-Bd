@@ -5,8 +5,10 @@ import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/widgets/section_label.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/skill_info.dart';
+import 'package:careermatebd/features/cv_builder/presentation/controllers/ai_improve_type.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/utils/suggested_skills.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/ai_action_pill.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/skill_chips.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,9 +62,14 @@ class _SkillsStepState extends ConsumerState<SkillsStep> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Align(
-          alignment: Alignment.centerLeft,
-          child: SectionLabel(AppStrings.builderSkillsLabel),
+        const Row(
+          children: [
+            Expanded(child: SectionLabel(AppStrings.builderSkillsLabel)),
+            AiActionPill(
+              type: AiImproveType.skillsSuggestion,
+              label: AppStrings.builderSuggestWithAi,
+            ),
+          ],
         ),
         const SizedBox(height: AppSpacing.s10),
         _SkillInput(

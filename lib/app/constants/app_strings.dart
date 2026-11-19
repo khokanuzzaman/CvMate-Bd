@@ -120,6 +120,7 @@ abstract final class AppStrings {
   static const String builderRemoveEntry = 'Remove';
   static const String builderImproveWithAi = 'Improve with AI';
   static const String builderGenerateWithAi = 'Generate with AI';
+  static const String builderSuggestWithAi = 'Suggest with AI';
 
   static String builderStepLabel(int step, int total, String section) =>
       'Step $step of $total · $section';
@@ -128,7 +129,6 @@ abstract final class AppStrings {
   static const String builderPhotoTitle = 'Profile photo';
   static const String builderPhotoHint = 'Optional · omit for Western/ATS CVs';
   static const String builderPhotoUpload = 'Upload';
-  static const String builderPhotoComingSoon = 'Photo upload is coming soon';
   static const String builderFullName = 'Full name';
   static const String builderFullNameHint = 'e.g. Ayesha Rahman';
   static const String builderHeadline = 'Headline';
@@ -628,7 +628,8 @@ abstract final class AppStrings {
   static String paywallTrial(int count, String unit) =>
       '$count-$unit free trial';
   static const String paywallOneTimeTitle = 'Just this CV — one-time';
-  static const String paywallOneTimeSubtitle = '+5 AI actions · no subscription';
+  static const String paywallOneTimeSubtitle =
+      '+5 AI actions · no subscription';
   static const String paywallChoosePlan = 'Choose a plan';
   static const String paywallCtaSubscribe = 'Subscribe';
   static const String paywallCtaTrial = 'Start free trial';
@@ -760,7 +761,18 @@ abstract final class AppStrings {
   static const String atsMenuApplySkills = 'Apply detected skills';
   static const String atsMenuCopySuggestions = 'Copy suggestions';
   static const String atsNeedsJobPost =
-      'Paste a job post first — tap "Check against a job post".';
+      'Add a job post first: tap "Add job post" above.';
+  static const String atsJobPostLabel = 'Job post';
+  static const String atsJobPostFromTailor = 'From Tailor';
+  static const String atsJobPostAddedHere = 'Added here';
+  static const String atsJobPostNone =
+      'No job post. Job match and AI suggestions use only your CV.';
+  static const String atsJobPostAdd = 'Add job post';
+  static const String atsJobPostChange = 'Change';
+  static const String atsJobPostClear = 'Clear';
+  static const String atsJobPostSheetTitle = 'Job post for matching';
+  static const String atsJobPostSheetHint = 'Paste the job post here';
+  static const String atsJobPostSave = 'Use this job post';
   static const String atsAiSheetTitle = 'Improve with AI';
   static const String atsAiSheetBody =
       'Generate an editable summary or objective. Review it and keep only '
@@ -919,7 +931,7 @@ abstract final class AppStrings {
   static const String profileCloudBackup = 'Cloud backup';
   static const String profileCloudOn = 'On';
   static const String profileCloudOff = 'Off';
-  static const String profileCloudOnNote = 'CVs only';
+  static const String profileCloudOnNote = 'CVs backed up';
   static const String profileCloudOffNote = 'Sign in to back up your CVs';
   static const String profileComingSoon = 'Coming soon';
   static const String profilePrivacyTerms = 'Privacy & terms';
@@ -928,6 +940,33 @@ abstract final class AppStrings {
   static const String profileLogIn = 'Log in';
   static const String profileCreateAccount = 'Create account';
   static String profileVersion(String version) => 'CvMate $version';
+  static const String guestBackupHint =
+      'Your CVs are saved only on this device. Sign in to back them up.';
+  static const String guestBackupSignIn = 'Sign in';
+
+  // Settings: clear all data
+  static const String clearDataTitle = 'Clear all local data';
+  static const String clearDataBody =
+      'This permanently removes saved CVs, cover letter drafts, job '
+      'applications and interview prep sessions from this device. Theme and '
+      'language preferences stay.\n\nThis cannot be undone.';
+  static const String clearDataAlsoCloud = 'Also delete my CV cloud backup';
+  static const String clearDataCloudKeptNote =
+      'Your CVs stay in your cloud backup and download to this device again '
+      'the next time the app syncs.';
+  static const String clearDataCloudDeletedNote =
+      'Your CV backup is deleted from the cloud too, so nothing comes back.';
+  static const String clearDataCancel = 'Cancel';
+  static const String clearDataConfirm = 'Clear data';
+  static const String clearDataDone =
+      'Local career data cleared. Theme and language preferences were kept.';
+  static const String clearDataDoneWithCloud =
+      'Local career data and your CV cloud backup were deleted.';
+  static const String clearDataFailed = 'Could not clear local data right now.';
+  static const String clearDataCloudFailed =
+      'Could not delete your cloud backup, so nothing was cleared. Check your '
+      'connection and try again.';
+
   static const String logOutTitle = 'Log out';
   static const String logOutBody =
       'Log out now? Your local CVs and drafts will remain on this device.';
@@ -962,6 +1001,14 @@ abstract final class AppStrings {
       'Off: AI actions ask for permission first and send nothing until you '
       'allow them.';
   static String aiActionsLeft(int count) => 'AI actions left: $count';
+
+  // AI result recovered after the app was closed mid-request
+  static const String pendingAiReadyTitle = 'Your last result is ready';
+  static const String pendingAiReadyBody =
+      'The app closed before it arrived. You were not charged again.';
+  static const String pendingAiCopy = 'Copy';
+  static const String pendingAiCopied = 'Copied';
+  static const String pendingAiClose = 'Close';
 
   // Privacy, rating and feedback (Settings)
   static const String privacySection = 'Privacy';

@@ -22,6 +22,10 @@ class FakeAuthRepository implements AuthRepository {
   final List<String> signInEmails = [];
   final List<String> createdEmails = [];
   final List<String?> createdDisplayNames = [];
+  final List<String> resetEmails = [];
+
+  /// When non-null, password reset returns a failure with this message.
+  String? resetFailWith;
   AuthUser? _currentUser;
 
   @override
@@ -72,6 +76,11 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<Result<void>> sendPasswordResetEmail({required String email}) async {
+    resetEmails.add(email);
+    final message = resetFailWith;
+    if (message != null) {
+      return FailureResult<void>(Failure(message));
+    }
     return const Success<void>(null);
   }
 

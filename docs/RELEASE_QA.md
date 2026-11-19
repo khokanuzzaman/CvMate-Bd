@@ -235,6 +235,20 @@ Settings > **Report a problem / Send feedback**:
 - [ ] The review notes give a sandbox account and say that AI needs consent
       first.
 
+## Not in v1 (planned for v1.1)
+
+v1 ships without these on purpose. Do not file them as v1 bugs; check the
+v1 side of each instead.
+
+| Item | v1 behaviour (check this) | v1.1 work |
+|---|---|---|
+| Dark theme | Light only. No theme selector in Profile or Settings; a phone in dark mode still shows the light design. | Design and build `CvMateTheme.dark` (today it returns the light theme), then show Light / Dark / Auto again. |
+| UI in Bangla | The app's own text is English. There is no App language picker. The English / Bangla choice on AI screens (summary, cover letter, interview and so on) still works. | Move `AppStrings` to localization files, translate, and bring back the picker. |
+| Sync of cover letters, interview prep and the tracker | Only CVs are backed up to the account (`users/<uid>/cvs`). Cover letter drafts, interview sessions and job applications stay on the device and are lost with it. | Add Firestore collections next to `cvs`, with the same local-first mirror and the same rules. |
+| Tracker reminders | "Plan to follow up on" is a date the tracker shows; the app sends no notification. | Local notifications for follow-up and interview dates, with a permission prompt and a setting. |
+| Server-side export counter | The one free export is counted on the device (Hive), so clearing app data or reinstalling resets it. | Count exports on the server with the AI entitlement, so the free export is per account. |
+| DOCX export | PDF only (share or print). | A DOCX export, in the same templates where practical. |
+
 ## Results
 
 ### 17 Nov 2026: simulator billing run (Xcode StoreKit testing)
