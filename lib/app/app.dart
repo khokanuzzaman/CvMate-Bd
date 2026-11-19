@@ -1,6 +1,7 @@
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/app_router.dart';
 import 'package:careermatebd/app/widgets/pending_ai_result_overlay.dart';
+import 'package:careermatebd/core/config/dev_labels.dart';
 import 'package:careermatebd/core/config/env_config.dart';
 import 'package:careermatebd/core/theme/cv_mate_theme.dart';
 import 'package:careermatebd/core/widgets/text_scale_clamp.dart';
@@ -51,7 +52,7 @@ class CareerMateApp extends ConsumerWidget {
         }
 
         return Banner(
-          message: 'MOCK AI',
+          message: DevLabels.mockAiBanner,
           location: BannerLocation.topEnd,
           color: Theme.of(context).colorScheme.error,
           textStyle:

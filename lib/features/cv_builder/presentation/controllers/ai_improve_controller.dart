@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:careermatebd/core/utils/result.dart';
+import 'package:careermatebd/core/utils/skill_list_text.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
@@ -657,13 +658,6 @@ class AiImproveController extends Notifier<AiImproveState> {
     ];
   }
 
-  List<String> _parseSkillOutput(String output) {
-    final values = output
-        .split(RegExp(r'[\n,]+'))
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toList();
-
-    return values.toSet().toList();
-  }
+  List<String> _parseSkillOutput(String output) =>
+      SkillListText.parse(output);
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:careermatebd/core/errors/failure.dart';
+import 'package:careermatebd/core/utils/skill_list_text.dart';
 import 'package:careermatebd/features/ats_checker/presentation/controllers/ats_checker_controller.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
@@ -211,11 +212,7 @@ class TailoringController extends Notifier<TailoringState> {
     if (result == null) {
       return;
     }
-    final skills = value
-        .split(RegExp(r'[\n,]+'))
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toList();
+    final skills = SkillListText.parse(value);
     state = state.copyWith(
       result: result.copyWith(emphasizedSkills: skills),
       clearSavedCvId: true,

@@ -1,6 +1,7 @@
 import 'package:careermatebd/app/constants/app_constants.dart';
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
+import 'package:careermatebd/core/config/dev_labels.dart';
 import 'package:careermatebd/core/config/env_config.dart';
 import 'package:careermatebd/core/widgets/custom_app_bar.dart';
 import 'package:careermatebd/core/widgets/custom_button.dart';
@@ -459,10 +460,8 @@ class _AiSettingsSection extends ConsumerWidget {
             const ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.science_outlined),
-              title: Text('Mock AI'),
-              subtitle: Text(
-                'Debug build with USE_MOCK_AI=true: canned answers, no server.',
-              ),
+              title: Text(DevLabels.mockAiTitle),
+              subtitle: Text(DevLabels.mockAiSubtitle),
             ),
         ],
       ),

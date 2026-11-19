@@ -1,3 +1,4 @@
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/constants/app_constants.dart';
 import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/utils/date_formatter.dart';
@@ -693,7 +694,7 @@ class _InputCard extends StatelessWidget {
   String _fieldHelperText(AiImproveType type) {
     return switch (type) {
       AiImproveType.skillsSuggestion =>
-        'This context helps the mock AI suggest more targeted skills.',
+        AppStrings.aiImproveSkillsContextHelper,
       _ => 'You can edit this input before generating.',
     };
   }
