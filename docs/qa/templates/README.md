@@ -4,7 +4,7 @@ Every template in `CvTemplate` (classic, modern, minimal, professional,
 fresher) was checked with three CVs from `test/helpers/template_fixtures.dart`:
 
 - **(a) full**: every section, photo, personal details, two custom sections,
-  declaration and signature; long bullets, so the PDF runs to 3 pages.
+  declaration and signature; a realistic 2-page CV in every template.
 - **(b) minimal**: only what the builder requires (name, role, email, phone,
   address, a summary, one education entry, two skills).
 - **(c) non-ASCII**: Bangla name and address (`নুসরাত জাহান`, `ঢাকা, বাংলাদেশ`),
@@ -12,6 +12,44 @@ fresher) was checked with three CVs from `test/helpers/template_fixtures.dart`:
   bullet (`Shipped v2 🚀`).
 
 `<template>.pdf` here is each template's export of the full CV on A4.
+
+## Update, 19 Nov 2026: the preview is the PDF
+
+The preview no longer has its own layout. `CvPreviewScreen` now shows the pages
+of the PDF that Export builds (`generateCvPdf(profile: draft)`), rendered by
+the platform (`Printing.raster`) into `CvPdfPagesView`. So every template's
+preview looks like that template, with the same page breaks, header, photo and
+fonts as the export. `CvPreviewContent` (one purple design for all five) and
+its goldens are gone. What makes each template itself is in
+[IDENTITY.md](IDENTITY.md); the simulator side-by-sides are in
+[compare/](compare/).
+
+Consequences to know:
+
+- **Bangla in the preview now looks like the PDF**, including failure 1 below
+  (unshaped vowel signs and conjuncts). Before, the preview shaped Bangla
+  correctly and hid that the PDF does not.
+- The preview pages are images, so they are not selectable text in the app.
+  Each page has the screen-reader label "CV page N of M".
+
+Results, 19 Nov (all PASS; widget tests render with poppler, the simulator
+with iOS):
+
+| Template | (a) full: widget / iPhone 17 Pro sim | (b) minimal: widget | (c) Bangla: widget / iPhone 17 Pro sim |
+|---|---|---|---|
+| Classic | PASS / PASS | PASS | PASS / PASS |
+| Modern | PASS / PASS | PASS | PASS / PASS |
+| Minimal | PASS / PASS | PASS | PASS / PASS |
+| Professional | PASS / PASS | PASS | PASS / PASS |
+| Fresher | PASS / PASS | PASS | PASS / PASS |
+
+Each PASS covers identity, page count and page breaks, layout, the same PDF as
+the export, and no text cut off. Switching in every order passed in the widget
+test (all 20 ordered pairs) and on the simulator (Classic, Modern, Minimal,
+Professional, Fresher, Classic, for (a) and (c)). Details: [compare/RESULTS.md](compare/RESULTS.md).
+
+The rest of this file is the 17 Nov pass; its preview column described the old
+preview.
 
 ## Results
 
@@ -73,8 +111,8 @@ on a phone the system emoji font draws it. Not checked on a device.
 
 ### Notes
 
-- **The preview looks the same for every template.** `CvPreviewContent` has one
-  design. Only Fresher's default section order differs. So the four
+- **The preview looked the same for every template** (fixed 19 Nov, see above).
+  `CvPreviewContent` had one design. Only Fresher's default section order differs. So the four
   non-Fresher goldens are identical, and the template's look shows only in the
   PDF.
 - **Paper size.** A4 and Letter are both supported (`PaperSize`, chosen on the
@@ -84,13 +122,15 @@ on a phone the system emoji font draws it. Not checked on a device.
 
 | Check | Test |
 |---|---|
-| Preview: no overflow, every value shown, no empty headings, goldens for (a) and (b) | `test/features/cv_builder/presentation/widgets/cv_preview_templates_test.dart` |
-| PDF: `pdftotext` has every value, `pdffonts` shows non-base-14 fonts embedded, page size, page count, a page-tall experience flows on | `test/shared/services/pdf/cv_pdf_templates_qa_test.dart` |
-| Switching through every template keeps every stored field | `test/features/cv_builder/presentation/controllers/template_switch_test.dart` |
+| Template identity on the preview (fails on the wrong template), photo, page count, title case, fonts; for (a), (b), (c) | `test/features/cv_builder/presentation/screens/cv_preview_templates_qa_test.dart`, group 1 |
+| Switching in the picker through every ordered pair of templates: preview follows, no data lost | same file, group 2; `test/features/cv_builder/presentation/controllers/template_switch_test.dart` |
+| Preview pages = exported PDF pages: same page count and page text, same layout, pixels within anti-aliasing, nothing cut off | same file, group 3 |
+| PDF: `pdftotext` has every value, `pdffonts`, page size, page count, a page-tall experience flows on | `test/shared/services/pdf/cv_pdf_templates_qa_test.dart` |
+| On the simulator: device preview against the exported PDF | `integration_test/template_compare_test.dart` + `test/qa/template_compare_test.dart`, see [compare/README.md](compare/README.md) |
 
-The PDF tests need poppler (`brew install poppler`) and skip without it. The
-goldens use the real app fonts (`loadTestFonts`). They are compared on macOS
-only, because Linux CI rasterises text slightly differently.
+The tests need poppler (`brew install poppler`) and skip without it. In widget
+tests the preview's pages come from poppler's `pdftoppm`, since the platform
+renderer does not exist there.
 
 ## Regenerate
 
@@ -98,7 +138,6 @@ only, because Linux CI rasterises text slightly differently.
 # PDFs in this folder
 CVMATE_QA_PDF_DIR="$PWD/docs/qa/templates" \
   flutter test test/shared/services/pdf/cv_pdf_templates_qa_test.dart
-
-# Preview goldens (on macOS)
-flutter test test/features/cv_builder/presentation/widgets/cv_preview_templates_test.dart --update-goldens
 ```
+
+Simulator side-by-sides: see [compare/README.md](compare/README.md).

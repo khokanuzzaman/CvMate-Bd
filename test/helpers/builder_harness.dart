@@ -10,12 +10,14 @@ import 'package:careermatebd/features/cv_builder/presentation/screens/cv_templat
 import 'package:careermatebd/shared/services/entitlement/entitlement_record.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_service.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_store.dart';
+import 'package:careermatebd/shared/services/pdf/cv_pdf_rasterizer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'fake_cv_repository.dart';
+import 'preview_pages.dart';
 
 const String builderPath = '/builder';
 const String aiImprovePlaceholder = 'ai-improve-page';
@@ -42,13 +44,15 @@ class FakeEntitlementStore implements EntitlementStore {
 
 /// Pumps the real builder, preview and template screens in a small router (AI
 /// improve and paywall are placeholders) on a phone-sized surface. Returns the
-/// container so tests can read controller state.
+/// container so tests can read controller state. The preview's pages come
+/// from [testPdfRasterizer] (poppler) unless [rasterizer] is given.
 Future<ProviderContainer> pumpBuilderApp(
   WidgetTester tester, {
   required FakeCvRepository repository,
   FakeEntitlementStore? entitlements,
   String initialLocation = builderPath,
   String? loadDraftId,
+  CvPdfRasterizer? rasterizer,
 }) async {
   tester.view.physicalSize = const Size(390, 1500);
   tester.view.devicePixelRatio = 1;
@@ -59,6 +63,9 @@ Future<ProviderContainer> pumpBuilderApp(
     overrides: [
       cvRepositoryProvider.overrideWithValue(repository),
       entitlementServiceProvider.overrideWithValue(EntitlementService(store)),
+      cvPdfRasterizerProvider.overrideWithValue(
+        rasterizer ?? testPdfRasterizer(),
+      ),
     ],
   );
   addTearDown(container.dispose);

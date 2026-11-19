@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 /// Thin wrappers over the poppler command-line tools (`pdftotext`, `pdffonts`,
 /// `pdfinfo`), so tests read a PDF the way a viewer or an ATS does. Tests that
@@ -6,6 +7,9 @@ import 'dart:io';
 /// `apt-get install poppler-utils`).
 abstract final class Poppler {
   static final bool available = _has('pdftotext') && _has('pdffonts');
+
+  /// Whether `pdftoppm` (page rasterizing) is installed too.
+  static final bool canRaster = available && _has('pdftoppm');
 
   static bool _has(String tool) {
     try {
@@ -55,6 +59,42 @@ abstract final class Poppler {
       size: RegExp(r'Page size:.*\((\w+)\)').firstMatch(out)?.group(1) ?? '',
     );
   }
+
+  /// Every page of [pdf] as a PNG at [dpi], in page order.
+  static List<Uint8List> raster(File pdf, {required double dpi}) {
+    final dir = Directory.systemTemp.createTempSync('cv_raster');
+    try {
+      _run('pdftoppm', ['-r', '$dpi', '-png', pdf.path, '${dir.path}/p']);
+      int page(File f) =>
+          int.parse(RegExp(r'-(\d+)\.png$').firstMatch(f.path)!.group(1)!);
+      final files = dir.listSync().whereType<File>().toList()
+        ..sort((a, b) => page(a).compareTo(page(b)));
+      return [for (final f in files) f.readAsBytesSync()];
+    } finally {
+      dir.deleteSync(recursive: true);
+    }
+  }
+
+  /// The text of one page (1-based), whitespace collapsed.
+  static String pageText(File pdf, int page) => collapse(
+    _run('pdftotext', [
+      '-enc',
+      'UTF-8',
+      '-f',
+      '$page',
+      '-l',
+      '$page',
+      pdf.path,
+      '-',
+    ]),
+  );
+
+  /// Width of page 1 in points.
+  static double pageWidth(File pdf) => double.parse(
+    RegExp(
+      r'Page size:\s+([\d.]+)',
+    ).firstMatch(_run('pdfinfo', [pdf.path]))!.group(1)!,
+  );
 
   static String collapse(String value) =>
       value.replaceAll(RegExp(r'\s+'), ' ').trim();

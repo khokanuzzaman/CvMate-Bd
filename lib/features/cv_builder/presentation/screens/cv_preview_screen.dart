@@ -12,7 +12,7 @@ import 'package:careermatebd/core/widgets/custom_loading_view.dart';
 import 'package:careermatebd/core/widgets/overflow_menu_button.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
-import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_preview_content.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_pdf_pages_view.dart';
 import 'package:careermatebd/features/cv_builder/presentation/widgets/preview_warnings_banner.dart';
 import 'package:careermatebd/features/subscription/presentation/export_gate.dart';
 import 'package:careermatebd/shared/services/pdf/cv_pdf_service.dart';
@@ -22,9 +22,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:printing/printing.dart';
 
-/// Paper-style CV preview with the template picker and PDF export. Export still
-/// goes through [runGatedExport] (Pro, an unlocked CV or the one free export;
-/// otherwise the paywall).
+/// CV preview with the template picker and PDF export. The preview shows the
+/// exported PDF's own pages ([CvPdfPagesView]). Export still goes through
+/// [runGatedExport] (Pro, an unlocked CV or the one free export; otherwise the
+/// paywall).
 class CvPreviewScreen extends ConsumerWidget {
   const CvPreviewScreen({super.key});
 
@@ -128,7 +129,7 @@ class CvPreviewScreen extends ConsumerWidget {
                     PreviewWarningsBanner(warnings: warnings),
                     if (warnings.isNotEmpty)
                       const SizedBox(height: AppSpacing.s12),
-                    CvPreviewContent(profile: draft),
+                    CvPdfPagesView(paperSize: draft.paperSize),
                   ],
                 ),
               ),

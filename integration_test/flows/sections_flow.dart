@@ -138,19 +138,22 @@ void registerSectionsFlow() {
       // hidden one is gone.
       await tapOn(tester, find.byIcon(Icons.visibility_outlined));
       await waitFor(tester, find.text(AppStrings.previewExport));
+      // The preview is the PDF of this layout (the printed order and titles
+      // are checked in the exported PDF, see docs/QA_REPORT.md).
+      final preview = (await waitForPreviewPdf(tester)).profile;
       await shot(tester, 'sections', 'preview');
-      expect(find.text('WORK HISTORY'), findsOneWidget);
-      expect(find.text('EXPERIENCE'), findsNothing);
-      expect(find.text('SKILLS'), findsNothing);
-      expect(find.text('AWARDS'), findsOneWidget);
-      expect(find.textContaining('Best Nurse Award 2024'), findsWidgets);
-      final order = [
-        _y(tester, 'EDUCATION'),
-        _y(tester, 'SUMMARY'),
-        _y(tester, 'WORK HISTORY'),
-        _y(tester, 'AWARDS'),
-      ];
-      expect(order, [...order]..sort(), reason: 'preview follows the layout');
+      expect(preview.sections.first.kind, CvSectionKind.education);
+      expect(preview.isSectionVisible(CvSectionKind.skills), isFalse);
+      expect(
+        preview.sections
+            .firstWhere((s) => s.kind == CvSectionKind.experience)
+            .titleOverride,
+        'Work history',
+      );
+      expect(
+        preview.customSections.single.filledItems.single.title,
+        'Best Nurse Award 2024',
+      );
 
       // Export: the PDF goes to the share sheet.
       await tapText(

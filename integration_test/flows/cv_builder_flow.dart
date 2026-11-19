@@ -1,6 +1,7 @@
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
+import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/subscription/presentation/screens/paywall_screen.dart';
 import 'package:careermatebd/features/subscription/presentation/widgets/paywall_plan_card.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_service.dart';
@@ -135,7 +136,8 @@ void registerCvBuilderFlow() {
 
       // Preview
       await waitFor(tester, find.text(AppStrings.previewExport));
-      expect(find.text('Ayesha Rahman'), findsWidgets);
+      final modern = await waitForPreviewPdf(tester);
+      expect(modern.profile.personalInfo.fullName, 'Ayesha Rahman');
       await shot(tester, 'cv-builder', 'preview-modern');
 
       // Template picker → switch to Minimal.
@@ -149,6 +151,8 @@ void registerCvBuilderFlow() {
       await shot(tester, 'cv-builder', 'template-picker-minimal-selected');
       await tapText(tester, 'Use Minimal template');
       await waitFor(tester, find.text(AppStrings.previewExport));
+      final minimal = await waitForPreviewPdf(tester);
+      expect(minimal.profile.template, CvTemplate.minimal);
       await shot(tester, 'cv-builder', 'preview-minimal');
 
       // Export #1 is free; export #2 opens the paywall.

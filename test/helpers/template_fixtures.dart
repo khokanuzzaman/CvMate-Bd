@@ -60,7 +60,7 @@ CvProfile _base(CvTemplate template, String id) => CvProfile.empty().copyWith(
 );
 
 /// (a) Every section filled, photo / details / declaration / signature shown,
-/// long bullets so the PDF runs past one page.
+/// long bullets so the PDF runs to two pages in every template.
 FixtureCv fullCv(CvTemplate template) {
   const name = 'Ayesha Rahman';
   const role = 'Senior Frontend Engineer';
@@ -82,21 +82,19 @@ FixtureCv fullCv(CvTemplate template) {
       'the design system end to end.';
 
   final experiences = [
-    for (var i = 1; i <= 3; i++)
+    for (var i = 1; i <= 2; i++)
       ExperienceInfo(
         id: 'exp-$i',
         jobTitle: 'Frontend Engineer $i',
         companyName: 'Company $i Ltd.',
         location: const ['Chattogram', 'Sylhet', 'Dubai'][i - 1],
         startDate: '${2015 + 2 * i}',
-        endDate: i == 3 ? '' : '${2017 + 2 * i}',
-        isCurrentRole: i == 3,
+        endDate: i == 2 ? '' : '${2017 + 2 * i}',
+        isCurrentRole: i == 2,
         highlights: [
-          for (var b = 1; b <= 3; b++)
-            'Bullet $i.$b: led the migration of a large legacy dashboard to a '
-                'component-based architecture, cutting page load time by 40 '
-                'percent and reducing support tickets from slow screens by '
-                'half over two quarters.',
+          for (var b = 1; b <= 2; b++)
+            'Bullet $i.$b: moved a legacy dashboard to shared components, '
+                'cutting page load time by 40 percent.',
         ],
       ),
   ];
@@ -110,14 +108,6 @@ FixtureCv fullCv(CvTemplate template) {
       startYear: '2011',
       endYear: '2015',
       result: 'CGPA 3.8 out of 4',
-    ),
-    EducationInfo(
-      id: 'edu-2',
-      degree: 'HSC',
-      institution: 'Notre Dame College',
-      startYear: '2009',
-      endYear: '2011',
-      result: 'GPA 5.00',
     ),
   ];
   final skills = [
