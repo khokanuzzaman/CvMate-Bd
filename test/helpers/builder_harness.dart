@@ -2,6 +2,7 @@ import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_builder_screen.dart';
+import 'package:careermatebd/features/cv_builder/presentation/screens/cv_declaration_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_preview_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_sections_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_style_screen.dart';
@@ -95,6 +96,10 @@ Future<ProviderContainer> pumpBuilderApp(
       GoRoute(
         path: RouteNames.cvTemplatePath,
         builder: (context, state) => const CvTemplateScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.cvDeclarationPath,
+        builder: (context, state) => const CvDeclarationScreen(),
       ),
       GoRoute(
         path: RouteNames.aiImprovePath,
