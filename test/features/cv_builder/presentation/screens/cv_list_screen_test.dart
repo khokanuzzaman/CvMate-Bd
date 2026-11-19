@@ -1,4 +1,5 @@
 import 'package:careermatebd/app/router/route_names.dart';
+import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
@@ -6,6 +7,7 @@ import 'package:careermatebd/features/cv_builder/presentation/screens/cv_list_sc
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../helpers/fake_auth_repository.dart';
 import '../../../../helpers/fake_cv_repository.dart';
 import '../../../../helpers/routed_screen_harness.dart';
 
@@ -15,13 +17,18 @@ CvProfile _cv(String id, String title) =>
     CvProfile.empty().copyWith(id: id, title: title);
 
 Future<RoutedScreen> _open(WidgetTester tester, FakeCvRepository repository) {
+  final auth = FakeAuthRepository();
+  addTearDown(auth.dispose);
   return pumpRoutedScreen(
     tester,
     path: RouteNames.cvListPath,
     screen: const CvListScreen(),
     surface: const Size(390, 1600),
     routes: {RouteNames.cvStylePath: const Text(_stylePage)},
-    overrides: [cvRepositoryProvider.overrideWithValue(repository)],
+    overrides: [
+      authRepositoryProvider.overrideWithValue(auth),
+      cvRepositoryProvider.overrideWithValue(repository),
+    ],
   );
 }
 
