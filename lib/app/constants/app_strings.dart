@@ -128,7 +128,6 @@ abstract final class AppStrings {
   static const String builderPhotoTitle = 'Profile photo';
   static const String builderPhotoHint = 'Optional · omit for Western/ATS CVs';
   static const String builderPhotoUpload = 'Upload';
-  static const String builderPhotoComingSoon = 'Photo upload is coming soon';
   static const String builderFullName = 'Full name';
   static const String builderFullNameHint = 'e.g. Ayesha Rahman';
   static const String builderHeadline = 'Headline';
