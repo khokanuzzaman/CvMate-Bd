@@ -297,8 +297,11 @@ void main() {
       await _tap(tester, find.text(AppStrings.profilePrivacyTerms));
 
       expect(find.byType(AlertDialog), findsOneWidget);
-      expect(find.textContaining('Privacy Policy placeholder'), findsOneWidget);
-      expect(find.textContaining('Terms placeholder'), findsOneWidget);
+      expect(
+        find.textContaining('Privacy Policy could not be opened'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Terms of Use could not be opened'), findsOne);
 
       await _tap(tester, find.text(AppStrings.legalClose));
       expect(find.byType(AlertDialog), findsNothing);

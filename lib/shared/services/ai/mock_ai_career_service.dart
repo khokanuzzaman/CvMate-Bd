@@ -20,6 +20,7 @@ import 'package:careermatebd/shared/services/ai/pending_ai_request.dart';
 import 'package:careermatebd/shared/services/ai/server_ai_career_service.dart';
 import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
 import 'package:careermatebd/shared/services/entitlement/ai_entitlement_controller.dart';
+import 'package:careermatebd/shared/services/analytics/analytics_params.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -76,6 +77,20 @@ final aiCareerServiceProvider = Provider<AiCareerService>((ref) {
   }
 
   return guardedServerAiCareerService(ref);
+});
+
+/// [aiCareerServiceProvider] for the ATS check's AI sheet: the same guard and
+/// requests, but analytics log `ats_summary` / `ats_objective`, so ATS use is
+/// not counted as builder use. A test fake is returned unchanged.
+final atsAiCareerServiceProvider = Provider<AiCareerService>((ref) {
+  final service = ref.watch(aiCareerServiceProvider);
+  if (service is! GuardedAiCareerService) {
+    return service;
+  }
+  return service.withActionAliases(const {
+    AiAction.professionalSummary: AiAction.atsSummary,
+    AiAction.careerObjective: AiAction.atsObjective,
+  });
 });
 
 /// The AI server service behind the consent and quota guard (what release

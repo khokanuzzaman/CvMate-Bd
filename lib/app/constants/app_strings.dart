@@ -1,5 +1,7 @@
+import 'package:careermatebd/app/constants/app_links.dart';
+
 abstract final class AppStrings {
-  static const String appName = 'CareerMate BD';
+  static const String appName = 'CvMate';
   static const String playStoreTitle = 'CareerMate BD: AI CV Builder';
   static const String shortTagline = 'AI Career Assistant for Bangladesh';
   static const String longTagline =
@@ -973,16 +975,50 @@ abstract final class AppStrings {
   static const String logOutCancel = 'Cancel';
   static const String legalClose = 'Close';
   static const String privacyPolicyTitle = 'Privacy Policy';
+  // Shown only when the published page cannot be opened (no browser, no
+  // connection). A short, true summary; the page itself is the policy.
   static const String privacyPolicyBody =
-      'Privacy Policy placeholder\n\nCareerMate BD stores sensitive career '
-      'information such as CV content, job applications, and interview prep '
-      'notes. Review every future production privacy document carefully '
-      'before release.';
+      'The full Privacy Policy could not be opened. In short:\n\n'
+      '• Your CVs, cover letters, job applications and interview prep are '
+      'stored on this device.\n'
+      '• When you are signed in, a copy of your CVs is kept in your account '
+      'so you can restore them.\n'
+      '• AI features send only the CV text you choose to our server and to '
+      'Anthropic (Claude), and only after you allow it.\n'
+      '• Usage analytics and crash reports can be turned off in Settings > '
+      'Privacy.\n\n'
+      'Full policy: ${AppLinks.privacyPolicy}';
   static const String termsTitle = 'Terms';
   static const String termsBody =
-      'Terms placeholder\n\nCareerMate BD provides career writing and '
-      'preparation tools. AI suggestions may help improve clarity, but users '
-      'remain responsible for reviewing all content before sending it.';
+      'The full Terms of Use could not be opened. In short: CvMate helps you '
+      'write CVs, cover letters and interview answers. AI suggestions can be '
+      'wrong, so check everything before you send it and keep only what is '
+      'true.\n\n'
+      'Full terms: ${AppLinks.termsOfUse}';
+
+  // Settings > About, Support, log out, account
+  static const String aboutTagline = 'AI CV and job application assistant';
+  static const String aboutBody =
+      'CvMate helps job seekers build CVs, tailor them to job posts, write '
+      'cover letters, prepare for interviews and track applications.';
+  static String aboutVersion(String version) => 'Version: $version';
+  static const String supportTitle = 'Support';
+  static const String supportBody =
+      'Need help? Use "Report a problem / Send feedback" below. We read every '
+      'message, and if you allow it we reply to your sign-in email.';
+  static const String settingsLogOutBody =
+      'Log out of CvMate now? Your local CVs and drafts will stay on this '
+      'device.';
+  static const String settingsGuestModeBody =
+      'You are using CvMate without an account. Your data stays on this '
+      'device.';
+
+  // My CVs: delete
+  static String cvDeleteBodyLocal(String title) =>
+      'Delete "$title" from this device? This cannot be undone.';
+  static String cvDeleteBodyWithBackup(String title) =>
+      'Delete "$title"? It is removed from this device and from your cloud '
+      'backup. This cannot be undone.';
 
   // AI consent (App Store guideline 5.1.2) and the AI quota
   static const String aiConsentTitle = 'Use AI features?';

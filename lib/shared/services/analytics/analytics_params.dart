@@ -91,7 +91,12 @@ enum AiAction implements AnalyticsValue {
   atsSuggestions,
   analyzeJobPost,
   cvJobMatch,
-  tailorCv;
+  tailorCv,
+
+  /// The summary / objective generated from the ATS check's AI sheet, logged
+  /// apart from the builder's [professionalSummary] / [careerObjective].
+  atsSummary,
+  atsObjective;
 
   @override
   String get wire => _snake(name);

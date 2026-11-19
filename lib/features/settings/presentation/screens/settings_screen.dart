@@ -185,9 +185,8 @@ class SettingsScreen extends ConsumerWidget {
                   _SupportSection(
                     onSupport: () => _showInfoDialog(
                       context,
-                      title: 'Support',
-                      body:
-                          'Support placeholder\n\nAdd your future support email or help center before release. For now, keep user-facing support messaging honest and simple.',
+                      title: AppStrings.supportTitle,
+                      body: AppStrings.supportBody,
                     ),
                     onFeedback: () => context.push(RouteNames.feedbackPath),
                     onRate: () => _rateApp(context, ref),
@@ -258,9 +257,7 @@ class SettingsScreen extends ConsumerWidget {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Logout'),
-          content: const Text(
-            'Log out of CareerMate BD now? Your local CVs and drafts will stay on this device.',
-          ),
+          content: const Text(AppStrings.settingsLogOutBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -423,9 +420,7 @@ class _AccountSection extends StatelessWidget {
             leading: const Icon(Icons.person_outline_rounded),
             title: Text(isLoggedOut ? 'Guest / local mode' : 'Signed in'),
             subtitle: Text(
-              isLoggedOut
-                  ? 'You are using CareerMate BD without a logged-in account. Local data stays on this device.'
-                  : userEmail ?? '',
+              isLoggedOut ? AppStrings.settingsGuestModeBody : userEmail ?? '',
             ),
           ),
           const SizedBox(height: 12),
@@ -671,15 +666,16 @@ class _AboutContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('CareerMate BD', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
-        const Text('AI Career Assistant for Bangladesh'),
-        const SizedBox(height: 8),
-        Text('Version: $versionLabel'),
-        const SizedBox(height: 12),
-        const Text(
-          'CareerMate BD helps Bangladeshi job seekers create CVs, generate cover letters, prepare for interviews, and track job applications.',
+        Text(
+          AppStrings.brandName,
+          style: Theme.of(context).textTheme.titleLarge,
         ),
+        const SizedBox(height: 8),
+        const Text(AppStrings.aboutTagline),
+        const SizedBox(height: 8),
+        Text(AppStrings.aboutVersion(versionLabel)),
+        const SizedBox(height: 12),
+        const Text(AppStrings.aboutBody),
       ],
     );
   }

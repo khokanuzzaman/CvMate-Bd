@@ -67,7 +67,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Enter the email address you used for CareerMate BD. Firebase Auth will send a password reset email.',
+                    'Enter the email address you used for CvMate. We will send you a link to reset your password.',
                     style: theme.textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 20),

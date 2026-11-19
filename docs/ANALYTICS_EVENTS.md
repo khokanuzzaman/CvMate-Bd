@@ -99,7 +99,10 @@ enforces it is in `lib/shared/services/analytics/`:
 `action` is one of: `professional_summary`, `career_objective`,
 `experience_bullet`, `project_description`, `suggest_skills`, `cover_letter`,
 `application_email`, `linkedin_message`, `interview_questions`,
-`ats_suggestions`, `analyze_job_post`, `cv_job_match` or `tailor_cv`.
+`ats_suggestions`, `analyze_job_post`, `cv_job_match`, `tailor_cv`,
+`ats_summary` or `ats_objective`. The last two are the summary and objective
+generated from the ATS check's AI sheet; the builder's are
+`professional_summary` and `career_objective`.
 
 ### Paywall and purchases
 
