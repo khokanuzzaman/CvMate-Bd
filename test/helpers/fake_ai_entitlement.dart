@@ -29,6 +29,7 @@ class FakeAiEntitlementController extends AiEntitlementController {
   /// Whether [claimExportUnlock] succeeds.
   bool claimable;
   int refreshCount = 0;
+  int syncCount = 0;
   final List<String> claims = [];
 
   @override
@@ -41,6 +42,13 @@ class FakeAiEntitlementController extends AiEntitlementController {
       final index = (refreshCount - 1).clamp(0, afterRefresh.length - 1);
       state = AsyncData(afterRefresh[index]);
     }
+  }
+
+  /// A purchase sync reads the server like a refresh does.
+  @override
+  Future<void> syncPurchase() async {
+    syncCount++;
+    await refresh();
   }
 
   @override

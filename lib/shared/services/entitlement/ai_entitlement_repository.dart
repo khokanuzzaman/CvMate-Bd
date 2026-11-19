@@ -26,6 +26,7 @@ class AiEntitlementRepository {
 
   static const String entitlementPath = '/v1/me/entitlement';
   static const String exportUnlocksPath = '/v1/me/cv-export-unlocks';
+  static const String syncPath = '/v1/me/entitlement/sync';
 
   final AiServerClient client;
   final AiEntitlementCache cache;
@@ -39,6 +40,24 @@ class AiEntitlementRepository {
   Future<AiEntitlement> fetch(String uid) async {
     final entitlement = AiEntitlement.fromJson(
       await client.getJson(entitlementPath),
+    );
+    if (entitlement == null) {
+      throw const AppException(
+        AiFailureMessages.generic,
+        code: AiFailureCodes.failed,
+      );
+    }
+    await cache.write(uid, entitlement);
+    return entitlement;
+  }
+
+  /// Purchase sync: asks the server to read this user's purchase from
+  /// RevenueCat now (it grants Pro without waiting for the store webhook)
+  /// and returns the resulting value (also cached). The app sends nothing
+  /// but its token. Throws [AppException], e.g. offline or an older server.
+  Future<AiEntitlement> sync(String uid) async {
+    final entitlement = AiEntitlement.fromJson(
+      await client.postJson(syncPath, const <String, dynamic>{}),
     );
     if (entitlement == null) {
       throw const AppException(
