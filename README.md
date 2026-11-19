@@ -51,7 +51,9 @@ A release build always uses the AI server and **refuses to start**
 not HTTPS, so canned mock AI output can never ship:
 
 ```sh
-flutter build ipa --release --dart-define=AI_API_BASE_URL=https://api.khokan.me
+flutter build ipa --release --split-debug-info=build/debug-info \
+  --dart-define=AI_API_BASE_URL=https://api.khokan.me
+scripts/upload_dart_symbols.sh   # Dart symbols to Crashlytics (firebase login once)
 ```
 
 The check lives in `EnvConfig.aiConfigurationProblem`

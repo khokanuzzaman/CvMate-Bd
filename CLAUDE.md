@@ -32,7 +32,9 @@ through the service layer in lib/shared/services/ai/.
 - Mock AI (default `.env`, `USE_MOCK_AI=true`): `flutter run`
 - Real AI server (set `USE_MOCK_AI=false` in `.env`, sign in first):
   `flutter run --dart-define=AI_API_BASE_URL=https://api.khokan.me`
-- Release: `flutter build ipa --release --dart-define=AI_API_BASE_URL=https://api.khokan.me`
+- Release: `flutter build ipa --release --split-debug-info=build/debug-info --dart-define=AI_API_BASE_URL=https://api.khokan.me`,
+  then `scripts/upload_dart_symbols.sh` (Dart symbols to Crashlytics; needs `firebase login`).
+  No `--obfuscate`: crash reports send the exception type name.
   (refuses to build if `.env` has `USE_MOCK_AI=true`; a release app ignores the flag
   and refuses to start on a non-HTTPS AI URL).
 
