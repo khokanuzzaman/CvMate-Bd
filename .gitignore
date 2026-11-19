@@ -51,3 +51,6 @@ app.*.map.json
 
 # FVM local SDK link (the pinned version lives in .fvmrc)
 .fvm/
+
+# Golden test failure output
+**/failures/*.png

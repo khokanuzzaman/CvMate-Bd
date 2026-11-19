@@ -224,6 +224,7 @@ class CvPreviewContent extends StatelessWidget {
                         end: item.endDate,
                         ongoing: item.isCurrentRole,
                       ),
+                      subtitle: item.location.trim(),
                       bullets: item.highlights,
                     ),
                 ],
@@ -241,7 +242,7 @@ class CvPreviewContent extends StatelessWidget {
                     runSpacing: AppSpacing.s8,
                     children: [
                       for (final skill in profile.skills)
-                        _Pill(label: skill.name),
+                        _Pill(label: _joined(' · ', [skill.name, skill.level])),
                     ],
                   ),
                 ],
