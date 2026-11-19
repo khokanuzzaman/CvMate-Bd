@@ -94,10 +94,6 @@ class JobTrackerController extends AsyncNotifier<List<JobApplication>> {
     state = AsyncData(next);
   }
 
-  Future<JobApplication?> archiveApplication(String id) {
-    return updateStatus(id, JobApplicationStatus.archived);
-  }
-
   Future<void> _replaceAndPublish(JobApplication saved) async {
     final currentData = state.asData?.value;
     if (currentData == null) {

@@ -34,39 +34,32 @@ class TailoringResult {
     required this.tailoredSummary,
     required this.emphasizedSkills,
     required this.rewrittenBullets,
-    required this.coverLetter,
   });
 
   factory TailoringResult.empty() => const TailoringResult(
     tailoredSummary: '',
     emphasizedSkills: [],
     rewrittenBullets: [],
-    coverLetter: '',
   );
 
   final String tailoredSummary;
   final List<String> emphasizedSkills;
   final List<TailoredBullet> rewrittenBullets;
-  final String coverLetter;
 
   bool get hasTailoredContent =>
       tailoredSummary.trim().isNotEmpty ||
       emphasizedSkills.isNotEmpty ||
       rewrittenBullets.isNotEmpty;
 
-  bool get hasCoverLetter => coverLetter.trim().isNotEmpty;
-
   TailoringResult copyWith({
     String? tailoredSummary,
     List<String>? emphasizedSkills,
     List<TailoredBullet>? rewrittenBullets,
-    String? coverLetter,
   }) {
     return TailoringResult(
       tailoredSummary: tailoredSummary ?? this.tailoredSummary,
       emphasizedSkills: emphasizedSkills ?? this.emphasizedSkills,
       rewrittenBullets: rewrittenBullets ?? this.rewrittenBullets,
-      coverLetter: coverLetter ?? this.coverLetter,
     );
   }
 }
