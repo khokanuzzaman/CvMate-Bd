@@ -14,6 +14,7 @@ import 'package:careermatebd/features/auth/presentation/widgets/auth_error_banne
 import 'package:careermatebd/features/auth/presentation/widgets/auth_page_layout.dart';
 import 'package:careermatebd/features/auth/presentation/widgets/auth_switch_link.dart';
 import 'package:careermatebd/features/auth/presentation/widgets/password_strength_meter.dart';
+import 'package:careermatebd/features/profile/presentation/widgets/profile_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -86,8 +87,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   AuthErrorBanner(message: state.errorMessage!),
                   const SizedBox(height: AppSpacing.s16),
                 ],
-                // TODO(display-name): the name is validated but not yet saved —
-                // AuthRepository has no display-name API.
                 AppTextField(
                   controller: _nameController,
                   label: AppStrings.registerNameLabel,
@@ -147,6 +146,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   value: _acceptedTerms,
                   showError: _showTermsError && !_acceptedTerms,
                   onChanged: _setAcceptedTerms,
+                  onOpenTerms: () => openTermsOfUse(context, ref),
+                  onOpenPrivacy: () => openPrivacyPolicy(context, ref),
                 ),
                 const SizedBox(height: AppSpacing.s16),
                 PrimaryButton(
@@ -201,6 +202,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           email: _emailController.text,
           password: password,
           confirmPassword: password,
+          displayName: _nameController.text,
         );
     if (!mounted) {
       return;
@@ -224,11 +226,32 @@ class _TermsCheckbox extends StatelessWidget {
     required this.value,
     required this.showError,
     required this.onChanged,
+    required this.onOpenTerms,
+    required this.onOpenPrivacy,
   });
 
   final bool value;
   final bool showError;
   final ValueChanged<bool> onChanged;
+  final VoidCallback onOpenTerms;
+  final VoidCallback onOpenPrivacy;
+
+  /// A tappable word inside the sentence; taps on it open the page instead
+  /// of toggling the checkbox.
+  static InlineSpan _link(String label, TextStyle style, VoidCallback onTap) {
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.baseline,
+      baseline: TextBaseline.alphabetic,
+      child: Semantics(
+        link: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: Text(label, style: style),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -257,21 +280,17 @@ class _TermsCheckbox extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.s4),
               Expanded(
-                // TODO(legal-links): Terms / Privacy are styled as links but
-                // not tappable until the legal pages exist.
                 child: Text.rich(
                   TextSpan(
                     style: AppTextStyles.bodySm,
                     children: [
                       const TextSpan(text: AppStrings.registerTermsPrefix),
-                      TextSpan(
-                        text: AppStrings.registerTerms,
-                        style: linkStyle,
-                      ),
+                      _link(AppStrings.registerTerms, linkStyle, onOpenTerms),
                       const TextSpan(text: AppStrings.registerTermsAnd),
-                      TextSpan(
-                        text: AppStrings.registerPrivacy,
-                        style: linkStyle,
+                      _link(
+                        AppStrings.registerPrivacy,
+                        linkStyle,
+                        onOpenPrivacy,
                       ),
                       const TextSpan(text: AppStrings.registerTermsSuffix),
                     ],

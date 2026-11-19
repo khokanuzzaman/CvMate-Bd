@@ -12,6 +12,7 @@ import 'package:careermatebd/features/account_deletion/presentation/widgets/dele
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/forgot_password_controller.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/logout_controller.dart';
+import 'package:careermatebd/features/profile/presentation/widgets/profile_dialogs.dart';
 import 'package:careermatebd/features/settings/domain/entities/app_preferences.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/app_preferences_controller.dart';
 import 'package:careermatebd/features/settings/presentation/controllers/settings_overview_controller.dart';
@@ -155,16 +156,8 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _SectionTitle(title: 'Legal / Safety'),
                   _LegalSection(
-                    onOpenPrivacy: () => _showInfoDialog(
-                      context,
-                      title: AppStrings.privacyPolicyTitle,
-                      body: AppStrings.privacyPolicyBody,
-                    ),
-                    onOpenTerms: () => _showInfoDialog(
-                      context,
-                      title: AppStrings.termsTitle,
-                      body: AppStrings.termsBody,
-                    ),
+                    onOpenPrivacy: () => openPrivacyPolicy(context, ref),
+                    onOpenTerms: () => openTermsOfUse(context, ref),
                     onOpenAiDisclaimer: () => _showInfoDialog(
                       context,
                       title: 'AI Disclaimer',

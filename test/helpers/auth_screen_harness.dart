@@ -4,6 +4,7 @@ import 'package:careermatebd/features/auth/presentation/screens/login_screen.dar
 import 'package:careermatebd/features/auth/presentation/screens/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,6 +20,7 @@ Future<void> pumpAuthScreen(
   WidgetTester tester, {
   required FakeAuthRepository repository,
   required String initialLocation,
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = const Size(390, 1000);
   tester.view.devicePixelRatio = 1;
@@ -52,7 +54,10 @@ Future<void> pumpAuthScreen(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [authRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        authRepositoryProvider.overrideWithValue(repository),
+        ...overrides,
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
