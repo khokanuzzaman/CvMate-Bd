@@ -8,7 +8,6 @@ import 'package:careermatebd/core/theme/app_spacing.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/widgets/app_buttons.dart';
 import 'package:careermatebd/core/widgets/brand_logo_tile.dart';
-import 'package:careermatebd/core/widgets/pager_dots.dart';
 import 'package:careermatebd/features/auth/presentation/widgets/auth_switch_link.dart';
 import 'package:careermatebd/features/onboarding/presentation/controllers/onboarding_seen_controller.dart';
 import 'package:careermatebd/features/onboarding/presentation/widgets/onboarding_cv_illustration.dart';
@@ -30,9 +29,6 @@ final _onboardingViewedProvider = Provider.autoDispose<void>((ref) {
 
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
-
-  // Only the first page is designed; the dots are ready for a future PageView.
-  static const int _pageCount = 3;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -100,18 +96,6 @@ class OnboardingScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.s22),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: PagerDots(
-                        count: _pageCount,
-                        index: 0,
-                        dotSize: 6,
-                        activeWidth: 22,
-                        activeColor: AppColors.primary,
-                        inactiveColor: AppColors.lineStrong,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s20),
                     PrimaryButton(
                       label: AppStrings.onboardingGetStarted,
                       trailingIcon: Icons.arrow_forward_rounded,

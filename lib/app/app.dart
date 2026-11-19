@@ -1,5 +1,6 @@
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/app_router.dart';
+import 'package:careermatebd/app/widgets/pending_ai_result_overlay.dart';
 import 'package:careermatebd/core/config/env_config.dart';
 import 'package:careermatebd/core/theme/cv_mate_theme.dart';
 import 'package:careermatebd/core/widgets/text_scale_clamp.dart';
@@ -40,7 +41,10 @@ class CareerMateApp extends ConsumerWidget {
       routerConfig: router,
       builder: (context, child) {
         final appChild = TextScaleClamp(
-          child: child ?? const SizedBox.shrink(),
+          // Shows an AI answer recovered after the app was closed mid-request.
+          child: PendingAiResultOverlay(
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
         if (!EnvConfig.isMockAiActive) {
           return appChild;

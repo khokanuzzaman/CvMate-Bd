@@ -97,13 +97,42 @@ class AtsCheckerController extends Notifier<AtsCheckerState> {
   }
 
   void updateJobPostText(String value) {
+    _setJobPost(
+      value,
+      value.trim().isEmpty ? AtsJobPostSource.cleared : AtsJobPostSource.typed,
+    );
+  }
+
+  /// Uses Tailor's job post when the user has not typed or cleared one here,
+  /// so the screen shows the post its job match and AI suggestions use.
+  void syncJobPostFromTailor(String tailorPost) {
+    final source = state.jobPostSource;
+    if (source == AtsJobPostSource.typed ||
+        source == AtsJobPostSource.cleared) {
+      return;
+    }
+    final post = tailorPost.trim();
+    _setJobPost(
+      post,
+      post.isEmpty ? AtsJobPostSource.none : AtsJobPostSource.tailor,
+    );
+  }
+
+  /// Stops using a job post: matching and AI suggestions use the CV only.
+  void clearJobPost() => _setJobPost('', AtsJobPostSource.cleared);
+
+  void _setJobPost(String value, AtsJobPostSource source) {
     if (value == state.jobPostText) {
+      if (source != state.jobPostSource) {
+        state = state.copyWith(jobPostSource: source);
+      }
       return;
     }
 
     state = _rebuildAnalysis(
       state.copyWith(
         jobPostText: value,
+        jobPostSource: source,
         hasCheckedJobMatch: false,
         clearJobMatchReport: true,
         clearErrorMessage: true,

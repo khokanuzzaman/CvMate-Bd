@@ -152,7 +152,6 @@ enum LatencyBucket implements AnalyticsValue {
 /// hand-typed deep link can never put free text into analytics.
 enum PaywallSource implements AnalyticsValue {
   cvPreview,
-  cvPdfPreview,
   tailoring,
   profile,
   restore,
@@ -207,7 +206,6 @@ enum RestoreResult implements AnalyticsValue {
 /// Where an export started.
 enum ExportSource implements AnalyticsValue {
   cvPreview,
-  cvPdfPreview,
   tailoring;
 
   @override

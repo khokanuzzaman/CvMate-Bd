@@ -12,7 +12,6 @@ import 'package:careermatebd/features/tailoring/domain/entities/tailoring_result
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_stage.dart';
 import 'package:careermatebd/features/tailoring/presentation/controllers/tailoring_state.dart';
 import 'package:careermatebd/shared/models/ai/ai_models.dart';
-import 'package:careermatebd/shared/services/ai/document_draft_personalizer.dart';
 import 'package:careermatebd/shared/services/ai/mock_ai_career_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -196,65 +195,6 @@ class TailoringController extends Notifier<TailoringState> {
     );
   }
 
-  Future<void> generateCoverLetter() async {
-    final cv = state.selectedCv;
-    if (cv == null) {
-      _fail('Create or select a CV first before generating a cover letter.');
-      return;
-    }
-    if (state.company.trim().isEmpty) {
-      _fail('Add the target company name first.');
-      return;
-    }
-
-    final jobTitle = state.jobTitle.trim().isEmpty
-        ? cv.displayRole
-        : state.jobTitle.trim();
-    final tailoredSummary = state.result?.tailoredSummary.trim() ?? '';
-    final candidateSummary = tailoredSummary.isNotEmpty
-        ? tailoredSummary
-        : cv.professionalSummary.trim();
-
-    state = state.copyWith(
-      stage: TailoringStage.generatingCoverLetter,
-      clearFailure: true,
-    );
-
-    final result = await ref
-        .read(aiCareerServiceProvider)
-        .generateCoverLetter(
-          profile: cv,
-          companyName: state.company.trim(),
-          jobTitle: jobTitle,
-          jobPostText: state.jobPostText.trim(),
-          candidateSummary: candidateSummary,
-          language: AiOutputLanguage.english,
-          tone: AiTone.formal,
-        );
-
-    result.when(
-      success: (document) {
-        // The server never sends the name to the model; sign it here.
-        final signed = personalizeDocumentDraft(
-          document,
-          info: cv.personalInfo,
-          kind: AiDocumentKind.coverLetter,
-        );
-        final tailoring = (state.result ?? TailoringResult.empty()).copyWith(
-          coverLetter: signed.body,
-        );
-        state = state.copyWith(
-          stage: TailoringStage.ready,
-          result: tailoring,
-          clearFailure: true,
-        );
-      },
-      failure: (failure) {
-        state = state.copyWith(stage: TailoringStage.error, failure: failure);
-      },
-    );
-  }
-
   void updateTailoredSummary(String value) {
     final result = state.result;
     if (result == null) {
@@ -301,11 +241,6 @@ class TailoringController extends Notifier<TailoringState> {
       result: result.copyWith(rewrittenBullets: bullets),
       clearSavedCvId: true,
     );
-  }
-
-  void updateCoverLetter(String value) {
-    final result = state.result ?? TailoringResult.empty();
-    state = state.copyWith(result: result.copyWith(coverLetter: value));
   }
 
   /// Builds a preview CV with the tailored content applied, WITHOUT persisting

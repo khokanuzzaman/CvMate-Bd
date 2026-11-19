@@ -413,6 +413,37 @@ class InterviewPrepController extends Notifier<InterviewPrepState> {
     );
   }
 
+  /// Opened for a specific job (a tracker card): the setup is filled with its
+  /// role, company and the CV used to apply. Questions already shown for the
+  /// same role and company are kept; for another job it starts over, as
+  /// "Start over" does.
+  void prepareForJob({
+    required String jobTitle,
+    required String companyName,
+    String? cvId,
+  }) {
+    final title = jobTitle.trim();
+    final company = companyName.trim();
+    final sameJob =
+        state.targetJobTitle.trim().toLowerCase() == title.toLowerCase() &&
+        state.companyName.trim().toLowerCase() == company.toLowerCase();
+    if (state.hasGeneratedQuestions && sameJob) {
+      return;
+    }
+
+    if (state.hasGeneratedQuestions) {
+      startOver();
+    }
+    final knownCv =
+        !state.hasInitialized || _findCv(state.availableCvs, cvId) != null;
+    state = state.copyWith(
+      selectedCvId: cvId != null && knownCv ? cvId : state.selectedCvId,
+      targetJobTitle: title,
+      companyName: company,
+      clearErrorMessage: true,
+    );
+  }
+
   void startOver() {
     _generatedAnswers.clear();
     final selectedCv = state.selectedCv;

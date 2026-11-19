@@ -105,7 +105,7 @@ enforces it is in `lib/shared/services/analytics/`:
 
 | Event | Params | Fires when | Question it answers |
 |---|---|---|---|
-| `paywall_view` | `source`: `cv_preview` \| `cv_pdf_preview` \| `tailoring` \| `profile` \| `restore` \| `ai_quota` \| `other` | The paywall opens | Which moments lead people to the paywall? |
+| `paywall_view` | `source`: `cv_preview` \| `tailoring` \| `profile` \| `restore` \| `ai_quota` \| `other` | The paywall opens | Which moments lead people to the paywall? |
 | `purchase_start` | `package`: `monthly` \| `yearly` \| `one_cv` | The buy button is tapped | Which plans do people try to buy? |
 | `purchase_result` | `result`: `success` \| `cancelled` \| `pending` \| `failed`, `package` | The store answers | Conversion rate per plan, and failure rate |
 | `restore_result` | `result`: `restored` \| `nothing_to_restore` \| `cancelled` \| `failed` | *Restore purchases* ends | Does restore work? |
@@ -114,7 +114,7 @@ enforces it is in `lib/shared/services/analytics/`:
 
 | Event | Params | Fires when | Question it answers |
 |---|---|---|---|
-| `export_start` | `source`: `cv_preview` \| `cv_pdf_preview` \| `tailoring`, `format`: `share` \| `print` | Share or print is tapped | How many people try to export? |
+| `export_start` | `source`: `cv_preview` \| `tailoring`, `format`: `share` \| `print` | Share or print is tapped | How many people try to export? |
 | `export_result` | `source`, `format`, `result`: `ok` \| `paywall_closed` \| `failed`, `gate` (only when `ok`): `pro` \| `unlock` \| `free` \| `purchased` | The export ends | How do exports get through (Pro, unlock, free, bought just now), and how many stop at the paywall? |
 
 ### Ratings and feedback

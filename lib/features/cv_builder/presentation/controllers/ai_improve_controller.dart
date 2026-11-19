@@ -24,8 +24,13 @@ class AiImproveController extends Notifier<AiImproveState> {
   @override
   AiImproveState build() => AiImproveState.initial();
 
-  Future<void> initialize({bool force = false}) async {
-    if (state.hasInitialized && !force) {
+  /// Reads the saved CVs again on every visit. This provider outlives the
+  /// screen (the builder's AI pills preselect the type on it), so without the
+  /// reload the screen and its AI calls kept the CV as it was the first time
+  /// it was opened in the app session. The chosen type, language and tone
+  /// are kept; the CV being built is preferred, then the one chosen before.
+  Future<void> initialize() async {
+    if (state.isLoading) {
       return;
     }
 
@@ -38,11 +43,16 @@ class AiImproveController extends Notifier<AiImproveState> {
           ? activeDraftState.draft.id
           : null;
 
-      final selected = _selectInitialCv(cvs, activeDraftId: activeDraftId);
+      final selected = _selectInitialCv(
+        cvs,
+        activeDraftId: activeDraftId ?? state.selectedCv?.id,
+      );
       state = _stateForSelectedCv(
         profile: selected,
         availableCvs: cvs,
         improvementType: state.improvementType,
+        outputLanguage: state.outputLanguage,
+        tone: state.tone,
       ).copyWith(hasInitialized: true, isLoading: false);
     } catch (_) {
       state = state.copyWith(
@@ -53,7 +63,7 @@ class AiImproveController extends Notifier<AiImproveState> {
     }
   }
 
-  Future<void> reload() => initialize(force: true);
+  Future<void> reload() => initialize();
 
   void selectCv(String cvId) {
     if (state.selectedCv?.id == cvId) {

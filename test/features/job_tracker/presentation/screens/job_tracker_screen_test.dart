@@ -3,6 +3,7 @@ import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/widgets/app_chip.dart';
 import 'package:careermatebd/core/widgets/bottom_nav_bar.dart';
 import 'package:careermatebd/core/widgets/custom_error_view.dart';
+import 'package:careermatebd/features/interview_prep/presentation/controllers/interview_prep_controller.dart';
 import 'package:careermatebd/features/job_tracker/data/repositories/job_application_repository_impl.dart';
 import 'package:careermatebd/features/job_tracker/domain/entities/job_application.dart';
 import 'package:careermatebd/features/job_tracker/domain/entities/job_application_status.dart';
@@ -201,6 +202,18 @@ void main() {
         find.text(placeholderFor(RouteNames.interviewPrepPath)),
         findsOneWidget,
       );
+    });
+
+    testWidgets('interview prep opens with that job filled in', (
+      tester,
+    ) async {
+      final app = await _open(tester);
+
+      await _tap(tester, find.textContaining('· Prep now'));
+
+      final prep = app.container.read(interviewPrepControllerProvider);
+      expect(prep.targetJobTitle, 'Frontend Developer');
+      expect(prep.companyName, 'Acme Ltd.');
     });
 
     testWidgets('the bottom nav has Tracker selected and switches tabs', (

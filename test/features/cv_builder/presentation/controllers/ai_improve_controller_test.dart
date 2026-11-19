@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  _regressionStaleCv();
+
   test('AI Improve controller generates and applies summary output', () async {
     final repository = _FakeCvRepository([
       CvProfile.empty().copyWith(
@@ -55,6 +57,42 @@ void main() {
     final savedCv = await repository.getCvById('cv-1');
     expect(savedCv, isNotNull);
     expect(savedCv!.professionalSummary, generatedState.generatedOutput);
+  });
+}
+
+void _regressionStaleCv() {
+  test('reopening AI Improve uses the CV as it is now, not the copy from the '
+      'first visit (finding 12)', () async {
+    final first = CvProfile.empty().copyWith(
+      id: 'cv-1',
+      title: 'Flutter CV',
+      personalInfo: const PersonalInfo(fullName: 'Rahim Uddin'),
+    );
+    final repository = _FakeCvRepository([first]);
+    final container = ProviderContainer(
+      overrides: [cvRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+    final controller = container.read(aiImproveControllerProvider.notifier);
+
+    await controller.initialize();
+    expect(
+      container.read(aiImproveControllerProvider).selectedCv!.projects,
+      isEmpty,
+    );
+
+    await repository.saveCv(
+      first.copyWith(
+        projects: const [
+          ProjectInfo(id: 'p1', title: 'Clinic App', description: 'Booking'),
+        ],
+      ),
+    );
+    await controller.initialize();
+
+    final state = container.read(aiImproveControllerProvider);
+    expect(state.selectedCv!.projects.single.title, 'Clinic App');
+    expect(state.availableCvs.single.projects, hasLength(1));
   });
 }
 
