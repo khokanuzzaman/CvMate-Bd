@@ -88,6 +88,25 @@ class AiEntitlementController extends AsyncNotifier<AiEntitlement?> {
     }
   }
 
+  /// Right after a purchase or restore: asks the server to sync the purchase
+  /// from RevenueCat and shows the result, so Pro appears at once instead of
+  /// after the store webhook. Falls back to a plain [refresh] when the
+  /// server cannot (offline, or a server without purchase sync).
+  Future<void> syncPurchase() async {
+    final uid = _uid;
+    if (uid == null) {
+      return;
+    }
+    try {
+      final fresh = await ref.read(aiEntitlementRepositoryProvider).sync(uid);
+      if (ref.mounted && _uid == uid) {
+        state = AsyncData(fresh);
+      }
+    } catch (_) {
+      await refresh();
+    }
+  }
+
   /// The current value, waiting for the first load. Null when unknown.
   Future<AiEntitlement?> current() async {
     try {
@@ -98,8 +117,11 @@ class AiEntitlementController extends AsyncNotifier<AiEntitlement?> {
   }
 
   /// Refreshes until [done] holds for the server's value, waiting
-  /// [entitlementPollDelaysProvider] between tries. Returns whether it did.
+  /// [entitlementPollDelaysProvider] between tries. The first try is a
+  /// purchase sync ([syncPurchase]); later ones poll, for when the server
+  /// could not sync and the webhook has to arrive. Returns whether it did.
   Future<bool> refreshUntil(bool Function(AiEntitlement value) done) async {
+    var first = true;
     for (final delay in ref.read(entitlementPollDelaysProvider)) {
       if (delay > Duration.zero) {
         await Future<void>.delayed(delay);
@@ -107,7 +129,12 @@ class AiEntitlementController extends AsyncNotifier<AiEntitlement?> {
       if (!ref.mounted) {
         return false;
       }
-      await refresh();
+      if (first) {
+        first = false;
+        await syncPurchase();
+      } else {
+        await refresh();
+      }
       final value = state.asData?.value;
       if (value != null && done(value)) {
         return true;
