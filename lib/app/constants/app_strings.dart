@@ -120,6 +120,7 @@ abstract final class AppStrings {
   static const String builderRemoveEntry = 'Remove';
   static const String builderImproveWithAi = 'Improve with AI';
   static const String builderGenerateWithAi = 'Generate with AI';
+  static const String builderSuggestWithAi = 'Suggest with AI';
 
   static String builderStepLabel(int step, int total, String section) =>
       'Step $step of $total · $section';
