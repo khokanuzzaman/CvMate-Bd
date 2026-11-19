@@ -8,13 +8,26 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/screenshot_harness.dart';
 import '../../../../helpers/template_fixtures.dart';
+import '../../../../helpers/tolerant_golden_comparator.dart';
 
 /// Every template's preview with the three QA fixtures (docs/qa/templates/):
 /// no overflow, every value shown, no empty section titles. Goldens for the
 /// full and minimal CVs use the real app fonts; they are compared on macOS
 /// only, since text rasterises slightly differently on the Linux CI runners.
+/// They allow up to 1% of pixels to differ (TolerantGoldenComparator), so a
+/// macOS update that changes anti-aliasing does not fail them; regenerate with
+/// `flutter test --update-goldens` on a Mac when the layout really changes.
+/// Current goldens: macOS 27.2.1 (26B131), 19 Nov 2026.
 void main() {
-  setUpAll(loadTestFonts);
+  setUpAll(() async {
+    await loadTestFonts();
+    goldenFileComparator = TolerantGoldenComparator(
+      Uri.parse(
+        'test/features/cv_builder/presentation/widgets/'
+        'cv_preview_templates_test.dart',
+      ),
+    );
+  });
 
   final boundary = GlobalKey();
 
@@ -53,9 +66,7 @@ void main() {
   }
 
   // Regression: the preview left out two things the PDF prints.
-  testWidgets('shows an experience location and a skill level', (
-    tester,
-  ) async {
+  testWidgets('shows an experience location and a skill level', (tester) async {
     final shown = await pumpPreview(tester, fullCv(CvTemplate.classic));
 
     expect(shown, contains('chattogram'));
