@@ -1,3 +1,4 @@
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
@@ -520,7 +521,7 @@ class _TimelineCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s10),
           _DateSelectorTile(
-            label: 'Follow-up reminder date',
+            label: AppStrings.trackerFollowUpPlanLabel,
             value: optional(state.followUpDate),
             onTap: onPickFollowUpDate,
             onClear: state.followUpDate == null ? null : onClearFollowUpDate,
