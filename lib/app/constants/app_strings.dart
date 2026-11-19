@@ -628,7 +628,8 @@ abstract final class AppStrings {
   static String paywallTrial(int count, String unit) =>
       '$count-$unit free trial';
   static const String paywallOneTimeTitle = 'Just this CV — one-time';
-  static const String paywallOneTimeSubtitle = '+5 AI actions · no subscription';
+  static const String paywallOneTimeSubtitle =
+      '+5 AI actions · no subscription';
   static const String paywallChoosePlan = 'Choose a plan';
   static const String paywallCtaSubscribe = 'Subscribe';
   static const String paywallCtaTrial = 'Start free trial';
@@ -962,6 +963,14 @@ abstract final class AppStrings {
       'Off: AI actions ask for permission first and send nothing until you '
       'allow them.';
   static String aiActionsLeft(int count) => 'AI actions left: $count';
+
+  // AI result recovered after the app was closed mid-request
+  static const String pendingAiReadyTitle = 'Your last result is ready';
+  static const String pendingAiReadyBody =
+      'The app closed before it arrived. You were not charged again.';
+  static const String pendingAiCopy = 'Copy';
+  static const String pendingAiCopied = 'Copied';
+  static const String pendingAiClose = 'Close';
 
   // Privacy, rating and feedback (Settings)
   static const String privacySection = 'Privacy';
