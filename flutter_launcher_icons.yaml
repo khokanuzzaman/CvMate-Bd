@@ -1,0 +1,11 @@
+# App icons for iOS and Android from one 1024×1024 source.
+# Regenerate with: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/branding/app_icon_1024.png"
+  ios: true
+  # The App Store rejects icons with an alpha channel.
+  remove_alpha_ios: true
+  # Legacy launcher icons (mipmap/ic_launcher). The adaptive icon (separate
+  # foreground and background) waits for the Android launch; see the v1.1
+  # list in docs/RELEASE_QA.md.
+  android: true
