@@ -172,6 +172,10 @@ Settings > **Report a problem / Send feedback**:
       id is a 64-character hash, not an email.
 - [ ] A TestFlight build symbolicates: the dSYMs were uploaded by the "Upload
       Crashlytics dSYMs" build phase.
+- [ ] The build was made with `--split-debug-info=build/debug-info` and
+      `scripts/upload_dart_symbols.sh` ran after it (it prints the upload
+      result). In the test crash, the **Dart** frames show file and line, not
+      raw addresses.
 - [ ] Analytics switch off, then force another crash: no new report arrives.
 
 ## 12. App Check
