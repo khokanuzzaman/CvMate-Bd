@@ -1,3 +1,4 @@
+import 'package:careermatebd/app/constants/app_links.dart';
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/app/router/route_names.dart';
 import 'package:careermatebd/core/widgets/bottom_nav_bar.dart';
@@ -8,6 +9,7 @@ import 'package:careermatebd/features/settings/domain/entities/app_preferences.d
 import 'package:careermatebd/features/settings/presentation/controllers/settings_overview_controller.dart';
 import 'package:careermatebd/shared/services/entitlement/ai_entitlement.dart';
 import 'package:careermatebd/shared/services/entitlement/entitlement_store.dart';
+import 'package:careermatebd/shared/services/links/url_opener.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -32,6 +34,7 @@ Future<_App> _open(
   bool anonymous = false,
   AiEntitlement? plan,
   Future<PackageInfo> Function()? packageInfo,
+  List<Uri>? openedUrls,
 }) async {
   final auth = FakeAuthRepository(displayName: 'Ayesha Rahman');
   addTearDown(auth.dispose);
@@ -55,6 +58,10 @@ Future<_App> _open(
       entitlementStoreProvider.overrideWithValue(FakeEntitlementStore()),
       ...fakeEntitlementOverrides(FakeAiEntitlementController(plan)),
       settingsRepositoryProvider.overrideWithValue(settings),
+      urlOpenerProvider.overrideWithValue((uri) async {
+        openedUrls?.add(uri);
+        return true;
+      }),
       packageInfoLoaderProvider.overrideWithValue(
         packageInfo ??
             () async => PackageInfo(
@@ -291,16 +298,19 @@ void main() {
       expect(find.text(uriTextFor('/paywall?source=restore')), findsOneWidget);
     });
 
-    testWidgets('Privacy & terms shows the policy and terms', (tester) async {
-      await _open(tester);
+    testWidgets('Privacy Policy and Terms open the published pages', (
+      tester,
+    ) async {
+      final opened = <Uri>[];
+      await _open(tester, openedUrls: opened);
 
-      await _tap(tester, find.text(AppStrings.profilePrivacyTerms));
+      await _tap(tester, find.text(AppStrings.privacyPolicyTitle));
+      await _tap(tester, find.text(AppStrings.termsTitle));
 
-      expect(find.byType(AlertDialog), findsOneWidget);
-      expect(find.textContaining('Privacy Policy placeholder'), findsOneWidget);
-      expect(find.textContaining('Terms placeholder'), findsOneWidget);
-
-      await _tap(tester, find.text(AppStrings.legalClose));
+      expect(opened, [
+        Uri.parse(AppLinks.privacyPolicy),
+        Uri.parse(AppLinks.termsOfUse),
+      ]);
       expect(find.byType(AlertDialog), findsNothing);
     });
 

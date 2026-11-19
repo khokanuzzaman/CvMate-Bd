@@ -135,12 +135,20 @@ class ProfileScreen extends ConsumerWidget {
                       context.push('${RouteNames.paywallPath}?source=restore'),
                 ),
                 SettingsRow(
-                  label: AppStrings.profilePrivacyTerms,
+                  label: AppStrings.privacyPolicyTitle,
                   trailing: const Icon(
-                    Icons.chevron_right_rounded,
+                    Icons.open_in_new_rounded,
                     color: AppColors.muted2,
                   ),
-                  onTap: () => showPrivacyTermsDialog(context),
+                  onTap: () => openPrivacyPolicy(context, ref),
+                ),
+                SettingsRow(
+                  label: AppStrings.termsTitle,
+                  trailing: const Icon(
+                    Icons.open_in_new_rounded,
+                    color: AppColors.muted2,
+                  ),
+                  onTap: () => openTermsOfUse(context, ref),
                 ),
                 SettingsRow(
                   label: AppStrings.profileMoreSettings,

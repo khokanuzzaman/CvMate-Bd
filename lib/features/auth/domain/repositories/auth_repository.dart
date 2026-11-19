@@ -11,9 +11,12 @@ abstract class AuthRepository {
     required String password,
   });
 
+  /// Creates an email account. A non-empty [displayName] is saved on the
+  /// account; failing to save it does not fail the sign-up.
   Future<Result<AuthUser>> createUserWithEmailAndPassword({
     required String email,
     required String password,
+    String? displayName,
   });
 
   Future<Result<void>> sendPasswordResetEmail({required String email});
