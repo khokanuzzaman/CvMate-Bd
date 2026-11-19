@@ -7,6 +7,7 @@ import 'package:careermatebd/features/subscription/presentation/controllers/payw
 import 'package:careermatebd/shared/services/billing/billing_models.dart';
 import 'package:careermatebd/shared/services/billing/billing_service.dart';
 import 'package:careermatebd/shared/services/billing/fake_billing_service.dart';
+import 'package:careermatebd/shared/services/entitlement/ai_entitlement.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -169,6 +170,26 @@ void main() {
     expect(find.text(AppStrings.paywallTitle), findsNothing);
     expect(find.text(homePlaceholder), findsOneWidget);
     expect(find.text(AppStrings.paywallProActive), findsOneWidget);
+  });
+
+  testWidgets('one CV: the first check after buying is a purchase sync; when '
+      'the server reports the unlock there is no polling', (tester) async {
+    final entitlement = FakeAiEntitlementController(
+      freeEntitlement,
+      // The sync itself returns the unlock and the +5 actions.
+      afterRefresh: const [
+        AiEntitlement(isPro: false, actionsLeft: 8, cvExportUnlocks: 1),
+      ],
+    );
+    await _open(tester, entitlement: entitlement);
+
+    await _tap(tester, find.text(AppStrings.paywallOneTimeTitle));
+    await _tap(tester, find.byType(PrimaryButton));
+
+    expect(entitlement.syncCount, 1);
+    expect(entitlement.refreshCount, 1, reason: 'the sync, no extra poll');
+    expect(find.text(AppStrings.paywallPurchaseDone), findsOneWidget);
+    expect(find.text(AppStrings.paywallTitle), findsNothing);
   });
 
   testWidgets('when the server has not caught up, it says activation takes '
