@@ -97,6 +97,10 @@ abstract final class AppStrings {
 
   static const String settings = 'Settings';
 
+  // AI Improve
+  static const String aiImproveSkillsContextHelper =
+      'A job title or job post here helps the AI suggest more relevant skills.';
+
   // CV builder — chrome
   static const String builderChipPersonal = 'Personal';
   static const String builderChipEducation = 'Education';

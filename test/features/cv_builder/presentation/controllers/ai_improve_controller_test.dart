@@ -5,11 +5,13 @@ import 'package:careermatebd/features/cv_builder/domain/entities/project_info.da
 import 'package:careermatebd/features/cv_builder/domain/entities/skill_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/repositories/cv_repository.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/ai_improve_controller.dart';
+import 'package:careermatebd/features/cv_builder/presentation/controllers/ai_improve_type.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   _regressionStaleCv();
+  _skillWithCommasStaysOne();
 
   test('AI Improve controller generates and applies summary output', () async {
     final repository = _FakeCvRepository([
@@ -57,6 +59,33 @@ void main() {
     final savedCv = await repository.getCvById('cv-1');
     expect(savedCv, isNotNull);
     expect(savedCv!.professionalSummary, generatedState.generatedOutput);
+  });
+}
+
+void _skillWithCommasStaysOne() {
+  test('applying AI skills keeps "State Management (Provider, Riverpod, or '
+      'BLoC)" as one skill', () async {
+    final repository = _FakeCvRepository([
+      CvProfile.empty().copyWith(id: 'cv-1', title: 'CV'),
+    ]);
+    final container = ProviderContainer(
+      overrides: [cvRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+    final controller = container.read(aiImproveControllerProvider.notifier);
+    await controller.initialize();
+    controller.selectImprovementType(AiImproveType.skillsSuggestion);
+    controller.updateGeneratedOutput(
+      'REST API Integration\nState Management (Provider, Riverpod, or BLoC)',
+    );
+
+    await controller.applySuggestion();
+
+    final saved = await repository.getCvById('cv-1');
+    expect(saved!.skills.map((skill) => skill.name), [
+      'REST API Integration',
+      'State Management (Provider, Riverpod, or BLoC)',
+    ]);
   });
 }
 
