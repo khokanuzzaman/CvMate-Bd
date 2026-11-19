@@ -16,6 +16,7 @@ import 'package:careermatebd/features/ats_checker/presentation/controllers/ats_c
 import 'package:careermatebd/features/ats_checker/presentation/utils/ats_fix_target.dart';
 import 'package:careermatebd/features/ats_checker/presentation/widgets/ats_ai_sheet.dart';
 import 'package:careermatebd/features/ats_checker/presentation/widgets/ats_issue_list.dart';
+import 'package:careermatebd/features/ats_checker/presentation/widgets/ats_job_post_card.dart';
 import 'package:careermatebd/features/ats_checker/presentation/widgets/ats_score_card.dart';
 import 'package:careermatebd/features/ats_checker/presentation/widgets/ats_section_scores.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
@@ -41,9 +42,23 @@ class _AtsCheckerScreenState extends ConsumerState<AtsCheckerScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => ref.read(atsCheckerControllerProvider.notifier).initialize(),
-    );
+    Future.microtask(() async {
+      final ats = ref.read(atsCheckerControllerProvider.notifier);
+      await ats.initialize();
+      if (!mounted) {
+        return;
+      }
+      ats.syncJobPostFromTailor(
+        ref.read(tailoringControllerProvider).jobPostText,
+      );
+    });
+  }
+
+  Future<void> _editJobPost(AtsCheckerState state) async {
+    final text = await showAtsJobPostSheet(context, state.jobPostText);
+    if (text != null && mounted) {
+      ref.read(atsCheckerControllerProvider.notifier).updateJobPostText(text);
+    }
   }
 
   void _back() {
@@ -104,16 +119,17 @@ class _AtsCheckerScreenState extends ConsumerState<AtsCheckerScreen> {
     await ref.read(atsCheckerControllerProvider.notifier).reload();
   }
 
-  /// Job-match actions need a match report. The screen has no job-post field
-  /// any more, so reuse the post pasted in Tailor; false when there is none.
+  /// Job-match actions need a match report against the job post shown on
+  /// the screen; false when there is none.
   Future<bool> _ensureJobMatch() async {
-    final ats = ref.read(atsCheckerControllerProvider.notifier);
-    if (ref.read(atsCheckerControllerProvider).jobMatchReport != null) {
+    final ats = ref.read(
+      atsCheckerControllerProvider.notifier,
+    )..syncJobPostFromTailor(ref.read(tailoringControllerProvider).jobPostText);
+    final state = ref.read(atsCheckerControllerProvider);
+    if (state.jobMatchReport != null) {
       return true;
     }
-    final post = ref.read(tailoringControllerProvider).jobPostText.trim();
-    if (post.isNotEmpty) {
-      ats.updateJobPostText(post);
+    if (state.hasJobPost) {
       await ats.checkJobMatch();
     }
     return ref.read(atsCheckerControllerProvider).jobMatchReport != null;
@@ -267,6 +283,14 @@ class _AtsCheckerScreenState extends ConsumerState<AtsCheckerScreen> {
             cv: cv,
             subtitle: AppStrings.atsCheckedNow,
             onTap: () => _pickCv(state),
+          ),
+          const SizedBox(height: AppSpacing.s10),
+          AtsJobPostCard(
+            jobPost: state.jobPostText,
+            source: state.jobPostSource,
+            onEdit: () => _editJobPost(state),
+            onClear: () =>
+                ref.read(atsCheckerControllerProvider.notifier).clearJobPost(),
           ),
           const SizedBox(height: AppSpacing.s14),
           AtsScoreCard(score: report.score, fixes: report.issues.length),

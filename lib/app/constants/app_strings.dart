@@ -761,7 +761,18 @@ abstract final class AppStrings {
   static const String atsMenuApplySkills = 'Apply detected skills';
   static const String atsMenuCopySuggestions = 'Copy suggestions';
   static const String atsNeedsJobPost =
-      'Paste a job post first — tap "Check against a job post".';
+      'Add a job post first: tap "Add job post" above.';
+  static const String atsJobPostLabel = 'Job post';
+  static const String atsJobPostFromTailor = 'From Tailor';
+  static const String atsJobPostAddedHere = 'Added here';
+  static const String atsJobPostNone =
+      'No job post. Job match and AI suggestions use only your CV.';
+  static const String atsJobPostAdd = 'Add job post';
+  static const String atsJobPostChange = 'Change';
+  static const String atsJobPostClear = 'Clear';
+  static const String atsJobPostSheetTitle = 'Job post for matching';
+  static const String atsJobPostSheetHint = 'Paste the job post here';
+  static const String atsJobPostSave = 'Use this job post';
   static const String atsAiSheetTitle = 'Improve with AI';
   static const String atsAiSheetBody =
       'Generate an editable summary or objective. Review it and keep only '
