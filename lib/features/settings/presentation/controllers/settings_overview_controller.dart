@@ -1,3 +1,4 @@
+import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/features/cover_letter/data/repositories/cover_letter_repository_impl.dart';
 import 'package:careermatebd/features/cover_letter/presentation/controllers/cover_letter_controller.dart';
 import 'package:careermatebd/features/cv_builder/data/repositories/cv_repository_impl.dart';
@@ -14,6 +15,12 @@ final packageInfoLoaderProvider = Provider<Future<PackageInfo> Function()>((
   ref,
 ) {
   return PackageInfo.fromPlatform;
+});
+
+/// Deletes the signed-in user's CV cloud backup and returns whether there was
+/// one. Overridable in tests.
+final cvCloudBackupEraserProvider = Provider<Future<bool> Function()>((ref) {
+  return () => ref.read(cvRepositoryImplProvider).deleteCloudBackup();
 });
 
 class SettingsOverviewState {
@@ -85,10 +92,25 @@ class SettingsOverviewController extends AsyncNotifier<SettingsOverviewState> {
     state = await AsyncValue.guard(_loadOverview);
   }
 
-  Future<String?> clearAllLocalCareerData() async {
+  /// Clears the career data on this device. With [includeCloudBackup] the CV
+  /// backup in Firestore is deleted first; if that fails nothing is cleared,
+  /// so local data and backup never end up half removed.
+  Future<String?> clearAllLocalCareerData({
+    bool includeCloudBackup = false,
+  }) async {
     final current =
         state.asData?.value ?? const SettingsOverviewState.initial();
     state = AsyncData(current.copyWith(isClearingLocalData: true));
+
+    var cloudDeleted = false;
+    if (includeCloudBackup) {
+      try {
+        cloudDeleted = await ref.read(cvCloudBackupEraserProvider)();
+      } catch (_) {
+        state = AsyncData(current.copyWith(isClearingLocalData: false));
+        return AppStrings.clearDataCloudFailed;
+      }
+    }
 
     try {
       await ref.read(cvRepositoryProvider).clearAllCvs();
@@ -104,10 +126,12 @@ class SettingsOverviewController extends AsyncNotifier<SettingsOverviewState> {
 
       final refreshed = await _loadOverview();
       state = AsyncData(refreshed);
-      return 'Local career data cleared. Theme and language preferences were kept.';
+      return cloudDeleted
+          ? AppStrings.clearDataDoneWithCloud
+          : AppStrings.clearDataDone;
     } catch (_) {
       state = AsyncData(current.copyWith(isClearingLocalData: false));
-      return 'Could not clear local data right now.';
+      return AppStrings.clearDataFailed;
     }
   }
 
