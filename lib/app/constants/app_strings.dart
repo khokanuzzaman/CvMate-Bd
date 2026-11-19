@@ -620,6 +620,9 @@ abstract final class AppStrings {
   static const String paywallBodyEmphasis = 'free export';
   static const String paywallBodySuffix =
       '. Go Pro for unlimited tailored CVs — or pay once for just this one.';
+  // Opened from Profile, Restore, the AI quota or anywhere but an export.
+  static const String paywallBodyNeutral =
+      'Unlock unlimited exports and 100 AI actions a month.';
   static const String paywallBenefitTailoring =
       '100 AI actions a month for tailoring & rewrites';
   static const String paywallBenefitTemplates =

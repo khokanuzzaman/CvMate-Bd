@@ -163,6 +163,11 @@ enum PaywallSource implements AnalyticsValue {
   aiQuota,
   other;
 
+  /// Opened because an export was blocked (the export gate passes the
+  /// export's own source); every other entry point is browsing plans.
+  bool get isExportGate =>
+      this == PaywallSource.cvPreview || this == PaywallSource.tailoring;
+
   static PaywallSource parse(String? raw) {
     for (final value in values) {
       if (value.wire == raw) {
