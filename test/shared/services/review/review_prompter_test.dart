@@ -62,6 +62,24 @@ void main() {
     expect(platform.requests, 2);
   });
 
+  // Regression: Printing.sharePdf returns while the share sheet is still
+  // open, so the rating request used to appear on top of it.
+  test('an export that opened the share sheet never asks right then; the '
+      'next success moment asks', () async {
+    store.record = const ReviewPromptRecord(launches: 3);
+    final review = prompter();
+
+    await review.onExportSucceeded(openedShareSheet: true);
+    expect(platform.requests, 0, reason: 'share sheet may still be open');
+
+    // First tailoring is not a moment of its own, but carries the export.
+    await review.onTailoringSucceeded();
+    expect(platform.requests, 1);
+    expect(analytics.paramsFor('review_prompt_requested').single, {
+      'trigger': 'export',
+    });
+  });
+
   test('only from the 2nd successful tailoring, and never right after an '
       'error or the paywall', () async {
     store.record = const ReviewPromptRecord(launches: 3);
