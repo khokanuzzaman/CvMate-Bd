@@ -66,8 +66,11 @@ Future<void> loadTestFonts() async {
             message.lengthInBytes,
           ),
         );
+        // Test fonts, and the app's own assets (e.g. the PDF's Bengali font).
         final file = File(key);
-        if (!key.startsWith('$_fontDir/') || !file.existsSync()) {
+        final served =
+            key.startsWith('$_fontDir/') || key.startsWith('assets/');
+        if (!served || !file.existsSync()) {
           return null;
         }
         return ByteData.sublistView(file.readAsBytesSync());

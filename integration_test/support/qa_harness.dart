@@ -4,6 +4,8 @@ import 'package:careermatebd/app/app.dart';
 import 'package:careermatebd/app/router/app_router.dart';
 import 'package:careermatebd/features/cv_builder/data/datasources/cv_remote_data_source.dart';
 import 'package:careermatebd/features/cv_builder/data/dtos/cv_profile_dto.dart';
+import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_preview_pages_provider.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_pdf_pages_view.dart';
 import 'package:careermatebd/firebase_options.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_sink.dart';
@@ -518,4 +520,20 @@ List<MethodCall> mockSharePlus(WidgetTester tester) {
     ),
   );
   return calls;
+}
+
+/// Waits until the preview shows the PDF pages of the current draft (the
+/// platform renderer runs on the device), and returns them.
+Future<CvPreviewPages> waitForPreviewPdf(WidgetTester tester) async {
+  await waitFor(tester, find.byKey(CvPdfPagesView.pageKey(0)));
+  final container = appContainer(tester);
+  for (var i = 0; i < 200; i++) {
+    final state = container.read(cvPreviewPagesProvider);
+    if (state.hasValue && !state.isLoading) {
+      await pumpFor(tester, const Duration(milliseconds: 300));
+      return state.requireValue;
+    }
+    await pumpFor(tester, const Duration(milliseconds: 100));
+  }
+  throw StateError('the preview pages did not arrive');
 }

@@ -7,6 +7,7 @@ import 'package:careermatebd/features/cv_builder/domain/entities/education_info.
 import 'package:careermatebd/features/cv_builder/domain/entities/experience_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/language_info.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/personal_info.dart';
+import 'package:careermatebd/features/cv_builder/presentation/widgets/cv_pdf_pages_view.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/ai_improve_controller.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/ai_improve_type.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
@@ -359,7 +360,9 @@ void main() {
         'Ayesha Rahman',
       );
       expect(find.text(AppStrings.previewTitle), findsOneWidget);
-      expect(find.text('Ayesha Rahman'), findsOneWidget);
+      // The preview shows this draft's PDF pages.
+      expect(find.byType(CvPdfPagesView), findsOneWidget);
+      expect(draft().personalInfo.fullName, 'Ayesha Rahman');
       expect(find.text(AppStrings.previewExport), findsOneWidget);
       await _flush(tester);
     });

@@ -68,6 +68,7 @@ void registerStressFlow() {
       find.textContaining('Senior Registered Nurse and').first,
     );
     await waitFor(tester, find.text(AppStrings.previewExport));
+    await waitForPreviewPdf(tester);
     await shot(tester, 'stress-long', 'preview-extreme');
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -1500));
     await pumpFor(tester, const Duration(milliseconds: 500));
@@ -87,6 +88,7 @@ void registerStressFlow() {
     // Bangla CV preview + builder.
     await tapOn(tester, find.text('আমার সিভি').first);
     await waitFor(tester, find.text(AppStrings.previewExport));
+    await waitForPreviewPdf(tester);
     await shot(tester, 'stress-long', 'preview-bangla');
     await goBack(tester);
 

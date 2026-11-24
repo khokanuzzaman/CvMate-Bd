@@ -88,13 +88,15 @@ void registerMarketStyleFlow() {
       await tapText(tester, AppStrings.declarationSave);
       await waitFor(tester, find.text(AppStrings.declarationTile));
 
-      // Preview shows the shown fields.
+      // Preview: the PDF of the draft with the shown fields (their lines are
+      // checked in the exported PDF, see docs/QA_REPORT.md).
       await tapOn(tester, find.byIcon(Icons.visibility_outlined));
       await waitFor(tester, find.text(AppStrings.previewExport));
+      final preview = await waitForPreviewPdf(tester);
       await shot(tester, 'market-style', 'preview-gulf');
-      expect(find.textContaining('Nationality: Bangladeshi'), findsOneWidget);
-      expect(find.textContaining('Passport: A01234567 · 2031'), findsOneWidget);
-      expect(find.textContaining('Place: Dubai'), findsOneWidget);
+      expect(preview.profile.details.nationality, 'Bangladeshi');
+      expect(preview.profile.isFieldShown(PersonalField.passport), isTrue);
+      expect(preview.profile.declaration.place, 'Dubai');
 
       // Export reaches the share sheet.
       await tapText(

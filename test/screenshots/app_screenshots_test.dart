@@ -14,6 +14,7 @@ import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_bui
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_flow.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_builder_screen.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_preview_screen.dart';
+import 'package:careermatebd/shared/services/pdf/cv_pdf_rasterizer.dart';
 import 'package:careermatebd/features/cv_builder/presentation/screens/cv_template_screen.dart';
 import 'package:careermatebd/features/cover_letter/data/repositories/cover_letter_repository_impl.dart';
 import 'package:careermatebd/features/cover_letter/presentation/controllers/cover_letter_controller.dart';
@@ -41,6 +42,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
+import '../helpers/preview_pages.dart';
 import '../helpers/fake_auth_repository.dart';
 import '../helpers/core_flow_harness.dart';
 import '../helpers/design_cv.dart';
@@ -56,6 +58,7 @@ Future<ProviderContainer> _containerWith(CvProfile profile) async {
   final container = ProviderContainer(
     overrides: [
       cvRepositoryProvider.overrideWithValue(FakeCvRepository([profile])),
+      cvPdfRasterizerProvider.overrideWithValue(testPdfRasterizer()),
     ],
   );
   addTearDown(container.dispose);
@@ -225,6 +228,7 @@ void main() {
         const CvPreviewScreen(),
         container: container,
       );
+      await waitForPreviewPages(tester, container);
       await expectCaptured(tester, key, '13_preview');
     });
 
@@ -241,6 +245,7 @@ void main() {
         const CvPreviewScreen(),
         container: container,
       );
+      await waitForPreviewPages(tester, container);
       await tester.tap(find.text('2 things to fix'));
       await tester.pumpAndSettle();
       await expectCaptured(tester, key, '14_preview_notes');
