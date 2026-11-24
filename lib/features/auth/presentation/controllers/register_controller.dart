@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:careermatebd/features/auth/data/repositories/firebase_auth_repository_impl.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_form_state.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
+import 'package:careermatebd/features/auth/presentation/controllers/new_account_session_provider.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_events.dart';
 import 'package:careermatebd/shared/services/analytics/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,7 +49,8 @@ class RegisterController extends Notifier<AuthFormState> {
         );
 
     return result.when(
-      success: (_) {
+      success: (user) {
+        ref.read(newAccountSessionProvider.notifier).markCreated(user.uid);
         // The name is saved after the sign-in event, so read the user again.
         ref.invalidate(currentAuthUserProvider);
         unawaited(

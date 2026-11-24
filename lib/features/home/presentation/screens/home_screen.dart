@@ -13,6 +13,7 @@ import 'package:careermatebd/core/widgets/cv_list_tile.dart';
 import 'package:careermatebd/core/widgets/quick_action_tile.dart';
 import 'package:careermatebd/core/widgets/section_label.dart';
 import 'package:careermatebd/features/auth/presentation/controllers/auth_session_provider.dart';
+import 'package:careermatebd/features/auth/presentation/controllers/new_account_session_provider.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_profile.dart';
 import 'package:careermatebd/features/cv_builder/domain/entities/cv_template.dart';
 import 'package:careermatebd/features/cv_builder/presentation/controllers/cv_builder_controller.dart';
@@ -68,6 +69,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cvLibrary = ref.watch(cvLibraryControllerProvider);
     final user = ref.watch(currentAuthUserProvider);
+    final isNewAccount = ref.watch(isNewAccountSessionProvider);
     final avatarInitial = _initialFor(user?.email);
 
     return Scaffold(
@@ -84,6 +86,9 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _HomeHeader(
+                greeting: isNewAccount
+                    ? AppStrings.homeWelcomeEyebrowNew
+                    : AppStrings.homeWelcomeEyebrow,
                 initial: avatarInitial,
                 onProfileTap: () => context.push(RouteNames.profilePath),
               ),
@@ -183,8 +188,13 @@ class _QuickAction {
 
 /// "WELCOME BACK" eyebrow + "Ready to apply?" title + profile avatar button.
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.initial, required this.onProfileTap});
+  const _HomeHeader({
+    required this.greeting,
+    required this.initial,
+    required this.onProfileTap,
+  });
 
+  final String greeting;
   final String? initial;
   final VoidCallback onProfileTap;
 
@@ -197,7 +207,7 @@ class _HomeHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SectionLabel(AppStrings.homeWelcomeEyebrow),
+              SectionLabel(greeting),
               const SizedBox(height: AppSpacing.s6),
               Text(AppStrings.homeTitle, style: AppTextStyles.h1),
             ],
