@@ -20,7 +20,8 @@ import 'package:go_router/go_router.dart';
 /// moves only after [export] succeeds.
 ///
 /// Analytics: `export_start`, then `export_result` with the gate that let it
-/// through. A success may ask for a rating; a failure is a setback and a
+/// through. A success may ask for a rating (after a share, only at the next
+/// success: the share sheet may still be open); a failure is a setback and a
 /// non-fatal (code only).
 Future<void> runGatedExport({
   required WidgetRef ref,
@@ -92,5 +93,7 @@ Future<void> runGatedExport({
             ExportAccess.freeExport || ExportAccess.blocked => ExportGate.free,
           },
   );
-  unawaited(review.onExportSucceeded());
+  unawaited(
+    review.onExportSucceeded(openedShareSheet: format == ExportFormat.share),
+  );
 }

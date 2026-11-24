@@ -69,6 +69,10 @@ class ReviewPrompter {
 
   /// In memory on purpose: a setback only matters for this launch.
   DateTime? _lastSetbackAt;
+
+  /// A success that could not ask yet because a share sheet may still be
+  /// on screen; the next success moment asks instead.
+  ReviewTrigger? _deferred;
   bool _launchCounted = false;
 
   /// Once per app launch.
@@ -83,7 +87,16 @@ class ReviewPrompter {
   /// An error, a failed export or the paywall: no rating request for a while.
   void recordSetback() => _lastSetbackAt = _now();
 
-  Future<void> onExportSucceeded() => _maybeRequest(ReviewTrigger.export);
+  /// [openedShareSheet]: the export ended in the system share sheet, which
+  /// `Printing.sharePdf` leaves open after it returns. A rating request then
+  /// would appear over the sheet, so it waits for the next success moment.
+  Future<void> onExportSucceeded({bool openedShareSheet = false}) async {
+    if (openedShareSheet) {
+      _deferred = ReviewTrigger.export;
+      return;
+    }
+    await _maybeRequest(ReviewTrigger.export);
+  }
 
   Future<void> onTailoringSucceeded() async {
     final record = await _update(
@@ -93,6 +106,8 @@ class ReviewPrompter {
     );
     if (record != null && record.successfulTailorings >= 2) {
       await _maybeRequest(ReviewTrigger.tailoring);
+    } else if (_deferred case final trigger?) {
+      await _maybeRequest(trigger);
     }
   }
 
@@ -116,6 +131,7 @@ class ReviewPrompter {
   }
 
   Future<void> _maybeRequest(ReviewTrigger trigger) async {
+    _deferred = null;
     try {
       final record = await store.load();
       if (!await _allowed(record)) {
