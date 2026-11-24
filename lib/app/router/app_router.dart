@@ -46,23 +46,32 @@ final _splashGateProvider = FutureProvider<void>((ref) async {
   await minimumSplash;
 });
 
+/// The app's single [GoRouter]. It is built once: sign-in, sign-out and the
+/// end of the splash only re-run [GoRouter.redirect] (through
+/// `refreshListenable`). Rebuilding the router on every auth change used to
+/// throw away the whole navigation stack mid-flow, so a screen that was
+/// still awaiting (e.g. Settings > Delete account) lost its context and
+/// never showed its result.
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final repository = ref.watch(authRepositoryProvider);
-  final authSession = ref.watch(authSessionProvider);
-  final splashGate = ref.watch(_splashGateProvider);
-  // Read, not watch: marking onboarding as seen must not rebuild the router
-  // mid-navigation. Later rebuilds (e.g. on sign-out) pick up the saved value.
-  final isOnboardingSeen =
-      ref.read(onboardingSeenControllerProvider).asData?.value ?? false;
-  final currentUser = authSession.asData?.value ?? repository.currentUser;
-  final isLoggedIn = currentUser != null;
-  final isAuthLoading = authSession.isLoading && currentUser == null;
-  final isSplashReady = splashGate.hasValue;
+  final refresh = ValueNotifier<int>(0);
+  ref
+    ..listen(authSessionProvider, (_, _) => refresh.value++)
+    ..listen(_splashGateProvider, (_, _) => refresh.value++);
 
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: RouteNames.splashPath,
+    refreshListenable: refresh,
     observers: [AnalyticsRouteObserver(ref.read(analyticsServiceProvider))],
     redirect: (context, state) {
+      final authSession = ref.read(authSessionProvider);
+      final currentUser =
+          authSession.asData?.value ??
+          ref.read(authRepositoryProvider).currentUser;
+      final isLoggedIn = currentUser != null;
+      final isAuthLoading = authSession.isLoading && currentUser == null;
+      final isSplashReady = ref.read(_splashGateProvider).hasValue;
+      final isOnboardingSeen =
+          ref.read(onboardingSeenControllerProvider).asData?.value ?? false;
       final location = state.matchedLocation;
       final isSplashRoute = location == RouteNames.splashPath;
       final isPublicAuthRoute =
@@ -243,4 +252,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       );
     },
   );
+  ref.onDispose(() {
+    router.dispose();
+    refresh.dispose();
+  });
+  return router;
 });

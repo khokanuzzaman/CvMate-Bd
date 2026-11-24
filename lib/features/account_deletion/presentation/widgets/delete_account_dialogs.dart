@@ -14,6 +14,9 @@ Future<bool> confirmAccountDeletion(
   final apple = defaultTargetPlatform == TargetPlatform.iOS;
   final confirmed = await showDialog<bool>(
     context: context,
+    // Only Cancel or Delete close it: a quick second tap on "Delete account"
+    // would otherwise land on the barrier and dismiss the dialog at once.
+    barrierDismissible: false,
     builder: (dialogContext) => AlertDialog(
       title: Text(
         hasAccount

@@ -23,6 +23,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+/// True while Settings > Delete account is running (dialogs included).
+bool _deleteFlowOpen = false;
+
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -176,6 +179,20 @@ class SettingsScreen extends ConsumerWidget {
   /// sign-in) → back to onboarding. The steps live in
   /// [AccountDeletionController]; this only drives the dialogs.
   Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    // One flow at a time: a double tap must not open a second dialog (the
+    // button is only disabled once the server call starts).
+    if (_deleteFlowOpen) {
+      return;
+    }
+    _deleteFlowOpen = true;
+    try {
+      await _runDeleteFlow(context, ref);
+    } finally {
+      _deleteFlowOpen = false;
+    }
+  }
+
+  Future<void> _runDeleteFlow(BuildContext context, WidgetRef ref) async {
     final hasAccount = ref.read(currentAuthUserProvider) != null;
     if (!await confirmAccountDeletion(context, hasAccount: hasAccount) ||
         !context.mounted) {
