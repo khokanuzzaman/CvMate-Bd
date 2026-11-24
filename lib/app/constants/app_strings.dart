@@ -68,6 +68,9 @@ abstract final class AppStrings {
 
   // Home — header
   static const String homeWelcomeEyebrow = 'Welcome back';
+
+  /// Home greeting in a new account's first session.
+  static const String homeWelcomeEyebrowNew = 'Welcome';
   static const String homeTitle = 'Ready to apply?';
 
   // Home — hero "Tailor to a Job" card
