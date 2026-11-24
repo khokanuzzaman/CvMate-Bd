@@ -1,6 +1,7 @@
 import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_radii.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_system_ui.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 
@@ -35,6 +36,8 @@ abstract final class CvMateTheme {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         foregroundColor: AppColors.ink,
+        // A transparent bar would otherwise count as dark (white icons).
+        systemOverlayStyle: AppSystemUi.onLight,
         centerTitle: false,
         elevation: 0,
         titleTextStyle: AppTextStyles.appBar,

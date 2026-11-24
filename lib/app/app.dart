@@ -3,6 +3,7 @@ import 'package:careermatebd/app/router/app_router.dart';
 import 'package:careermatebd/app/widgets/pending_ai_result_overlay.dart';
 import 'package:careermatebd/core/config/dev_labels.dart';
 import 'package:careermatebd/core/config/env_config.dart';
+import 'package:careermatebd/core/theme/app_system_ui.dart';
 import 'package:careermatebd/core/theme/cv_mate_theme.dart';
 import 'package:careermatebd/core/widgets/text_scale_clamp.dart';
 import 'package:careermatebd/features/cv_builder/data/cv_cloud_sync.dart';
@@ -11,6 +12,7 @@ import 'package:careermatebd/shared/services/analytics/telemetry_bootstrap.dart'
 import 'package:careermatebd/shared/services/billing/billing_identity_sync.dart';
 import 'package:careermatebd/shared/services/entitlement/ai_entitlement_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class CareerMateApp extends ConsumerWidget {
@@ -41,10 +43,15 @@ class CareerMateApp extends ConsumerWidget {
       themeMode: themeMode,
       routerConfig: router,
       builder: (context, child) {
-        final appChild = TextScaleClamp(
-          // Shows an AI answer recovered after the app was closed mid-request.
-          child: PendingAiResultOverlay(
-            child: child ?? const SizedBox.shrink(),
+        final appChild = AnnotatedRegion<SystemUiOverlayStyle>(
+          // Default for screens without an app bar; dark screens override.
+          value: AppSystemUi.onLight,
+          child: TextScaleClamp(
+            // Shows an AI answer recovered after the app was closed
+            // mid-request.
+            child: PendingAiResultOverlay(
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
         if (!EnvConfig.isMockAiActive) {

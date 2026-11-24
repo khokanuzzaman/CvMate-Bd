@@ -1,6 +1,7 @@
 import 'package:careermatebd/app/constants/app_strings.dart';
 import 'package:careermatebd/core/theme/app_colors.dart';
 import 'package:careermatebd/core/theme/app_spacing.dart';
+import 'package:careermatebd/core/theme/app_system_ui.dart';
 import 'package:careermatebd/core/theme/app_text_styles.dart';
 import 'package:careermatebd/core/widgets/brand_logo_tile.dart';
 import 'package:careermatebd/core/widgets/pager_dots.dart';
@@ -19,7 +20,7 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: AppSystemUi.onDark,
       child: Scaffold(
         backgroundColor: AppColors.primary,
         body: SafeArea(
