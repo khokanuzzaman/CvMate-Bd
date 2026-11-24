@@ -17,7 +17,7 @@ import '../helpers/template_look.dart';
 /// Runs only when TEMPLATE_QA_DIR is set:
 ///
 ///   TEMPLATE_QA_DIR=build/qa TEMPLATE_QA_DEVICE="iPhone 17 Pro, iOS 26.5" \
-///     TEMPLATE_QA_IMAGE_BASE=<url of the images branch folder> \
+///     TEMPLATE_QA_IMAGE_BASE=https://github.com/khokanuzzaman/CvMate-Bd/blob/qa/template-compare/docs/qa/templates/compare \
 ///     flutter test test/qa/template_compare_test.dart
 void main() {
   final source = Platform.environment['TEMPLATE_QA_DIR'];
