@@ -134,6 +134,14 @@ checks use DebugView with an Xcode run as described in
       5 minutes the app asks for the password.
 - [ ] The app goes back to onboarding. Firebase > Authentication no longer
       lists the email.
+- [ ] **Every** Delete ends in exactly one of: *"Your account was deleted."*
+      and onboarding, the *Confirm your password* prompt, or a red error on
+      Settings. Never a silent jump to Home, My CVs or login with the
+      account still there. Try it once right after signing in and once with
+      a sign-in older than 5 minutes; also double-tap *Delete account*
+      (only one dialog opens). The simulator runs the same 10 cases:
+      `integration_test/delete_account_test.dart` (see `docs/QA_REPORT.md`
+      for the emulator command).
 - [ ] Deleting does not cancel a sandbox subscription: cancel it in section 4
       first, or let the sandbox subscription run out.
 
